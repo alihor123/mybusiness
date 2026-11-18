@@ -4,6 +4,7 @@ from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
+from app.auth import models as auth_models  # noqa: F401
 from app.config import get_settings
 from app.database import Base
 

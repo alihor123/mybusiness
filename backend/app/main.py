@@ -6,10 +6,12 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.router import router as auth_router
 from app.database import get_db
 from app.errors import api_error
 
 app = FastAPI(title="Мой бизнес", version="0.1.0")
+app.include_router(auth_router, prefix="/api/v1")
 app.mount("/media", StaticFiles(directory=Path(__file__).resolve().parents[1] / "public_media"))
 
 
