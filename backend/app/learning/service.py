@@ -70,6 +70,8 @@ def attempt_out(attempt: Attempt) -> AttemptOut:
     return AttemptOut(
         id=attempt.id,
         number=attempt.number,
+        request_key=attempt.request_key,
+        answer=attempt.answer,
         status=attempt.status,
         remarks=attempt.remarks,
         accepted=(attempt.status == "accepted") if attempt.status in TERMINAL else None,

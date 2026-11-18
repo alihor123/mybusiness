@@ -131,10 +131,18 @@ async def test_full_route_retry_and_one_first_draft(client):
                 assert failed.status_code == 503
                 saved = (await client.get(f"{BASE}{path}")).json()["last_attempt"]
                 assert saved["status"] == "check_unavailable" and saved["number"] == 1
-            response = await do_step(client, step)
-            assert response.status_code == 200, (step["id"], response.text)
-            if step["id"] == "idea-validation-06":
+
+                response = await send(
+                    client,
+                    "POST",
+                    path + "/submissions",
+                    json={"answer": saved["answer"], "request_key": saved["request_key"]},
+                )
+                assert response.status_code == 200, response.text
                 assert response.json()["attempt"]["id"] == saved["id"]
+            else:
+                response = await do_step(client, step)
+                assert response.status_code == 200, (step["id"], response.text)
 
     before = (await client.get(f"{BASE}/learning/progress")).json()
     assert not before["can_create_project"] and before["first_project_id"] is None

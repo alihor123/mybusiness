@@ -102,6 +102,8 @@ class TrackDetail(TrackOut):
 class AttemptOut(BaseModel):
     id: UUID
     number: int
+    request_key: str
+    answer: Answer
     status: Literal["checking", "check_unavailable", "accepted", "rejected"]
     accepted: bool | None
     remarks: list[str]
