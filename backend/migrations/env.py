@@ -7,6 +7,9 @@ from sqlalchemy.pool import NullPool
 from app.auth import models as auth_models  # noqa: F401
 from app.config import get_settings
 from app.database import Base
+from app.diagnostic import models as diagnostic_models  # noqa: F401
+from app.learning import models as learning_models  # noqa: F401
+from app.projects import bootstrap as projects_models  # noqa: F401
 
 
 def run_migrations(connection):

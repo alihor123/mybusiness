@@ -13,7 +13,7 @@ class Credentials(BaseModel):
     @classmethod
     def normalize_login(cls, login: str) -> str:
         login = login.strip().lower()
-        if not login or any(character.isspace() for character in login):
+        if not login or len(login) > 254 or any(character.isspace() for character in login):
             raise ValueError("Логин должен быть без пробелов")
         return login
 

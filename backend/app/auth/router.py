@@ -19,7 +19,12 @@ def require_origin(request: Request) -> None:
         raise api_error(403, "INVALID_ORIGIN", "Недопустимый источник запроса")
 
 
-@router.post("/auth/register", status_code=201, dependencies=[Depends(require_origin)])
+@router.post(
+    "/auth/register",
+    status_code=201,
+    dependencies=[Depends(require_origin)],
+    responses={409: {"description": "Логин уже занят"}},
+)
 async def register(
     data: Registration, response: Response, db: AsyncSession = Depends(get_db)
 ) -> Profile:
@@ -28,7 +33,11 @@ async def register(
     return actor.profile
 
 
-@router.post("/auth/login", dependencies=[Depends(require_origin)])
+@router.post(
+    "/auth/login",
+    dependencies=[Depends(require_origin)],
+    responses={401: {"description": "Неверные данные входа"}},
+)
 async def login(
     data: Credentials, response: Response, db: AsyncSession = Depends(get_db)
 ) -> Profile:
