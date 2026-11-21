@@ -9,13 +9,18 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.accompaniment.router import router as accompaniment_router
 from app.ai.client import get_deepseek
 from app.api_contract import describe_errors
+from app.applications.router import router as applications_router
 from app.auth.router import router as auth_router
 from app.database import get_db, get_session_factory
 from app.diagnostic.router import router as diagnostic_router
 from app.errors import api_error
+from app.events.router import router as events_router
 from app.learning.router import router as learning_router
+from app.mentors.router import router as mentors_router
+from app.projects.router import router as projects_router
 
 
 @asynccontextmanager
@@ -36,6 +41,16 @@ describe_errors(app)
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(diagnostic_router, prefix="/api/v1")
 app.include_router(learning_router, prefix="/api/v1")
+app.include_router(mentors_router, prefix="/api/v1")
+app.include_router(events_router, prefix="/api/v1")
+for router in (
+    projects_router,
+    mentors_router,
+    applications_router,
+    accompaniment_router,
+    events_router,
+):
+    app.include_router(router, prefix="/api/v1")
 app.mount("/media", StaticFiles(directory=Path(__file__).resolve().parents[1] / "public_media"))
 
 

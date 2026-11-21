@@ -372,7 +372,10 @@ async def extract_prefill(
     fields = None
     try:
         result = await ai.complete(
-            "Извлеки поля первого проекта из принятого итога. "
+            "Извлеки поля первой анкеты проекта из принятого итога: "
+            "title, industry, stage, audience, problem, solution_benefit, mentor_request. "
+            "Польза решения описывает пользу для клиента. Запрос наставнику извлекай "
+            "только если ученик явно описал, с чем нужна помощь. "
             "Заполняй только поля, прямо подтверждённые ответом. Остальные оставь пустыми.",
             json.dumps({"answer": data.answer}, ensure_ascii=False),
             ProjectPrefill,

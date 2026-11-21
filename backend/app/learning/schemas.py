@@ -85,6 +85,7 @@ class Progress(BaseModel):
     tracks: list[TrackProgress]
     can_create_project: bool
     first_project_id: UUID | None
+    draft_project_id: UUID | None = None
 
 
 class TrackOut(TrackProgress):

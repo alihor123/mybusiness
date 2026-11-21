@@ -21,6 +21,8 @@ class ProjectPrefill(BaseModel):
     problem: str | None = Field(None, max_length=2000)
     solution: str | None = Field(None, max_length=2000)
     completed_actions: str | None = Field(None, max_length=2000)
+    solution_benefit: str | None = Field(None, max_length=2000)
+    mentor_request: str | None = Field(None, max_length=2000)
 
     @field_validator("*")
     @classmethod

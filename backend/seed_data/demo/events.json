@@ -1,0 +1,28 @@
+{
+  "events": [
+    {
+      "slug": "demo-yugra-business-meetup-2027-02",
+      "title": "Встреча предпринимателей Югры",
+      "description": "Демонстрационная карточка встречи для начинающих предпринимателей.",
+      "starts_at": "2027-02-18T18:00:00+05:00",
+      "url": "https://demo.example/events/yugra-business-meetup",
+      "location": "Ханты-Мансийск"
+    },
+    {
+      "slug": "demo-first-customers-workshop-2027-03",
+      "title": "Практикум: первые клиенты",
+      "description": "Демонстрационный практикум по проверке спроса и поиску первых клиентов.",
+      "starts_at": "2027-03-11T17:30:00+05:00",
+      "url": "https://demo.example/events/first-customers",
+      "location": "Онлайн"
+    },
+    {
+      "slug": "demo-startup-pitch-2027-04",
+      "title": "Питч-сессия проектов Югры",
+      "description": "Демонстрационная встреча для коротких презентаций проектов и обратной связи.",
+      "starts_at": "2027-04-22T16:00:00+05:00",
+      "url": "https://demo.example/events/startup-pitch",
+      "location": "Сургут"
+    }
+  ]
+}

@@ -13,6 +13,7 @@ COPY --from=build /srv/backend/.venv ./.venv
 COPY app ./app
 COPY migrations ./migrations
 COPY scripts ./scripts
+COPY seed_data ./seed_data
 COPY public_media ./public_media
 COPY alembic.ini .
 USER backend

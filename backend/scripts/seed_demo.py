@@ -1,7 +1,7 @@
 """Load demo-only accounts without resetting existing work."""
 
 import asyncio
-from uuid import UUID
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -12,9 +12,13 @@ from app.auth.service import hash_password, lock_user
 from app.auth.tokens import utcnow
 from app.config import get_settings
 from app.database import get_session_factory
+from app.events.seed import import_demo_events
 from app.learning.models import Attempt, Completion, Credit, Step
 from app.learning.progress import finish_if_ready
+from app.mentors.models import Mentor
+from app.mentors.seed import import_demo_mentors
 from app.projects.bootstrap import ProjectPrefill
+from app.projects.seed import seed_projects
 
 START_ID = UUID("00000000-0000-4000-8000-000000000001")
 COMPLETE_ID = UUID("00000000-0000-4000-8000-000000000002")
@@ -99,8 +103,18 @@ async def main() -> None:
         await create_user(db, COMPLETE_ID, "demo-student-complete", "student", "Мария", hashed)
         await create_user(db, TEACHER_ID, "demo-teacher", "teacher", "Ирина", hashed)
         await complete_demo(db)
+        await import_demo_mentors(db)
+        for mentor in await db.scalars(select(Mentor).where(Mentor.showcase_login)):
+            login = mentor.stable_key
+            user_id = uuid5(NAMESPACE_URL, f"mybusiness:teacher:{login}")
+            await create_user(db, user_id, login, "teacher", mentor.name, hashed)
+            mentor.user_id = user_id
+        await import_demo_events(db)
+        await seed_projects(db, COMPLETE_ID)
 
-    print("Demo accounts ready: demo-student-start, demo-student-complete, demo-teacher")
+    print(
+        "Demo accounts ready: demo-student-start, demo-student-complete, demo-teacher, demo-mentor-gordon-ramsay, demo-mentor-lisa-su"
+    )
 
 
 if __name__ == "__main__":
