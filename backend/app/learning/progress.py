@@ -9,7 +9,9 @@ from app.auth.tokens import utcnow
 from app.diagnostic.models import Diagnostic
 from app.learning.models import Attempt, Completion, Credit, Step, Track, TrackPosition
 from app.learning.schemas import Progress, StepSummary, TrackOut, TrackProgress
-from app.projects.bootstrap import ProjectPrefill, ensure_first_project
+from app.projects.bootstrap import ProjectPrefill
+from app.projects.models import Project
+from app.projects.service import ensure_first_project
 
 
 class LearningOutcome(BaseModel):
@@ -108,10 +110,12 @@ async def get_route(db: AsyncSession, user_id: UUID) -> Route:
 async def get_progress(db: AsyncSession, user_id: UUID) -> Progress:
     route = await get_route(db, user_id)
     completion = await db.get(Completion, user_id)
+    draft = await db.get(Project, completion.first_project_id) if completion else None
     return Progress(
         tracks=[route.track_progress(track.id) for track in route.tracks],
         can_create_project=completion is not None,
         first_project_id=completion.first_project_id if completion else None,
+        draft_project_id=draft.id if draft and draft.archived_at is None else None,
     )
 
 

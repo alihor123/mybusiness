@@ -98,15 +98,40 @@ JWT выдаются с `HttpOnly`, `SameSite=Lax` и по умолчанию `S
 - `await app.learning.progress.get_learning_outcome(db, user_id)` возвращает
   `can_create_project` и `project_prefill`. Модулю проектов следует проверять флаг перед
   ручным созданием.
-- `await app.projects.bootstrap.ensure_first_project(db, user_id=…, completion_id=…, project_prefill=…)`
+- `await app.projects.service.ensure_first_project(db, user_id=…, completion_id=…, project_prefill=…)`
   вызывается в транзакции завершения, возвращает UUID черновика и использует уникальный
-  `completion_id`. В ТЗ 01 есть ссылка на отдельное описание семи полей. Текущий контракт
-  использует `title`, `industry`, `stage`, `audience`, `problem`, `solution` и
-  `completed_actions`. Эти имена нужно сверить с модулем проектов.
-- Таблица `first_project_drafts` хранит первую анкету и закреплённый за ней UUID.
-  При подключении проектного CRUD используйте этот UUID и сохраняйте ключ завершения после
-  удаления проекта. При конфликте извлечённых значений используются данные более позднего
-  трека. После создания анкеты её данные фиксируются.
+  `completion_id`. Таблица `first_project_drafts` хранит исходный ID и снимок
+  предзаполнения. Миграция переносит ранее созданные записи в `projects` с теми
+  же ID. После удаления проекта исходная запись сохраняется и повтор завершения
+  обучения не создаёт второй черновик. Данные из финалов копируются один раз.
 - `app.ai.client.get_deepseek().complete(instructions, data, ResultModel)` возвращает
   проверенный Pydantic-объект. Сетевой запрос выполняется вне транзакции PostgreSQL.
   Подменить клиент в тестах можно через `app.dependency_overrides[get_deepseek]`.
+
+## Проекты и сопровождение (ТЗ 02)
+
+Все маршруты используют префикс `/api/v1`. Для изменяющих запросов передавайте CSRF
+из cookie `csrf_access_token`. Swagger показывает точные имена полей и схемы ответов.
+
+- Ученик открывает `GET /projects` после завершения обучения. В прогрессе
+  `draft_project_id` указывает на первый проект. `first_project_id` сохранён для
+  совместимости. `POST /projects` создаёт последующий пустой проект.
+- `PATCH /projects/{id}` принимает частичную анкету. Для подбора и подачи заявки
+  заполните `title`, `industry`, `stage`, `audience`, `problem`, `solution_benefit`
+  и `mentor_request`. Каталог доступен на `GET /mentors`. Подбор вызывается через
+  `POST /projects/{id}/mentor-recommendations`. При `503 CHECK_UNAVAILABLE` наставника
+  можно выбрать вручную.
+- Для `POST /projects/{id}/applications` передайте `{"mentor_id":"<UUID>"}`.
+  Наставник открывает `GET /applications/{id}` и отправляет
+  `{"decision":"accept","questionnaire_version":1}` на `POST /applications/{id}/decision`.
+  Номер версии возьмите из анкеты. При `409` перечитайте её или обновите список заявок.
+- План из пяти задач доступен через `GET /projects/{id}/tasks`. Просмотр задачи,
+  черновик, проверка ИИ и сдача начинаются с `/tasks/{id}`. Черновик и сдача
+  используют multipart с полями `text`, `file_action` и необязательным `file`.
+  Доступные действия с файлом: `keep`, `replace`, `remove`. При сдаче передайте
+  уникальный `request_key`; для повтора сетевого запроса используйте тот же ключ.
+  Файл PDF, JPG или PNG размером до 10 МБ выдаётся
+  через `GET /attachments/{id}` участникам, которым доступна соответствующая версия.
+- Закреплённый наставник ведёт ближайшую встречу через `PUT /projects/{id}/meeting`.
+  `GET /events` отдаёт карточки Leader-ID. После `POST /projects/{id}/archive`
+  владелец и закреплённый наставник сохраняют доступ к истории и файлам.
