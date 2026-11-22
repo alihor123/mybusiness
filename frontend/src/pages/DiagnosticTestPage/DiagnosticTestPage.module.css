@@ -1,0 +1,315 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.headingCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.title {
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1.18;
+  color: var(--color-ink);
+}
+
+.subtitle {
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--color-muted);
+}
+
+.skipCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.skipBtn {
+  height: 45px;
+  padding: 0 28px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-accent);
+  background: var(--color-white);
+  color: var(--color-accent);
+  font-family: var(--font-alt);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.skipBtn:hover {
+  background: var(--color-tint);
+}
+
+.skipHint {
+  font-size: 12px;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.progressLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.progressTrack {
+  flex: 1;
+  height: 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  transition: width var(--transition-base);
+}
+
+.questionTitle {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-ink);
+}
+
+.instruction {
+  font-size: 16px;
+  color: var(--color-muted);
+  margin-top: -8px;
+}
+
+.optionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.optionBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+  text-align: left;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.optionBtn:hover {
+  border-color: var(--color-muted);
+}
+
+.optionBtnSelected {
+  background: var(--color-tint);
+  border-color: var(--color-accent);
+}
+
+.optionBtnSelected:hover {
+  border-color: var(--color-accent);
+}
+
+.radioOuter {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-muted);
+  background: var(--color-white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.radioOuterSelected {
+  border-color: var(--color-accent);
+  background: var(--color-tint);
+}
+
+.radioInner {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.optionText {
+  font-size: 18px;
+  line-height: 1.35;
+  color: var(--color-ink);
+}
+
+.actionsRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.backBtn {
+  height: 48px;
+  padding: 0 28px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+  color: var(--color-ink);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.nextBtn {
+  height: 50px;
+  padding: 0 38px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 18px;
+  font-weight: 600;
+  transition: background var(--transition-fast), opacity var(--transition-fast);
+}
+
+.nextBtn:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.nextBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .page {
+    gap: 10px;
+    padding-bottom: 16px;
+  }
+
+  .headerRow {
+    gap: 10px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .skipCol {
+    align-items: flex-start;
+    gap: 3px;
+  }
+
+  .skipBtn {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 11px;
+  }
+
+  .skipHint {
+    font-size: 11px;
+  }
+
+  .card {
+    padding: 12px;
+    gap: 10px;
+    border-radius: 10px;
+  }
+
+  .progressLabel {
+    font-size: 11.5px;
+  }
+
+  .progressTrack {
+    height: 8px;
+  }
+
+  .questionTitle {
+    font-size: 15.5px;
+  }
+
+  .instruction {
+    font-size: 12px;
+    margin-top: -4px;
+  }
+
+  .optionsList {
+    gap: 8px;
+  }
+
+  .optionBtn {
+    min-height: 40px;
+    padding: 8px 10px;
+    gap: 10px;
+    border-radius: 10px;
+  }
+
+  .radioOuter {
+    width: 18px;
+    height: 18px;
+  }
+
+  .radioInner {
+    width: 10px;
+    height: 10px;
+  }
+
+  .optionText {
+    font-size: 13.5px;
+  }
+
+  .actionsRow {
+    justify-content: stretch;
+    margin-top: 4px;
+  }
+
+  .nextBtn,
+  .backBtn {
+    flex: 1;
+    height: 38px;
+    font-size: 14px;
+    padding: 0 14px;
+  }
+}

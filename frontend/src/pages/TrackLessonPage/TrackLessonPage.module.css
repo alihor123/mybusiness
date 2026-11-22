@@ -1,0 +1,931 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 16px;
+  min-width: 0;
+}
+
+.fixedTop {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.scrollBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 24px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted);
+  font-size: 16px;
+  font-weight: 500;
+  width: fit-content;
+}
+
+.backLink:hover {
+  color: var(--color-ink);
+}
+
+.backIcon {
+  width: 18px;
+  height: 18px;
+}
+
+.title {
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1.18;
+  color: var(--color-ink);
+}
+
+.stepsNav {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 6px 6px 4px 2px;
+  margin: -6px -6px -4px -2px;
+  scrollbar-width: none;
+}
+
+.stepsNav::-webkit-scrollbar {
+  display: none;
+}
+
+.stepBtn {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.stepBtn:hover {
+  border-color: var(--color-accent);
+}
+
+.stepBtnDone {
+  background: var(--color-tint);
+  border-color: transparent;
+  color: var(--color-accent);
+}
+
+.stepBtnActive {
+  background: var(--color-tint);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.stepIcon {
+  width: 22px;
+  height: 22px;
+}
+
+.doneBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doneBadgeIcon {
+  width: 11px;
+  height: 11px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+}
+
+.badgePill {
+  width: fit-content;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--color-tint);
+  color: var(--color-accent);
+  font-size: 16px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+}
+
+.theoryContent,
+.videoContent,
+.practiceContent {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sectionTitle {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-ink);
+}
+
+.bodyText {
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--color-muted);
+}
+
+.bodyTextSmall {
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--color-muted);
+}
+
+.lessonImageWrap {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-soft);
+}
+
+.lessonImage {
+  width: 100%;
+  height: auto;
+  max-height: 240px;
+  object-fit: cover;
+}
+
+.flowRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.flowCard {
+  flex: 1;
+  min-width: 0;
+  min-height: 86px;
+  padding: 16px 20px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.flowCardTint {
+  background: var(--color-tint);
+}
+
+.flowCardSoft {
+  background: var(--color-soft);
+}
+
+.flowIconAccent {
+  width: 28px;
+  height: 28px;
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.flowIconInk {
+  width: 28px;
+  height: 28px;
+  color: var(--color-ink);
+  flex-shrink: 0;
+}
+
+.flowTextCol {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.flowTitleAccent {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.flowSubAccent {
+  font-size: 16px;
+  color: var(--color-accent);
+}
+
+.flowTitleInk {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.flowSubInk {
+  font-size: 16px;
+  color: var(--color-ink);
+}
+
+.flowArrow {
+  width: 20px;
+  height: 20px;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.compareRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.compareBad,
+.compareGood {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--radius-sm);
+}
+
+.compareBad {
+  background: var(--color-soft);
+}
+
+.compareGood {
+  background: var(--color-tint);
+}
+
+.compareIconInk {
+  width: 30px;
+  height: 30px;
+  color: var(--color-ink);
+  flex-shrink: 0;
+}
+
+.compareIconAccent {
+  width: 30px;
+  height: 30px;
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.compareTextCol {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.compareLabelInk {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.compareDescInk {
+  font-size: 16px;
+  color: var(--color-ink);
+}
+
+.compareLabelAccent {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.compareDescAccent {
+  font-size: 16px;
+  color: var(--color-accent);
+}
+
+.playerBox {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.videoStage {
+  position: relative;
+  height: 320px;
+  background: #1d1c1b;
+  overflow: hidden;
+}
+
+.videoPoster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.42;
+}
+
+.videoOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.bigPlayBtn {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  background: rgba(41, 39, 37, 0.65);
+  color: var(--color-white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-fast), background var(--transition-fast);
+}
+
+.bigPlayBtn:hover {
+  transform: scale(1.06);
+  background: var(--color-accent);
+}
+
+.bigPlayIcon {
+  width: 30px;
+  height: 30px;
+  margin-left: 4px;
+}
+
+.videoStatusPill {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(41, 39, 37, 0.72);
+  color: var(--color-white);
+  font-size: 14px;
+}
+
+.playerControls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 50px;
+  padding: 0 16px;
+  background: var(--color-ink);
+  color: var(--color-white);
+}
+
+.controlBtn {
+  border: none;
+  background: transparent;
+  color: var(--color-white);
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.controlIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.timeText {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.seekBar {
+  flex: 1;
+  min-width: 80px;
+  accent-color: var(--color-accent);
+}
+
+.transcriptBox {
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  overflow: hidden;
+}
+
+.transcriptHeader {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 18px;
+  border: none;
+  background: var(--color-white);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+
+.transcriptIcon {
+  width: 22px;
+  height: 22px;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.transcriptTitle {
+  flex: 1;
+  font-size: 18px;
+  color: var(--color-muted);
+}
+
+.transcriptChevron {
+  width: 18px;
+  height: 18px;
+  color: var(--color-muted);
+  transition: transform var(--transition-fast);
+}
+
+.transcriptChevronOpen {
+  transform: rotate(180deg);
+}
+
+.transcriptBody {
+  padding: 0 18px 18px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-ink);
+}
+
+.practiceField {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.practicePrompt {
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--color-ink);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 112px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  font-size: 17px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.textarea:focus {
+  border-color: var(--color-accent);
+  outline: none;
+}
+
+.practiceToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.draftSaved {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  color: var(--color-muted);
+}
+
+.draftCheckIcon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-accent);
+}
+
+.practiceButtons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.outlineBtn {
+  height: 48px;
+  padding: 0 26px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--color-accent);
+  background: var(--color-white);
+  color: var(--color-accent);
+  font-size: 17px;
+  font-weight: 600;
+  transition: background var(--transition-fast);
+}
+
+.outlineBtn:hover {
+  background: var(--color-tint);
+}
+
+.primaryBtn {
+  height: 48px;
+  padding: 0 30px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 18px;
+  font-weight: 600;
+  transition: background var(--transition-fast);
+}
+
+.primaryBtn:hover {
+  background: var(--color-accent-hover);
+}
+
+.aiBox {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px;
+  border-radius: var(--radius-md);
+  background: var(--color-tint);
+}
+
+.aiTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.aiList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aiRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  color: var(--color-muted);
+}
+
+.aiIcon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.aiSuccessBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  background: var(--color-success-tint);
+  color: var(--color-success);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.aiSuccessIcon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.continueRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.continueBtn {
+  height: 50px;
+  padding: 0 36px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 18px;
+  font-weight: 600;
+  transition: background var(--transition-fast), opacity var(--transition-fast);
+}
+
+.continueBtn:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.continueBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.continueHint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  color: var(--color-muted);
+}
+
+.continueHintIcon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+
+.actionsEnd {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 860px) {
+  .flowRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .flowArrow {
+    align-self: center;
+    transform: rotate(90deg);
+  }
+
+  .compareRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    gap: 10px;
+    flex: initial;
+    min-height: auto;
+    padding-bottom: 16px;
+  }
+
+  .fixedTop {
+    gap: 8px;
+  }
+
+  .scrollBody {
+    overflow-y: visible;
+    padding-bottom: 0;
+  }
+
+  .backLink {
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .backIcon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .title {
+    font-size: 19px;
+  }
+
+  .stepsNav {
+    gap: 6px;
+  }
+
+  .stepBtn {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .stepIcon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .doneBadge {
+    width: 13px;
+    height: 13px;
+    top: -4px;
+    right: -4px;
+  }
+
+  .doneBadgeIcon {
+    width: 8px;
+    height: 8px;
+  }
+
+  .card {
+    padding: 12px;
+    gap: 10px;
+    border-radius: 10px;
+  }
+
+  .badgePill {
+    height: 24px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .theoryContent,
+  .videoContent,
+  .practiceContent {
+    gap: 10px;
+  }
+
+  .sectionTitle {
+    font-size: 16px;
+  }
+
+  .bodyText,
+  .bodyTextSmall {
+    font-size: 13px;
+    line-height: 1.42;
+  }
+
+  .lessonImage {
+    min-height: 118px;
+    max-height: 148px;
+    object-fit: cover;
+  }
+
+  .flowRow {
+    gap: 5px;
+  }
+
+  .flowCard {
+    min-height: 44px;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .flowIconAccent,
+  .flowIconInk {
+    width: 18px;
+    height: 18px;
+  }
+
+  .flowTitleAccent,
+  .flowTitleInk {
+    font-size: 13px;
+  }
+
+  .flowSubAccent,
+  .flowSubInk {
+    font-size: 11.5px;
+  }
+
+  .flowArrow {
+    width: 14px;
+    height: 14px;
+  }
+
+  .compareRow {
+    gap: 6px;
+  }
+
+  .compareBad,
+  .compareGood {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .compareIconInk,
+  .compareIconAccent {
+    width: 18px;
+    height: 18px;
+  }
+
+  .compareLabelInk,
+  .compareDescInk,
+  .compareLabelAccent,
+  .compareDescAccent {
+    font-size: 12.5px;
+  }
+
+  .videoStage {
+    height: 156px;
+  }
+
+  .bigPlayBtn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .bigPlayIcon {
+    width: 17px;
+    height: 17px;
+  }
+
+  .videoStatusPill {
+    font-size: 11px;
+    padding: 3px 9px;
+  }
+
+  .playerControls {
+    min-height: 34px;
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .controlIcon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .timeText {
+    font-size: 11px;
+  }
+
+  .transcriptHeader {
+    min-height: 36px;
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  .transcriptIcon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .transcriptTitle {
+    font-size: 13px;
+  }
+
+  .transcriptBody {
+    padding: 0 10px 10px;
+    font-size: 12.5px;
+  }
+
+  .practicePrompt {
+    font-size: 13px;
+  }
+
+  .textarea {
+    min-height: 82px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .draftSaved {
+    font-size: 12px;
+    gap: 5px;
+  }
+
+  .draftCheckIcon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .aiBox {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
+  .aiTitle {
+    font-size: 13px;
+  }
+
+  .aiRow {
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  .practiceButtons,
+  .continueRow {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .outlineBtn,
+  .primaryBtn,
+  .continueBtn {
+    flex: 1;
+    width: 100%;
+    height: 36px;
+    font-size: 13px;
+    padding: 0 14px;
+  }
+
+  .continueHint {
+    font-size: 11.5px;
+  }
+}

@@ -1,0 +1,319 @@
+.shell {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--color-white);
+}
+
+.sidebar {
+  height: 100%;
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 20px 18px;
+  background: var(--color-white);
+  border-right: 1.5px solid var(--color-border);
+  transition: width var(--transition-base), padding var(--transition-base);
+  z-index: 20;
+}
+
+.sidebarCollapsed {
+  width: var(--sidebar-collapsed);
+  padding: 24px 12px 18px;
+}
+
+.sidebarTop {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 54px;
+}
+
+.sidebarCollapsed .brandRow {
+  justify-content: center;
+}
+
+.logoLink {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.logo {
+  height: 52px;
+  width: auto;
+}
+
+.collapseBtn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.collapseBtn:hover {
+  color: var(--color-ink);
+  background: var(--color-soft);
+}
+
+.toggleIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.mobileCloseBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted);
+}
+
+.closeIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.navList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--color-ink);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 21px;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.navItem:hover {
+  background: var(--color-soft);
+}
+
+.navItemActive {
+  background: var(--color-tint);
+  color: var(--color-accent);
+}
+
+.navItemActive:hover {
+  background: var(--color-tint);
+}
+
+.sidebarCollapsed .navItem {
+  justify-content: center;
+  padding: 8px;
+}
+
+.navIcon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.navLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileLabel {
+  white-space: nowrap;
+}
+
+.navBadge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebarBottom {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.roleSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--color-soft);
+  border: 1px solid var(--color-border);
+}
+
+.roleBtn {
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-muted);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.roleBtnActive {
+  background: var(--color-white);
+  color: var(--color-ink);
+  box-shadow: 0 1px 2px rgba(41, 39, 37, 0.08);
+}
+
+.profileItem {
+  justify-content: center;
+}
+
+.contentArea {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-white);
+}
+
+.routePane {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--color-white);
+}
+
+.contentInner {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 28px clamp(24px, 3.2vw, 48px) 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.mobileHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 10px;
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  z-index: 30;
+}
+
+.mobileMenuBtn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menuBtnIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.mobileLogoLink {
+  display: inline-flex;
+  align-items: center;
+}
+
+.mobileLogo {
+  height: 28px;
+  width: auto;
+}
+
+.mobileHeaderSpacer {
+  width: 34px;
+  height: 34px;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(41, 39, 37, 0.38);
+  z-index: 40;
+}
+
+.mobileDrawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(280px, 82vw);
+  padding: 18px 16px;
+  background: var(--color-white);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 50;
+  box-shadow: 8px 0 28px rgba(41, 39, 37, 0.14);
+}
+
+@media (max-width: 1024px) {
+  .contentInner {
+    padding: 20px 24px 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .shell {
+    flex-direction: column;
+  }
+
+  .contentInner {
+    padding: 12px 12px 0;
+  }
+}

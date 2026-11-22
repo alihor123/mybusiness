@@ -1,0 +1,348 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  gap: 20px;
+}
+
+.stickyTop {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  flex-shrink: 0;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.title {
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.16;
+  color: var(--color-ink);
+}
+
+.newBtn {
+  height: 48px;
+  padding: 0 24px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 17px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.newBtn:hover {
+  background: var(--color-accent-hover);
+}
+
+.newBtn:active {
+  transform: scale(0.98);
+}
+
+.plusIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.hintBanner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 22px;
+  border-radius: var(--radius-md);
+  background: var(--color-tint);
+  color: var(--color-accent);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.hintIcon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.scrollArea {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  padding-bottom: 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 324px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+}
+
+.cardTopRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardTitle {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+
+.deleteBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color var(--transition-fast);
+}
+
+.deleteBtn:hover {
+  color: var(--color-ink);
+}
+
+.deleteIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.statusPill {
+  width: 100%;
+  min-height: 38px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.statusSoft {
+  background: var(--color-soft);
+  color: var(--color-muted);
+}
+
+.statusTint {
+  background: var(--color-tint);
+  color: var(--color-accent);
+}
+
+.cardDesc {
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--color-muted);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.divider {
+  height: 1px;
+  width: 100%;
+  background: var(--color-border);
+}
+
+.detailRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.detailIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.cardBtn {
+  width: 100%;
+  height: 46px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 17px;
+  font-weight: 700;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.cardBtn:hover {
+  background: var(--color-accent-hover);
+}
+
+.cardBtn:active {
+  transform: scale(0.98);
+}
+
+.emptyState {
+  flex: 1;
+  min-height: 220px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.emptyTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.emptyDesc {
+  font-size: 16px;
+  color: var(--color-muted);
+  max-width: 420px;
+}
+
+.fabBtn {
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-white);
+  box-shadow: 0 4px 12px rgba(41, 39, 37, 0.22);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 35;
+  transition: transform var(--transition-fast), background var(--transition-fast);
+}
+
+.fabBtn:active {
+  transform: scale(0.94);
+}
+
+.fabIcon {
+  width: 22px;
+  height: 22px;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    gap: 10px;
+  }
+
+  .stickyTop {
+    gap: 8px;
+  }
+
+  .title {
+    font-size: 21px;
+  }
+
+  .hintBanner {
+    font-size: 12px;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .hintIcon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding-bottom: 72px;
+  }
+
+  .card {
+    min-height: 204px;
+    padding: 10px;
+    gap: 8px;
+    border-radius: var(--radius-md);
+  }
+
+  .cardTitle {
+    font-size: 14px;
+    line-height: 1.22;
+  }
+
+  .deleteBtn {
+    width: 22px;
+    height: 22px;
+  }
+
+  .deleteIcon {
+    width: 13px;
+    height: 13px;
+  }
+
+  .statusPill {
+    min-height: 24px;
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .cardDesc {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  .detailRow {
+    font-size: 11px;
+    gap: 6px;
+  }
+
+  .detailIcon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .cardBtn {
+    height: 32px;
+    font-size: 12px;
+  }
+}
