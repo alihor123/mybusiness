@@ -1,0 +1,583 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted);
+  font-size: 16px;
+  width: fit-content;
+}
+
+.backLink:hover {
+  color: var(--color-ink);
+}
+
+.backIcon {
+  width: 18px;
+  height: 18px;
+}
+
+.title {
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1.18;
+  color: var(--color-ink);
+}
+
+.tabsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tabBtn {
+  height: 40px;
+  padding: 0 28px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 16px;
+  font-weight: 500;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.tabBtn:hover {
+  background: var(--color-soft);
+  color: var(--color-ink);
+}
+
+.tabBtnActive {
+  background: var(--color-tint);
+  color: var(--color-accent);
+}
+
+.tabBtnActive:hover {
+  background: var(--color-tint);
+  color: var(--color-accent);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 318px;
+  gap: 20px;
+  align-items: start;
+}
+
+.mainCol {
+  min-width: 0;
+}
+
+.planCard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+}
+
+.progressHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progressTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.progressBarRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progressTrack {
+  flex: 1;
+  height: 9px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  transition: width var(--transition-base);
+}
+
+.progressPercent {
+  font-size: 16px;
+  color: var(--color-ink);
+  min-width: 38px;
+  text-align: right;
+}
+
+.tasksList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.taskRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.taskNumber {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-soft);
+  border: 1px solid var(--color-border);
+  color: var(--color-ink);
+  font-size: 18px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.taskNumberCurrent {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+.taskCard {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+  text-align: left;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.taskCard:hover {
+  border-color: var(--color-accent);
+}
+
+.taskCardCompleted {
+  background: var(--color-soft);
+}
+
+.taskCardCurrent {
+  background: var(--color-tint);
+  border-color: var(--color-accent);
+}
+
+.taskCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.taskTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.taskDesc {
+  font-size: 16px;
+  line-height: 1.38;
+  color: var(--color-muted);
+}
+
+.taskFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.taskStatus {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-accent);
+}
+
+.taskArrow {
+  width: 18px;
+  height: 18px;
+  color: var(--color-muted);
+}
+
+.taskArrowAccent {
+  color: var(--color-accent);
+}
+
+.sideCol {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.mentorCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+}
+
+.mentorCardHeading {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.mentorPhoto {
+  width: 100%;
+  height: 296px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  object-position: top center;
+}
+
+.mentorName {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.mentorRole {
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--color-muted);
+}
+
+.mentorBtns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.mentorOutlineBtn {
+  height: 44px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--color-accent);
+  background: var(--color-white);
+  color: var(--color-accent);
+  font-size: 17px;
+  font-weight: 600;
+  transition: background var(--transition-fast);
+}
+
+.mentorOutlineBtn:hover {
+  background: var(--color-tint);
+}
+
+.mentorPrimaryBtn {
+  height: 44px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 17px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background var(--transition-fast);
+}
+
+.mentorPrimaryBtn:hover {
+  background: var(--color-accent-hover);
+}
+
+.maxIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.nextMeetingCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+}
+
+.nextMeetingLabel {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.nextMeetingDate {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.nextMeetingFormat {
+  font-size: 16px;
+  color: var(--color-muted);
+}
+
+.subSectionTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.emptyBlock {
+  padding: 24px;
+  border-radius: var(--radius-md);
+  background: var(--color-soft);
+  color: var(--color-muted);
+  font-size: 16px;
+}
+
+.meetingsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meetingItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  flex-wrap: wrap;
+}
+
+.meetingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meetingDate {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.meetingTopic {
+  font-size: 16px;
+  color: var(--color-ink);
+}
+
+.meetingFormat {
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.meetingLinkBtn {
+  height: 40px;
+  padding: 0 22px;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 15px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.aboutHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.editBriefBtn {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--color-accent);
+  background: var(--color-white);
+  color: var(--color-accent);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.briefGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.briefItem,
+.briefItemFull {
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.briefItemFull {
+  grid-column: 1 / -1;
+}
+
+.briefLabel {
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.briefValue {
+  font-size: 17px;
+  color: var(--color-ink);
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(41, 39, 37, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 80;
+}
+
+.modalCard {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modalClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-white);
+  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalCloseIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.modalHeader {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.modalPhoto {
+  width: 100px;
+  height: 120px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  object-position: top center;
+}
+
+.modalMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 28px;
+}
+
+.modalName {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.modalRole {
+  font-size: 15px;
+  color: var(--color-muted);
+}
+
+.modalSub {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-accent);
+}
+
+.modalAboutTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.modalAboutText {
+  font-size: 16px;
+  line-height: 1.48;
+  color: var(--color-muted);
+}
+
+@media (max-width: 1040px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .title {
+    font-size: 30px;
+  }
+
+  .planCard {
+    padding: 16px;
+  }
+
+  .taskRow {
+    gap: 10px;
+  }
+
+  .taskNumber {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+  }
+
+  .briefGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .modalHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

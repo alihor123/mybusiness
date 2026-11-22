@@ -6,6 +6,11 @@ import DiagnosticTestPage from "./pages/DiagnosticTestPage/DiagnosticTestPage"
 import TestResultsPage from "./pages/TestResultsPage/TestResultsPage"
 import TracksPage from "./pages/TracksPage/TracksPage"
 import TrackLessonPage from "./pages/TrackLessonPage/TrackLessonPage"
+import ProjectsPage from "./pages/ProjectsPage/ProjectsPage"
+import ProjectBriefPage from "./pages/ProjectBriefPage/ProjectBriefPage"
+import MentorMatchingPage from "./pages/MentorMatchingPage/MentorMatchingPage"
+import ProjectPlanPage from "./pages/ProjectPlanPage/ProjectPlanPage"
+import ProjectTaskPage from "./pages/ProjectTaskPage/ProjectTaskPage"
 
 // Защищает маршруты кабинета и оборачивает их общей оболочкой.
 function ProtectedShell({ children }: { children: React.ReactNode }) {
@@ -38,6 +43,31 @@ function AppRoutes() {
       <Route
         path="/learning/track/:trackId"
         element={<ProtectedShell><TrackLessonPage /></ProtectedShell>}
+      />
+
+      <Route
+        path="/projects"
+        element={<ProtectedShell><ProjectsPage /></ProtectedShell>}
+      />
+      <Route
+        path="/projects/new"
+        element={<ProtectedShell><ProjectBriefPage /></ProtectedShell>}
+      />
+      <Route
+        path="/projects/:projectId/brief"
+        element={<ProtectedShell><ProjectBriefPage /></ProtectedShell>}
+      />
+      <Route
+        path="/projects/:projectId/mentors"
+        element={<ProtectedShell><MentorMatchingPage /></ProtectedShell>}
+      />
+      <Route
+        path="/projects/:projectId"
+        element={<ProtectedShell><ProjectPlanPage /></ProtectedShell>}
+      />
+      <Route
+        path="/projects/:projectId/tasks/:taskId"
+        element={<ProtectedShell><ProjectTaskPage /></ProtectedShell>}
       />
 
       <Route path="*" element={<Navigate to="/learning/test" replace />} />
