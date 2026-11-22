@@ -219,30 +219,49 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
+  .page {
+    gap: 14px;
+  }
+
   .title {
-    font-size: 30px;
+    font-size: 24px;
   }
 
   .subtitle {
-    font-size: 17px;
+    font-size: 14px;
   }
 
   .skipCol {
     align-items: flex-start;
   }
 
+  .skipBtn {
+    height: 36px;
+    padding: 0 18px;
+    font-size: 12px;
+  }
+
   .card {
-    padding: 18px;
-    gap: 16px;
+    padding: 14px;
+    gap: 12px;
   }
 
   .questionTitle {
-    font-size: 20px;
+    font-size: 17px;
+  }
+
+  .instruction {
+    font-size: 13px;
+  }
+
+  .optionBtn {
+    min-height: 44px;
+    padding: 10px 12px;
   }
 
   .optionText {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .actionsRow {
@@ -252,6 +271,8 @@
   .nextBtn,
   .backBtn {
     flex: 1;
-    padding: 0 20px;
+    height: 42px;
+    font-size: 15px;
+    padding: 0 16px;
   }
 }

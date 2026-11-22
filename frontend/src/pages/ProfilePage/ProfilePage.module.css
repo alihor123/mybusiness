@@ -207,18 +207,49 @@
   height: 16px;
 }
 
-@media (max-width: 680px) {
+.passwordForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .page {
+    gap: 14px;
+  }
+
   .title {
-    font-size: 30px;
+    font-size: 24px;
   }
 
   .card {
-    padding: 18px;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .cardTitle {
+    font-size: 19px;
+  }
+
+  .cardDesc {
+    font-size: 14px;
+  }
+
+  .label {
+    font-size: 14px;
+  }
+
+  .input {
+    height: 44px;
+    font-size: 15px;
+    padding: 0 14px;
   }
 
   .outlineBtn,
   .primaryBtn {
     width: 100%;
     min-width: 0;
+    height: 44px;
+    font-size: 15px;
   }
 }

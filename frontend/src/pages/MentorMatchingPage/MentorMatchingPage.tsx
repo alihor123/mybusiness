@@ -6,21 +6,25 @@ import BriefcaseIcon from "../../assets/icons/briefcase.svg?react"
 import PlayIcon from "../../assets/icons/play.svg?react"
 import LockIcon from "../../assets/icons/lock.svg?react"
 import CheckIcon from "../../assets/icons/check.svg?react"
+import SidePanel from "../../components/SidePanel/SidePanel"
 import { useApp } from "../../contexts/AppContext"
+import { useIsMobile } from "../../hooks/useIsMobile"
 import styles from "./MentorMatchingPage.module.css"
 
-// Показывает рекомендованных ИИ наставников и позволяет отправить заявку по проекту.
+// Показывает рекомендованных ИИ наставников: split-view на десктопе и сетку + шторку на мобилке.
 export default function MentorMatchingPage() {
   const { projectId } = useParams()
   const { projects, mentors, applyToMentor, cancelMentorApplication } = useApp()
+  const isMobile = useIsMobile(768)
 
   const project = projects.find((item) => item.id === projectId) ?? projects[0]
   const recommendedMentors = mentors.filter((item) => item.recommended)
 
-  // Хранит выбранного наставника для отображения его подробной карточки справа.
+  // Хранит выбранного наставника и состояние мобильной шторки подробностей.
   const [selectedMentorId, setSelectedMentorId] = useState(
     project.mentorId ?? recommendedMentors[0]?.id ?? mentors[0].id,
   )
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false)
 
   const selectedMentor =
     recommendedMentors.find((item) => item.id === selectedMentorId) ?? recommendedMentors[0]
@@ -28,9 +32,43 @@ export default function MentorMatchingPage() {
   const isAppliedToSelected =
     project.status === "pending_mentor" && project.mentorId === selectedMentor.id
 
+  // Выбирает наставника и на мобильном экране сразу открывает шторку с профилем.
+  function selectMentor(mentorId: string) {
+    setSelectedMentorId(mentorId)
+    if (isMobile) {
+      setMobileSheetOpen(true)
+    }
+  }
+
   // Отправляет заявку выбранному наставнику.
   function handleApply() {
     applyToMentor(project.id, selectedMentor.id)
+  }
+
+  // Рендерит кнопку отправки или отмены заявки для панели наставника.
+  function renderApplyActions() {
+    if (isAppliedToSelected) {
+      return (
+        <div className={styles.appliedBox}>
+          <div className={styles.appliedStatus}>
+            <CheckIcon className={styles.appliedIcon} aria-hidden="true" />
+            <span>Заявка отправлена наставнику</span>
+          </div>
+          <button
+            type="button"
+            className={styles.cancelBtn}
+            onClick={() => cancelMentorApplication(project.id)}
+          >
+            Отменить заявку
+          </button>
+        </div>
+      )
+    }
+    return (
+      <button type="button" className={styles.applyBtn} onClick={handleApply}>
+        Отправить заявку
+      </button>
+    )
   }
 
   return (
@@ -68,10 +106,10 @@ export default function MentorMatchingPage() {
                 key={mentor.id}
                 type="button"
                 className={`${styles.mentorCard} ${isSelected ? styles.mentorCardSelected : ""}`}
-                onClick={() => setSelectedMentorId(mentor.id)}
+                onClick={() => selectMentor(mentor.id)}
               >
                 <div className={styles.cardPhotoWrap}>
-                  <img src={mentor.photo} alt={mentor.name} className={styles.cardPhoto} />
+                  <img src={mentor.photo} alt="" loading="lazy" className={styles.cardPhoto} />
                 </div>
                 <div className={styles.cardName}>{mentor.name}</div>
                 <div className={styles.cardRole}>{mentor.role}</div>
@@ -81,64 +119,74 @@ export default function MentorMatchingPage() {
           })}
         </div>
 
-        <div className={styles.detailPanel}>
-          <div className={styles.detailHeader}>
-            <img
-              src={selectedMentor.photo}
-              alt={selectedMentor.name}
-              className={styles.detailPhoto}
-            />
-            <div className={styles.detailMeta}>
-              <div className={styles.detailName}>{selectedMentor.name}</div>
-              <div className={styles.detailRole}>{selectedMentor.fullRole}</div>
-
-              <div className={styles.metaRow}>
-                <BriefcaseIcon className={styles.metaIcon} aria-hidden="true" />
-                <span>{selectedMentor.experience}</span>
+        {!isMobile && (
+          <div className={styles.detailPanel}>
+            <div className={styles.detailHeader}>
+              <div className={styles.detailPhotoWrap}>
+                <img src={selectedMentor.photo} alt="" className={styles.detailPhoto} />
               </div>
+              <div className={styles.detailMeta}>
+                <div className={styles.detailName}>{selectedMentor.name}</div>
+                <div className={styles.detailRole}>{selectedMentor.fullRole}</div>
 
-              <div className={styles.metaRow}>
-                <PlayIcon className={styles.metaIcon} aria-hidden="true" />
-                <span>{selectedMentor.format}</span>
+                <div className={styles.metaRow}>
+                  <BriefcaseIcon className={styles.metaIcon} aria-hidden="true" />
+                  <span>{selectedMentor.experience}</span>
+                </div>
+
+                <div className={styles.metaRow}>
+                  <PlayIcon className={styles.metaIcon} aria-hidden="true" />
+                  <span>{selectedMentor.format}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className={styles.divider} />
+            <div className={styles.divider} />
 
-          <div className={styles.aboutSection}>
-            <div className={styles.aboutTitle}>О себе</div>
-            <div className={styles.aboutText}>{selectedMentor.about}</div>
-          </div>
+            <div className={styles.aboutSection}>
+              <div className={styles.aboutTitle}>О себе</div>
+              <div className={styles.aboutText}>{selectedMentor.about}</div>
+            </div>
 
-          <div className={styles.detailActions}>
-            {isAppliedToSelected ? (
-              <div className={styles.appliedBox}>
-                <div className={styles.appliedStatus}>
-                  <CheckIcon className={styles.appliedIcon} aria-hidden="true" />
-                  <span>Заявка отправлена наставнику</span>
-                </div>
-                <button
-                  type="button"
-                  className={styles.cancelBtn}
-                  onClick={() => cancelMentorApplication(project.id)}
-                >
-                  Отменить заявку
-                </button>
-              </div>
-            ) : (
-              <button type="button" className={styles.applyBtn} onClick={handleApply}>
-                Отправить заявку
-              </button>
-            )}
+            <div className={styles.detailActions}>{renderApplyActions()}</div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className={styles.lockBanner}>
         <LockIcon className={styles.lockIcon} aria-hidden="true" />
         <span>Сопровождение откроется после принятия заявки наставником.</span>
       </div>
+
+      {isMobile && (
+        <SidePanel
+          open={mobileSheetOpen}
+          title={selectedMentor.name}
+          subtitle={selectedMentor.industry}
+          onClose={() => setMobileSheetOpen(false)}
+          footer={renderApplyActions()}
+        >
+          <div className={styles.sheetHero}>
+            <div className={styles.sheetPhotoWrap}>
+              <img src={selectedMentor.photo} alt="" className={styles.detailPhoto} />
+            </div>
+            <div className={styles.detailRole}>{selectedMentor.fullRole}</div>
+            <div className={styles.metaRow}>
+              <BriefcaseIcon className={styles.metaIcon} aria-hidden="true" />
+              <span>{selectedMentor.experience}</span>
+            </div>
+            <div className={styles.metaRow}>
+              <PlayIcon className={styles.metaIcon} aria-hidden="true" />
+              <span>{selectedMentor.format}</span>
+            </div>
+          </div>
+          <div className={styles.divider} />
+          <div className={styles.aboutSection}>
+            <div className={styles.aboutTitle}>О себе</div>
+            <div className={styles.aboutText}>{selectedMentor.about}</div>
+          </div>
+        </SidePanel>
+      )}
     </div>
   )
 }

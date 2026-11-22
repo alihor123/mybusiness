@@ -3,7 +3,9 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
 import ArrowRightIcon from "../../assets/icons/arrow-right.svg?react"
 import MaxChatIcon from "../../assets/icons/max-chat.svg?react"
-import CloseIcon from "../../assets/icons/close.svg?react"
+import BriefcaseIcon from "../../assets/icons/briefcase.svg?react"
+import PlayIcon from "../../assets/icons/play.svg?react"
+import SidePanel from "../../components/SidePanel/SidePanel"
 import { useApp } from "../../contexts/AppContext"
 import type { ProjectTask } from "../../data/mockData"
 import styles from "./ProjectPlanPage.module.css"
@@ -19,9 +21,9 @@ export default function ProjectPlanPage() {
   const project = projects.find((item) => item.id === projectId) ?? projects[0]
   const mentor = mentors.find((item) => item.id === project.mentorId) ?? mentors[0]
 
-  // Управляет активной вкладкой экрана и модальным окном профиля наставника.
+  // Управляет активной вкладкой экрана и выезжающей панелью профиля наставника.
   const [activeTab, setActiveTab] = useState<PlanTab>("plan")
-  const [mentorModalOpen, setMentorModalOpen] = useState(false)
+  const [mentorPanelOpen, setMentorPanelOpen] = useState(false)
 
   const completedCount = project.tasks.filter((task) => task.status === "completed").length
   const totalCount = project.tasks.length
@@ -226,7 +228,9 @@ export default function ProjectPlanPage() {
         <div className={styles.sideCol}>
           <div className={styles.mentorCard}>
             <div className={styles.mentorCardHeading}>Ваш наставник</div>
-            <img src={mentor.photo} alt={mentor.name} className={styles.mentorPhoto} />
+            <div className={styles.mentorPhotoWrap}>
+              <img src={mentor.photo} alt="" loading="lazy" className={styles.mentorPhoto} />
+            </div>
             <div className={styles.mentorName}>{mentor.name}</div>
             <div className={styles.mentorRole}>{mentor.fullRole}</div>
 
@@ -234,7 +238,7 @@ export default function ProjectPlanPage() {
               <button
                 type="button"
                 className={styles.mentorOutlineBtn}
-                onClick={() => setMentorModalOpen(true)}
+                onClick={() => setMentorPanelOpen(true)}
               >
                 Открыть профиль
               </button>
@@ -262,38 +266,27 @@ export default function ProjectPlanPage() {
         </div>
       </div>
 
-      {mentorModalOpen && (
-        <div
-          className={styles.modalBackdrop}
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Профиль наставника ${mentor.name}`}
-          onClick={() => setMentorModalOpen(false)}
-        >
-          <div className={styles.modalCard} onClick={(event) => event.stopPropagation()}>
-            <button
-              type="button"
-              className={styles.modalClose}
-              aria-label="Закрыть окно"
-              onClick={() => setMentorModalOpen(false)}
-            >
-              <CloseIcon className={styles.modalCloseIcon} aria-hidden="true" />
-            </button>
-
-            <div className={styles.modalHeader}>
-              <img src={mentor.photo} alt={mentor.name} className={styles.modalPhoto} />
-              <div className={styles.modalMeta}>
-                <div className={styles.modalName}>{mentor.name}</div>
-                <div className={styles.modalRole}>{mentor.fullRole}</div>
-                <div className={styles.modalSub}>{mentor.experience} · {mentor.format}</div>
-              </div>
-            </div>
-
-            <div className={styles.modalAboutTitle}>О себе</div>
-            <div className={styles.modalAboutText}>{mentor.about}</div>
-          </div>
+      <SidePanel
+        open={mentorPanelOpen}
+        title={mentor.name}
+        subtitle={mentor.industry}
+        onClose={() => setMentorPanelOpen(false)}
+      >
+        <div className={styles.panelPhotoWrap}>
+          <img src={mentor.photo} alt="" className={styles.mentorPhoto} />
         </div>
-      )}
+        <div className={styles.mentorRole}>{mentor.fullRole}</div>
+        <div className={styles.panelInfoRow}>
+          <BriefcaseIcon className={styles.panelInfoIcon} aria-hidden="true" />
+          <span>{mentor.experience}</span>
+        </div>
+        <div className={styles.panelInfoRow}>
+          <PlayIcon className={styles.panelInfoIcon} aria-hidden="true" />
+          <span>{mentor.format}</span>
+        </div>
+        <div className={styles.panelAboutTitle}>О себе</div>
+        <div className={styles.panelAboutText}>{mentor.about}</div>
+      </SidePanel>
     </div>
   )
 }

@@ -9,9 +9,11 @@ import ProfileIcon from "../../assets/icons/profile.svg?react"
 import UserPlusIcon from "../../assets/icons/user-plus.svg?react"
 import MenuIcon from "../../assets/icons/menu.svg?react"
 import CloseIcon from "../../assets/icons/close.svg?react"
-import SidebarToggleIcon from "../../assets/icons/sidebar-toggle.svg?react"
+import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
 import { useApp } from "../../contexts/AppContext"
 import styles from "./AppShell.module.css"
+
+const SIDEBAR_STORAGE_KEY = "mb_sidebar_collapsed"
 
 type NavItem = {
   to: string
@@ -20,14 +22,23 @@ type NavItem = {
   badgeCount?: number
 }
 
-// Оборачивает экраны кабинета адаптивным сайдбаром и мобильным меню.
+// Считывает сохранённое состояние свёрнутости бокового меню из localStorage.
+function readInitialCollapsed() {
+  try {
+    return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === "1"
+  } catch {
+    return false
+  }
+}
+
+// Оборачивает экраны кабинета адаптивным сайдбаром и мобильным выдвижным меню.
 export default function AppShell({ children }: { children: ReactNode }) {
   const { role, setRole, mentorRequests } = useApp()
   const location = useLocation()
   const navigate = useNavigate()
 
   // Управляет сворачиванием десктопного меню и открытием мобильной шторки.
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readInitialCollapsed)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const pendingRequestsCount = mentorRequests.filter((req) => req.status === "pending").length
@@ -46,6 +57,30 @@ export default function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMobileMenuOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false)
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [mobileMenuOpen])
+
+  // Переключает свёрнутость сайдбара и сохраняет выбор в localStorage.
+  function toggleSidebar() {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      try {
+        window.localStorage.setItem(SIDEBAR_STORAGE_KEY, next ? "1" : "0")
+      } catch {
+        // Игнорируем недоступность хранилища в приватном режиме.
+      }
+      return next
+    })
+  }
 
   // Переключает демо-роль и переводит пользователя на стартовый экран выбранного кабинета.
   function switchRole(nextRole: "student" | "mentor") {
@@ -80,17 +115,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <MenuIcon className={styles.menuBtnIcon} aria-hidden="true" />
         </button>
 
-        <NavLink to={role === "student" ? "/learning" : "/mentor/requests"} className={styles.mobileLogoLink}>
+        <NavLink
+          to={role === "student" ? "/learning" : "/mentor/requests"}
+          className={styles.mobileLogoLink}
+        >
           <img src={logoUrl} alt="Мой бизнес Югра" className={styles.mobileLogo} />
         </NavLink>
 
-        <NavLink
-          to="/profile"
-          className={({ isActive }) => `${styles.mobileProfileBtn} ${isActive ? styles.mobileProfileActive : ""}`}
-          aria-label="Профиль"
-        >
-          <ProfileIcon className={styles.navIcon} aria-hidden="true" />
-        </NavLink>
+        <div className={styles.mobileHeaderSpacer} aria-hidden="true" />
       </div>
 
       {mobileMenuOpen && (
@@ -124,9 +156,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
               className={styles.collapseBtn}
               aria-label={sidebarCollapsed ? "Развернуть меню" : "Свернуть меню"}
               title={sidebarCollapsed ? "Развернуть меню" : "Свернуть меню"}
-              onClick={() => setSidebarCollapsed((prev) => !prev)}
+              onClick={toggleSidebar}
             >
-              <SidebarToggleIcon className={styles.toggleIcon} aria-hidden="true" />
+              <ChevronLeftIcon
+                className={`${styles.toggleIcon} ${sidebarCollapsed ? styles.toggleIconFlipped : ""}`}
+                aria-hidden="true"
+              />
             </button>
 
             <button
@@ -187,7 +222,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             }
           >
             <ProfileIcon className={styles.navIcon} aria-hidden="true" />
-            {!sidebarCollapsed && <span className={styles.navLabel}>Профиль</span>}
+            {!sidebarCollapsed && <span className={styles.profileLabel}>Профиль</span>}
           </NavLink>
         </div>
       </div>

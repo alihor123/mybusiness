@@ -1,8 +1,9 @@
 .shell {
   display: flex;
   width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--color-white);
 }
 
@@ -15,10 +16,7 @@
 }
 
 .sidebar {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100dvh;
+  height: 100%;
   width: var(--sidebar-width);
   flex-shrink: 0;
   display: flex;
@@ -26,7 +24,7 @@
   justify-content: space-between;
   padding: 24px 20px 18px;
   background: var(--color-white);
-  border-right: 2px solid var(--color-border);
+  border-right: 1.5px solid var(--color-border);
   transition: width var(--transition-base), padding var(--transition-base);
   z-index: 20;
 }
@@ -47,7 +45,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 58px;
+  min-height: 54px;
 }
 
 .sidebarCollapsed .brandRow {
@@ -61,33 +59,37 @@
 }
 
 .logo {
-  height: 56px;
+  height: 52px;
   width: auto;
 }
 
 .collapseBtn {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-white);
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
   color: var(--color-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+  transition: color var(--transition-fast), background var(--transition-fast);
 }
 
 .collapseBtn:hover {
   color: var(--color-ink);
-  border-color: var(--color-muted);
   background: var(--color-soft);
 }
 
 .toggleIcon {
   width: 18px;
   height: 18px;
+  transition: transform var(--transition-base);
+}
+
+.toggleIconFlipped {
+  transform: rotate(180deg);
 }
 
 .mobileCloseBtn {
@@ -146,6 +148,10 @@
   text-overflow: ellipsis;
 }
 
+.profileLabel {
+  white-space: nowrap;
+}
+
 .navBadge {
   min-width: 22px;
   height: 22px;
@@ -194,38 +200,40 @@
 }
 
 .profileItem {
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .contentArea {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   background: var(--color-white);
 }
 
 .contentInner {
   width: 100%;
-  max-width: 1200px;
-  padding: 36px 56px 56px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 44px 40px;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-width: 0;
+  min-height: 0;
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 1024px) {
   .contentInner {
-    padding: 28px 32px 44px;
+    padding: 24px 24px 32px;
   }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 768px) {
   .shell {
     flex-direction: column;
-    height: 100dvh;
-    overflow: hidden;
   }
 
   .mobileHeader {
@@ -233,30 +241,27 @@
     align-items: center;
     justify-content: space-between;
     height: var(--mobile-header-height);
-    padding: 0 16px;
+    padding: 0 12px;
     background: var(--color-white);
-    border-bottom: 1.5px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
     z-index: 30;
   }
 
-  .mobileMenuBtn,
-  .mobileProfileBtn {
-    width: 40px;
-    height: 40px;
+  .mobileMenuBtn {
+    width: 38px;
+    height: 38px;
+    border: none;
     border-radius: var(--radius-sm);
-    border: 1px solid var(--color-border);
-    background: var(--color-white);
+    background: transparent;
     color: var(--color-ink);
     display: inline-flex;
     align-items: center;
     justify-content: center;
   }
 
-  .mobileProfileActive {
-    background: var(--color-tint);
-    border-color: var(--color-accent);
-    color: var(--color-accent);
+  .mobileMenuBtn:active {
+    background: var(--color-soft);
   }
 
   .menuBtnIcon {
@@ -270,8 +275,13 @@
   }
 
   .mobileLogo {
-    height: 40px;
+    height: 36px;
     width: auto;
+  }
+
+  .mobileHeaderSpacer {
+    width: 38px;
+    height: 38px;
   }
 
   .backdrop {
@@ -280,6 +290,7 @@
     inset: 0;
     background: rgba(41, 39, 37, 0.36);
     z-index: 40;
+    animation: fadeIn 180ms ease;
   }
 
   .sidebar {
@@ -287,8 +298,8 @@
     top: 0;
     left: 0;
     bottom: 0;
-    width: min(290px, 84vw);
-    padding: 20px;
+    width: min(280px, 82vw);
+    padding: 18px 16px;
     transform: translateX(-100%);
     transition: transform var(--transition-base);
     z-index: 50;
@@ -296,8 +307,8 @@
   }
 
   .sidebarCollapsed {
-    width: min(290px, 84vw);
-    padding: 20px;
+    width: min(280px, 82vw);
+    padding: 18px 16px;
   }
 
   .sidebarMobileOpen {
@@ -312,26 +323,20 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
+    border: none;
     border-radius: var(--radius-sm);
-    border: 1px solid var(--color-border);
-    background: var(--color-white);
+    background: transparent;
     color: var(--color-muted);
   }
 
   .closeIcon {
-    width: 18px;
-    height: 18px;
-  }
-
-  .contentArea {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+    width: 20px;
+    height: 20px;
   }
 
   .contentInner {
-    padding: 20px 16px 36px;
+    padding: 14px 14px 24px;
   }
 }

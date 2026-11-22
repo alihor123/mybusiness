@@ -260,20 +260,37 @@
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 768px) {
+  .page {
+    gap: 12px;
+  }
+
   .title {
-    font-size: 30px;
+    font-size: 24px;
   }
 
   .context {
-    font-size: 18px;
+    font-size: 15px;
   }
 
-  .criteriaText {
-    font-size: 16px;
+  .criteriaCard,
+  .panelCard {
+    padding: 14px;
+  }
+
+  .criteriaText,
+  .answerBox,
+  .commentTextarea {
+    font-size: 15px;
   }
 
   .decisionRow {
     grid-template-columns: 1fr;
+  }
+
+  .outlineBtn,
+  .primaryBtn {
+    height: 42px;
+    font-size: 15px;
   }
 }

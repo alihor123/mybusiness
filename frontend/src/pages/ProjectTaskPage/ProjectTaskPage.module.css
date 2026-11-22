@@ -321,25 +321,37 @@
   background: var(--color-accent-hover);
 }
 
-@media (max-width: 680px) {
+@media (max-width: 768px) {
+  .page {
+    gap: 12px;
+  }
+
   .title {
-    font-size: 30px;
+    font-size: 24px;
   }
 
   .taskTitle {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .instruction {
-    font-size: 17px;
+    font-size: 14px;
   }
 
   .card {
-    padding: 16px;
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .textarea {
+    font-size: 15px;
+    padding: 12px 14px;
   }
 
   .outlineBtn,
   .primaryBtn {
     width: 100%;
+    height: 42px;
+    font-size: 15px;
   }
 }

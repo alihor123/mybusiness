@@ -4,8 +4,9 @@
   width: 100%;
   background: var(--color-white);
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 28px 24px 48px;
+  padding: 24px;
 }
 
 .container {

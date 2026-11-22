@@ -61,11 +61,6 @@
   border-radius: var(--radius-md);
   border: 1.5px solid var(--color-border);
   background: var(--color-white);
-  transition: border-color var(--transition-fast), transform var(--transition-fast);
-}
-
-.card:hover {
-  border-color: var(--color-accent);
 }
 
 .imageWrap {
@@ -131,20 +126,53 @@
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 768px) {
+  .page {
+    gap: 12px;
+  }
+
   .title {
-    font-size: 30px;
+    font-size: 24px;
   }
 
   .subtitle {
-    font-size: 17px;
+    font-size: 14px;
+  }
+
+  .testBtn {
+    height: 36px;
+    padding: 0 16px;
+    font-size: 13px;
   }
 
   .grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .card {
+    padding: 14px;
+    gap: 10px;
   }
 
   .imageWrap {
-    height: 180px;
+    height: 132px;
+  }
+
+  .cardTitle {
+    font-size: 18px;
+  }
+
+  .cardDesc {
+    font-size: 14px;
+  }
+
+  .progressText {
+    font-size: 12px;
+  }
+
+  .startBtn {
+    height: 40px;
+    font-size: 15px;
   }
 }

@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
 import AlertCircleIcon from "../../assets/icons/alert-circle.svg?react"
+import CustomSelect from "../../components/CustomSelect/CustomSelect"
 import { useApp } from "../../contexts/AppContext"
 import { INDUSTRY_OPTIONS, STAGE_OPTIONS, WEEKLY_HOURS_OPTIONS } from "../../data/mockData"
 import type { ProjectBrief } from "../../data/mockData"
@@ -19,7 +20,11 @@ const DEFAULT_NEW_BRIEF: ProjectBrief = {
   mentorRequest: "",
 }
 
-// Форма анкеты проекта для сохранения черновика и перехода к подбору наставника.
+const INDUSTRY_SELECT_OPTIONS = INDUSTRY_OPTIONS.map((item) => ({ id: item, label: item }))
+const STAGE_SELECT_OPTIONS = STAGE_OPTIONS.map((item) => ({ id: item, label: item }))
+const HOURS_SELECT_OPTIONS = WEEKLY_HOURS_OPTIONS.map((item) => ({ id: item, label: item }))
+
+// Форма анкеты проекта с кастомными селектами для сохранения черновика и подбора наставника.
 export default function ProjectBriefPage() {
   const { projectId } = useParams()
   const navigate = useNavigate()
@@ -98,33 +103,19 @@ export default function ProjectBriefPage() {
               />
             </label>
 
-            <label className={styles.field} htmlFor="brief-industry">
-              <span className={styles.label}>Отрасль</span>
-              <select
-                id="brief-industry"
-                className={styles.select}
-                value={form.industry}
-                onChange={(event) => updateField("industry", event.target.value)}
-              >
-                {INDUSTRY_OPTIONS.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </label>
+            <CustomSelect
+              label="Отрасль"
+              value={form.industry}
+              options={INDUSTRY_SELECT_OPTIONS}
+              onChange={(val) => updateField("industry", val)}
+            />
 
-            <label className={styles.field} htmlFor="brief-stage">
-              <span className={styles.label}>Стадия проекта</span>
-              <select
-                id="brief-stage"
-                className={styles.select}
-                value={form.stage}
-                onChange={(event) => updateField("stage", event.target.value)}
-              >
-                {STAGE_OPTIONS.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </label>
+            <CustomSelect
+              label="Стадия проекта"
+              value={form.stage}
+              options={STAGE_SELECT_OPTIONS}
+              onChange={(val) => updateField("stage", val)}
+            />
 
             <label className={styles.field} htmlFor="brief-audience">
               <span className={styles.label}>Для кого ваш продукт или услуга?</span>
@@ -138,19 +129,12 @@ export default function ProjectBriefPage() {
               />
             </label>
 
-            <label className={styles.field} htmlFor="brief-hours">
-              <span className={styles.label}>Время, которое вы готовы уделять проекту в неделю</span>
-              <select
-                id="brief-hours"
-                className={styles.select}
-                value={form.weeklyHours}
-                onChange={(event) => updateField("weeklyHours", event.target.value)}
-              >
-                {WEEKLY_HOURS_OPTIONS.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </label>
+            <CustomSelect
+              label="Время, которое вы готовы уделять проекту в неделю"
+              value={form.weeklyHours}
+              options={HOURS_SELECT_OPTIONS}
+              onChange={(val) => updateField("weeklyHours", val)}
+            />
           </div>
 
           <div className={styles.col}>

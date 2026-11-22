@@ -1,20 +1,20 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
-import CloseIcon from "../../assets/icons/close.svg?react"
 import LogoutIcon from "../../assets/icons/logout.svg?react"
+import SidePanel from "../../components/SidePanel/SidePanel"
 import { useApp } from "../../contexts/AppContext"
 import styles from "./ProfilePage.module.css"
 
-// Отображает и сохраняет личные данные пользователя, а также смену пароля и выход.
+// Отображает и сохраняет личные данные пользователя, а также смену пароля в выезжающей панели.
 export default function ProfilePage() {
   const { profile, updateProfile, logoutMock } = useApp()
   const navigate = useNavigate()
 
-  // Локальное состояние полей профиля и модального окна смены пароля.
+  // Локальное состояние полей профиля и панели смены пароля.
   const [form, setForm] = useState(profile)
   const [savedNotice, setSavedNotice] = useState("")
-  const [passwordModalOpen, setPasswordModalOpen] = useState(false)
+  const [passwordPanelOpen, setPasswordPanelOpen] = useState(false)
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [passwordNotice, setPasswordNotice] = useState("")
@@ -26,7 +26,7 @@ export default function ProfilePage() {
     setSavedNotice("Изменения профиля сохранены.")
   }
 
-  // Имитирует смену пароля и закрывает модальное окно.
+  // Имитирует смену пароля и закрывает выезжающую панель.
   function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (newPassword.trim().length < 6) {
@@ -36,7 +36,7 @@ export default function ProfilePage() {
     setCurrentPassword("")
     setNewPassword("")
     setPasswordNotice("")
-    setPasswordModalOpen(false)
+    setPasswordPanelOpen(false)
     setSavedNotice("Пароль успешно обновлён.")
   }
 
@@ -127,7 +127,7 @@ export default function ProfilePage() {
           <button
             type="button"
             className={styles.outlineBtn}
-            onClick={() => setPasswordModalOpen(true)}
+            onClick={() => setPasswordPanelOpen(true)}
           >
             Изменить пароль
           </button>
@@ -138,61 +138,42 @@ export default function ProfilePage() {
         </div>
       </form>
 
-      {passwordModalOpen && (
-        <div
-          className={styles.modalBackdrop}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Смена пароля"
-          onClick={() => setPasswordModalOpen(false)}
-        >
-          <form
-            className={styles.modalCard}
-            onSubmit={handlePasswordSubmit}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className={styles.modalHeader}>
-              <div className={styles.modalTitle}>Изменить пароль</div>
-              <button
-                type="button"
-                className={styles.modalClose}
-                aria-label="Закрыть окно"
-                onClick={() => setPasswordModalOpen(false)}
-              >
-                <CloseIcon className={styles.closeIcon} aria-hidden="true" />
-              </button>
-            </div>
+      <SidePanel
+        open={passwordPanelOpen}
+        title="Изменить пароль"
+        subtitle="Введите текущий и новый пароль учётной записи"
+        onClose={() => setPasswordPanelOpen(false)}
+      >
+        <form className={styles.passwordForm} onSubmit={handlePasswordSubmit}>
+          <label className={styles.field} htmlFor="pass-current">
+            <span className={styles.label}>Текущий пароль</span>
+            <input
+              id="pass-current"
+              type="password"
+              className={styles.input}
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+            />
+          </label>
 
-            <label className={styles.field} htmlFor="pass-current">
-              <span className={styles.label}>Текущий пароль</span>
-              <input
-                id="pass-current"
-                type="password"
-                className={styles.input}
-                value={currentPassword}
-                onChange={(event) => setCurrentPassword(event.target.value)}
-              />
-            </label>
+          <label className={styles.field} htmlFor="pass-new">
+            <span className={styles.label}>Новый пароль</span>
+            <input
+              id="pass-new"
+              type="password"
+              className={styles.input}
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+            />
+          </label>
 
-            <label className={styles.field} htmlFor="pass-new">
-              <span className={styles.label}>Новый пароль</span>
-              <input
-                id="pass-new"
-                type="password"
-                className={styles.input}
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-              />
-            </label>
+          {passwordNotice && <div className={styles.errorBox}>{passwordNotice}</div>}
 
-            {passwordNotice && <div className={styles.errorBox}>{passwordNotice}</div>}
-
-            <button type="submit" className={styles.primaryBtn}>
-              Обновить пароль
-            </button>
-          </form>
-        </div>
-      )}
+          <button type="submit" className={styles.primaryBtn}>
+            Обновить пароль
+          </button>
+        </form>
+      </SidePanel>
     </div>
   )
 }
