@@ -237,15 +237,15 @@
 
 .fabBtn {
   position: fixed;
-  right: 18px;
-  bottom: 20px;
-  width: 54px;
-  height: 54px;
+  right: 16px;
+  bottom: 18px;
+  width: 50px;
+  height: 50px;
   border: none;
   border-radius: 50%;
   background: var(--color-accent);
   color: var(--color-white);
-  box-shadow: 0 6px 20px rgba(233, 75, 53, 0.36);
+  box-shadow: 0 4px 12px rgba(41, 39, 37, 0.22);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -258,8 +258,8 @@
 }
 
 .fabIcon {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 @media (max-width: 1024px) {
@@ -270,60 +270,79 @@
 
 @media (max-width: 768px) {
   .page {
-    gap: 12px;
+    gap: 10px;
   }
 
   .stickyTop {
-    gap: 10px;
+    gap: 8px;
   }
 
   .title {
-    font-size: 24px;
+    font-size: 21px;
   }
 
   .hintBanner {
-    font-size: 13px;
-    padding: 10px 12px;
-    gap: 10px;
+    font-size: 12px;
+    padding: 8px 10px;
+    gap: 8px;
   }
 
   .hintIcon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   .grid {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    padding-bottom: 76px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding-bottom: 72px;
   }
 
   .card {
-    min-height: auto;
-    padding: 14px;
-    gap: 10px;
+    min-height: 204px;
+    padding: 10px;
+    gap: 8px;
+    border-radius: var(--radius-md);
   }
 
   .cardTitle {
-    font-size: 17px;
+    font-size: 14px;
+    line-height: 1.22;
+  }
+
+  .deleteBtn {
+    width: 22px;
+    height: 22px;
+  }
+
+  .deleteIcon {
+    width: 13px;
+    height: 13px;
   }
 
   .statusPill {
-    min-height: 30px;
-    font-size: 13px;
-    padding: 4px 10px;
+    min-height: 24px;
+    font-size: 11px;
+    padding: 3px 8px;
   }
 
   .cardDesc {
-    font-size: 14px;
+    font-size: 12px;
+    line-height: 1.3;
   }
 
   .detailRow {
-    font-size: 14px;
+    font-size: 11px;
+    gap: 6px;
+  }
+
+  .detailIcon {
+    width: 15px;
+    height: 15px;
   }
 
   .cardBtn {
-    height: 38px;
-    font-size: 14px;
+    height: 32px;
+    font-size: 12px;
   }
 }

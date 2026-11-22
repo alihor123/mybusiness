@@ -7,14 +7,6 @@
   background: var(--color-white);
 }
 
-.mobileHeader {
-  display: none;
-}
-
-.backdrop {
-  display: none;
-}
-
 .sidebar {
   height: 100%;
   width: var(--sidebar-width);
@@ -64,10 +56,10 @@
 }
 
 .collapseBtn {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-muted);
   display: inline-flex;
@@ -83,17 +75,25 @@
 }
 
 .toggleIcon {
-  width: 18px;
-  height: 18px;
-  transition: transform var(--transition-base);
-}
-
-.toggleIconFlipped {
-  transform: rotate(180deg);
+  width: 20px;
+  height: 20px;
 }
 
 .mobileCloseBtn {
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted);
+}
+
+.closeIcon {
+  width: 20px;
+  height: 20px;
 }
 
 .navList {
@@ -215,9 +215,9 @@
 
 .contentInner {
   width: 100%;
-  max-width: 1120px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 32px 44px 40px;
+  padding: 28px 40px 0;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -225,9 +225,75 @@
   min-height: 0;
 }
 
+.mobileHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--mobile-header-height);
+  padding: 0 12px;
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  z-index: 30;
+}
+
+.mobileMenuBtn {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menuBtnIcon {
+  width: 22px;
+  height: 22px;
+}
+
+.mobileLogoLink {
+  display: inline-flex;
+  align-items: center;
+}
+
+.mobileLogo {
+  height: 34px;
+  width: auto;
+}
+
+.mobileHeaderSpacer {
+  width: 38px;
+  height: 38px;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(41, 39, 37, 0.38);
+  z-index: 40;
+}
+
+.mobileDrawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(280px, 82vw);
+  padding: 18px 16px;
+  background: var(--color-white);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 50;
+  box-shadow: 8px 0 28px rgba(41, 39, 37, 0.14);
+}
+
 @media (max-width: 1024px) {
   .contentInner {
-    padding: 24px 24px 32px;
+    padding: 20px 24px 0;
   }
 }
 
@@ -236,107 +302,7 @@
     flex-direction: column;
   }
 
-  .mobileHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: var(--mobile-header-height);
-    padding: 0 12px;
-    background: var(--color-white);
-    border-bottom: 1px solid var(--color-border);
-    flex-shrink: 0;
-    z-index: 30;
-  }
-
-  .mobileMenuBtn {
-    width: 38px;
-    height: 38px;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--color-ink);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .mobileMenuBtn:active {
-    background: var(--color-soft);
-  }
-
-  .menuBtnIcon {
-    width: 22px;
-    height: 22px;
-  }
-
-  .mobileLogoLink {
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .mobileLogo {
-    height: 36px;
-    width: auto;
-  }
-
-  .mobileHeaderSpacer {
-    width: 38px;
-    height: 38px;
-  }
-
-  .backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(41, 39, 37, 0.36);
-    z-index: 40;
-    animation: fadeIn 180ms ease;
-  }
-
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: min(280px, 82vw);
-    padding: 18px 16px;
-    transform: translateX(-100%);
-    transition: transform var(--transition-base);
-    z-index: 50;
-    box-shadow: 8px 0 28px rgba(41, 39, 37, 0.14);
-  }
-
-  .sidebarCollapsed {
-    width: min(280px, 82vw);
-    padding: 18px 16px;
-  }
-
-  .sidebarMobileOpen {
-    transform: translateX(0);
-  }
-
-  .collapseBtn {
-    display: none;
-  }
-
-  .mobileCloseBtn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--color-muted);
-  }
-
-  .closeIcon {
-    width: 20px;
-    height: 20px;
-  }
-
   .contentInner {
-    padding: 14px 14px 24px;
+    padding: 12px 12px 0;
   }
 }

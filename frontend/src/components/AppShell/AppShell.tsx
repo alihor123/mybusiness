@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
+import { AnimatePresence, motion } from "motion/react"
 import logoUrl from "../../assets/brand/logo.svg"
 import GraduationIcon from "../../assets/icons/graduation.svg?react"
 import FolderIcon from "../../assets/icons/folder.svg?react"
@@ -9,8 +10,9 @@ import ProfileIcon from "../../assets/icons/profile.svg?react"
 import UserPlusIcon from "../../assets/icons/user-plus.svg?react"
 import MenuIcon from "../../assets/icons/menu.svg?react"
 import CloseIcon from "../../assets/icons/close.svg?react"
-import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
+import SidebarToggleIcon from "../../assets/icons/sidebar-toggle.svg?react"
 import { useApp } from "../../contexts/AppContext"
+import { useIsMobile } from "../../hooks/useIsMobile"
 import styles from "./AppShell.module.css"
 
 const SIDEBAR_STORAGE_KEY = "mb_sidebar_collapsed"
@@ -31,11 +33,12 @@ function readInitialCollapsed() {
   }
 }
 
-// Оборачивает экраны кабинета адаптивным сайдбаром и мобильным выдвижным меню.
+// Оборачивает экраны кабинета адаптивным сайдбаром и анимированным мобильным меню.
 export default function AppShell({ children }: { children: ReactNode }) {
   const { role, setRole, mentorRequests } = useApp()
   const location = useLocation()
   const navigate = useNavigate()
+  const isMobile = useIsMobile(768)
 
   // Управляет сворачиванием десктопного меню и открытием мобильной шторки.
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readInitialCollapsed)
@@ -102,47 +105,13 @@ export default function AppShell({ children }: { children: ReactNode }) {
     return <UserPlusIcon className={styles.navIcon} aria-hidden="true" />
   }
 
-  return (
-    <div className={styles.shell}>
-      <div className={styles.mobileHeader}>
-        <button
-          type="button"
-          className={styles.mobileMenuBtn}
-          aria-label="Открыть меню"
-          aria-expanded={mobileMenuOpen}
-          onClick={() => setMobileMenuOpen(true)}
-        >
-          <MenuIcon className={styles.menuBtnIcon} aria-hidden="true" />
-        </button>
-
-        <NavLink
-          to={role === "student" ? "/learning" : "/mentor/requests"}
-          className={styles.mobileLogoLink}
-        >
-          <img src={logoUrl} alt="Мой бизнес Югра" className={styles.mobileLogo} />
-        </NavLink>
-
-        <div className={styles.mobileHeaderSpacer} aria-hidden="true" />
-      </div>
-
-      {mobileMenuOpen && (
-        <div
-          className={styles.backdrop}
-          aria-hidden="true"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
-
-      <div
-        className={[
-          styles.sidebar,
-          sidebarCollapsed ? styles.sidebarCollapsed : "",
-          mobileMenuOpen ? styles.sidebarMobileOpen : "",
-        ].join(" ")}
-      >
+  // Рендерит содержимое бокового меню для десктопа и мобильной шторки.
+  function renderSidebarContent(compact: boolean) {
+    return (
+      <>
         <div className={styles.sidebarTop}>
           <div className={styles.brandRow}>
-            {!sidebarCollapsed && (
+            {!compact && (
               <NavLink
                 to={role === "student" ? "/learning" : "/mentor/requests"}
                 className={styles.logoLink}
@@ -151,27 +120,28 @@ export default function AppShell({ children }: { children: ReactNode }) {
               </NavLink>
             )}
 
-            <button
-              type="button"
-              className={styles.collapseBtn}
-              aria-label={sidebarCollapsed ? "Развернуть меню" : "Свернуть меню"}
-              title={sidebarCollapsed ? "Развернуть меню" : "Свернуть меню"}
-              onClick={toggleSidebar}
-            >
-              <ChevronLeftIcon
-                className={`${styles.toggleIcon} ${sidebarCollapsed ? styles.toggleIconFlipped : ""}`}
-                aria-hidden="true"
-              />
-            </button>
+            {!isMobile && (
+              <button
+                type="button"
+                className={styles.collapseBtn}
+                aria-label={compact ? "Развернуть меню" : "Свернуть меню"}
+                title={compact ? "Развернуть меню" : "Свернуть меню"}
+                onClick={toggleSidebar}
+              >
+                <SidebarToggleIcon className={styles.toggleIcon} aria-hidden="true" />
+              </button>
+            )}
 
-            <button
-              type="button"
-              className={styles.mobileCloseBtn}
-              aria-label="Закрыть меню"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <CloseIcon className={styles.closeIcon} aria-hidden="true" />
-            </button>
+            {isMobile && (
+              <button
+                type="button"
+                className={styles.mobileCloseBtn}
+                aria-label="Закрыть меню"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <CloseIcon className={styles.closeIcon} aria-hidden="true" />
+              </button>
+            )}
           </div>
 
           <div className={styles.navList} role="navigation" aria-label="Основная навигация">
@@ -179,14 +149,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <NavLink
                 key={item.to}
                 to={item.to}
-                title={sidebarCollapsed ? item.label : undefined}
+                title={compact ? item.label : undefined}
                 className={({ isActive }) =>
                   `${styles.navItem} ${isActive ? styles.navItemActive : ""}`
                 }
               >
                 {renderNavIcon(item.icon)}
-                {!sidebarCollapsed && <span className={styles.navLabel}>{item.label}</span>}
-                {!sidebarCollapsed && item.badgeCount !== undefined && item.badgeCount > 0 && (
+                {!compact && <span className={styles.navLabel}>{item.label}</span>}
+                {!compact && item.badgeCount !== undefined && item.badgeCount > 0 && (
                   <span className={styles.navBadge}>{item.badgeCount}</span>
                 )}
               </NavLink>
@@ -195,7 +165,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <div className={styles.sidebarBottom}>
-          {!sidebarCollapsed && (
+          {!compact && (
             <div className={styles.roleSwitch} role="group" aria-label="Переключение роли">
               <button
                 type="button"
@@ -216,19 +186,87 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
           <NavLink
             to="/profile"
-            title={sidebarCollapsed ? "Профиль" : undefined}
+            title={compact ? "Профиль" : undefined}
             className={({ isActive }) =>
               `${styles.navItem} ${styles.profileItem} ${isActive ? styles.navItemActive : ""}`
             }
           >
             <ProfileIcon className={styles.navIcon} aria-hidden="true" />
-            {!sidebarCollapsed && <span className={styles.profileLabel}>Профиль</span>}
+            {!compact && <span className={styles.profileLabel}>Профиль</span>}
           </NavLink>
         </div>
-      </div>
+      </>
+    )
+  }
+
+  return (
+    <div className={styles.shell}>
+      {isMobile && (
+        <div className={styles.mobileHeader}>
+          <button
+            type="button"
+            className={styles.mobileMenuBtn}
+            aria-label="Открыть меню"
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <MenuIcon className={styles.menuBtnIcon} aria-hidden="true" />
+          </button>
+
+          <NavLink
+            to={role === "student" ? "/learning" : "/mentor/requests"}
+            className={styles.mobileLogoLink}
+          >
+            <img src={logoUrl} alt="Мой бизнес Югра" className={styles.mobileLogo} />
+          </NavLink>
+
+          <div className={styles.mobileHeaderSpacer} aria-hidden="true" />
+        </div>
+      )}
+
+      {!isMobile && (
+        <div
+          className={`${styles.sidebar} ${sidebarCollapsed ? styles.sidebarCollapsed : ""}`}
+        >
+          {renderSidebarContent(sidebarCollapsed)}
+        </div>
+      )}
+
+      <AnimatePresence>
+        {isMobile && mobileMenuOpen && (
+          <>
+            <motion.div
+              className={styles.backdrop}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              aria-hidden="true"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <motion.div
+              className={styles.mobileDrawer}
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 360, damping: 36 }}
+            >
+              {renderSidebarContent(false)}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <div className={styles.contentArea}>
-        <div className={styles.contentInner}>{children}</div>
+        <motion.div
+          key={location.pathname}
+          className={styles.contentInner}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+        >
+          {children}
+        </motion.div>
       </div>
     </div>
   )

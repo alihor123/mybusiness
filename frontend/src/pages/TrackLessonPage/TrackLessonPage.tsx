@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
+import { motion } from "motion/react"
 import StageTabs from "../../components/StageTabs/StageTabs"
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
 import ChevronDownIcon from "../../assets/icons/chevron-down.svg?react"
@@ -152,7 +153,13 @@ export default function TrackLessonPage() {
         })}
       </div>
 
-      <div className={styles.card}>
+      <motion.div
+        key={currentStep.id}
+        className={styles.card}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+      >
         <div className={styles.badgePill}>{currentStep.badge}</div>
 
         {currentStep.kind === "theory" && (
@@ -403,7 +410,7 @@ export default function TrackLessonPage() {
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   )
 }
