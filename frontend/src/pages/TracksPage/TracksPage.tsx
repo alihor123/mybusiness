@@ -10,26 +10,29 @@ export default function TracksPage() {
 
   return (
     <div className={styles.page}>
-      <StageTabs active="learning" />
+      <div className={styles.fixedTop}>
+        <StageTabs active="learning" />
 
-      <div className={styles.headerRow}>
-        <div className={styles.headingCol}>
-          <div className={styles.title} role="heading" aria-level={1}>
-            ОБУЧЕНИЕ
+        <div className={styles.headerRow}>
+          <div className={styles.headingCol}>
+            <div className={styles.title} role="heading" aria-level={1}>
+              ОБУЧЕНИЕ
+            </div>
+            <div className={styles.subtitle}>Начните с проверки идеи</div>
           </div>
-          <div className={styles.subtitle}>Начните с проверки идеи</div>
-        </div>
 
-        <button
-          type="button"
-          className={styles.testBtn}
-          onClick={() => navigate(testCompleted ? "/learning/results" : "/learning/test")}
-        >
-          {testCompleted ? "Результаты теста" : "Пройти входной тест"}
-        </button>
+          <button
+            type="button"
+            className={styles.testBtn}
+            onClick={() => navigate(testCompleted ? "/learning/results" : "/learning/test")}
+          >
+            {testCompleted ? "Результаты теста" : "Пройти входной тест"}
+          </button>
+        </div>
       </div>
 
-      <div className={styles.grid}>
+      <div className={styles.scrollBody}>
+        <div className={styles.grid}>
         {tracks.map((track) => {
           const completedSteps = track.steps.filter((step) => step.completed).length
           const totalSteps = track.steps.length
@@ -61,6 +64,7 @@ export default function TracksPage() {
             </div>
           )
         })}
+        </div>
       </div>
     </div>
   )

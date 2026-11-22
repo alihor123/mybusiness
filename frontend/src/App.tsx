@@ -17,13 +17,13 @@ import MentorRequestsPage from "./pages/MentorRequestsPage/MentorRequestsPage"
 import MentorProjectsPage from "./pages/MentorProjectsPage/MentorProjectsPage"
 import MentorReviewPage from "./pages/MentorReviewPage/MentorReviewPage"
 
-// Защищает маршруты кабинета и оборачивает их общей оболочкой.
-function ProtectedShell({ children }: { children: React.ReactNode }) {
+// Защищает маршруты кабинета и оставляет AppShell смонтированным при переходах между экранами.
+function ProtectedLayout() {
   const { isAuthenticated } = useApp()
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
-  return <AppShell>{children}</AppShell>
+  return <AppShell />
 }
 
 // Определяет маршруты приложения и перенаправления по умолчанию.
@@ -33,69 +33,26 @@ function AppRoutes() {
       <Route path="/login" element={<AuthPage mode="login" />} />
       <Route path="/register" element={<AuthPage mode="register" />} />
 
-      <Route
-        path="/learning/test"
-        element={<ProtectedShell><DiagnosticTestPage /></ProtectedShell>}
-      />
-      <Route
-        path="/learning/results"
-        element={<ProtectedShell><TestResultsPage /></ProtectedShell>}
-      />
-      <Route
-        path="/learning"
-        element={<ProtectedShell><TracksPage /></ProtectedShell>}
-      />
-      <Route
-        path="/learning/track/:trackId"
-        element={<ProtectedShell><TrackLessonPage /></ProtectedShell>}
-      />
+      <Route element={<ProtectedLayout />}>
+        <Route path="/learning/test" element={<DiagnosticTestPage />} />
+        <Route path="/learning/results" element={<TestResultsPage />} />
+        <Route path="/learning" element={<TracksPage />} />
+        <Route path="/learning/track/:trackId" element={<TrackLessonPage />} />
 
-      <Route
-        path="/projects"
-        element={<ProtectedShell><ProjectsPage /></ProtectedShell>}
-      />
-      <Route
-        path="/projects/new"
-        element={<ProtectedShell><ProjectBriefPage /></ProtectedShell>}
-      />
-      <Route
-        path="/projects/:projectId/brief"
-        element={<ProtectedShell><ProjectBriefPage /></ProtectedShell>}
-      />
-      <Route
-        path="/projects/:projectId/mentors"
-        element={<ProtectedShell><MentorMatchingPage /></ProtectedShell>}
-      />
-      <Route
-        path="/projects/:projectId"
-        element={<ProtectedShell><ProjectPlanPage /></ProtectedShell>}
-      />
-      <Route
-        path="/projects/:projectId/tasks/:taskId"
-        element={<ProtectedShell><ProjectTaskPage /></ProtectedShell>}
-      />
+        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/projects/new" element={<ProjectBriefPage />} />
+        <Route path="/projects/:projectId/brief" element={<ProjectBriefPage />} />
+        <Route path="/projects/:projectId/mentors" element={<MentorMatchingPage />} />
+        <Route path="/projects/:projectId" element={<ProjectPlanPage />} />
+        <Route path="/projects/:projectId/tasks/:taskId" element={<ProjectTaskPage />} />
 
-      <Route
-        path="/mentors"
-        element={<ProtectedShell><MentorsCatalogPage /></ProtectedShell>}
-      />
-      <Route
-        path="/profile"
-        element={<ProtectedShell><ProfilePage /></ProtectedShell>}
-      />
+        <Route path="/mentors" element={<MentorsCatalogPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
-      <Route
-        path="/mentor/requests"
-        element={<ProtectedShell><MentorRequestsPage /></ProtectedShell>}
-      />
-      <Route
-        path="/mentor/projects"
-        element={<ProtectedShell><MentorProjectsPage /></ProtectedShell>}
-      />
-      <Route
-        path="/mentor/projects/:projectId/tasks/:taskId"
-        element={<ProtectedShell><MentorReviewPage /></ProtectedShell>}
-      />
+        <Route path="/mentor/requests" element={<MentorRequestsPage />} />
+        <Route path="/mentor/projects" element={<MentorProjectsPage />} />
+        <Route path="/mentor/projects/:projectId/tasks/:taskId" element={<MentorReviewPage />} />
+      </Route>
 
       <Route path="*" element={<Navigate to="/learning/test" replace />} />
     </Routes>

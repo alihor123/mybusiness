@@ -113,53 +113,56 @@ export default function TrackLessonPage() {
 
   return (
     <div className={styles.page}>
-      <StageTabs active="learning" />
+      <div className={styles.fixedTop}>
+        <StageTabs active="learning" />
 
-      <Link to="/learning" className={styles.backLink}>
-        <ChevronLeftIcon className={styles.backIcon} aria-hidden="true" />
-        <span>Все треки</span>
-      </Link>
+        <Link to="/learning" className={styles.backLink}>
+          <ChevronLeftIcon className={styles.backIcon} aria-hidden="true" />
+          <span>Все треки</span>
+        </Link>
 
-      <div className={styles.title} role="heading" aria-level={1}>
-        {track.title.toUpperCase()}
+        <div className={styles.title} role="heading" aria-level={1}>
+          {track.title.toUpperCase()}
+        </div>
+
+        <div className={styles.stepsNav} role="tablist" aria-label="Шаги трека">
+          {track.steps.map((step, index) => {
+            const isActive = index === activeStepIndex
+            const isDone = step.completed
+            return (
+              <button
+                key={step.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                title={step.title}
+                className={[
+                  styles.stepBtn,
+                  isDone ? styles.stepBtnDone : "",
+                  isActive ? styles.stepBtnActive : "",
+                ].join(" ")}
+                onClick={() => selectStep(index)}
+              >
+                {renderStepIcon(step.kind)}
+                {isDone && (
+                  <span className={styles.doneBadge} aria-label="Выполнено">
+                    <CheckIcon className={styles.doneBadgeIcon} aria-hidden="true" />
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      <div className={styles.stepsNav} role="tablist" aria-label="Шаги трека">
-        {track.steps.map((step, index) => {
-          const isActive = index === activeStepIndex
-          const isDone = step.completed
-          return (
-            <button
-              key={step.id}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              title={step.title}
-              className={[
-                styles.stepBtn,
-                isDone ? styles.stepBtnDone : "",
-                isActive ? styles.stepBtnActive : "",
-              ].join(" ")}
-              onClick={() => selectStep(index)}
-            >
-              {renderStepIcon(step.kind)}
-              {isDone && (
-                <span className={styles.doneBadge} aria-label="Выполнено">
-                  <CheckIcon className={styles.doneBadgeIcon} aria-hidden="true" />
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      <motion.div
-        key={currentStep.id}
-        className={styles.card}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-      >
+      <div className={styles.scrollBody}>
+        <motion.div
+          key={currentStep.id}
+          className={styles.card}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+        >
         <div className={styles.badgePill}>{currentStep.badge}</div>
 
         {currentStep.kind === "theory" && (
@@ -410,7 +413,8 @@ export default function TrackLessonPage() {
             </div>
           </div>
         )}
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   )
 }

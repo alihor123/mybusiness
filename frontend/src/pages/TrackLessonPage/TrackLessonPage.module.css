@@ -1,8 +1,24 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  flex: 1;
+  min-height: 0;
+  gap: 16px;
   min-width: 0;
+}
+
+.fixedTop {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.scrollBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 24px;
 }
 
 .backLink {
@@ -662,224 +678,235 @@
 @media (max-width: 768px) {
   .page {
     gap: 10px;
+    flex: initial;
+    min-height: auto;
     padding-bottom: 16px;
   }
 
+  .fixedTop {
+    gap: 8px;
+  }
+
+  .scrollBody {
+    overflow-y: visible;
+    padding-bottom: 0;
+  }
+
   .backLink {
-    font-size: 13px;
+    font-size: 12px;
     gap: 4px;
   }
 
   .backIcon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .title {
+    font-size: 19px;
+  }
+
+  .stepsNav {
+    gap: 6px;
+  }
+
+  .stepBtn {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .stepIcon {
     width: 15px;
     height: 15px;
   }
 
-  .title {
-    font-size: 21px;
-  }
-
-  .stepsNav {
-    gap: 8px;
-  }
-
-  .stepBtn {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-  }
-
-  .stepIcon {
-    width: 16px;
-    height: 16px;
-  }
-
   .doneBadge {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
     top: -4px;
     right: -4px;
   }
 
   .doneBadgeIcon {
-    width: 9px;
-    height: 9px;
+    width: 8px;
+    height: 8px;
   }
 
   .card {
     padding: 12px;
-    gap: 12px;
-    border-radius: var(--radius-md);
+    gap: 10px;
+    border-radius: 10px;
   }
 
   .badgePill {
-    height: 26px;
-    padding: 0 10px;
-    font-size: 12px;
+    height: 24px;
+    padding: 0 9px;
+    font-size: 11px;
   }
 
   .theoryContent,
   .videoContent,
   .practiceContent {
-    gap: 12px;
+    gap: 10px;
   }
 
   .sectionTitle {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   .bodyText,
   .bodyTextSmall {
-    font-size: 13.5px;
-    line-height: 1.45;
+    font-size: 13px;
+    line-height: 1.42;
   }
 
   .lessonImage {
-    min-height: 126px;
-    max-height: 160px;
+    min-height: 118px;
+    max-height: 148px;
     object-fit: cover;
   }
 
   .flowRow {
-    gap: 6px;
+    gap: 5px;
   }
 
   .flowCard {
-    min-height: 48px;
-    padding: 9px 12px;
-    gap: 10px;
+    min-height: 44px;
+    padding: 8px 10px;
+    gap: 8px;
   }
 
   .flowIconAccent,
   .flowIconInk {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   .flowTitleAccent,
   .flowTitleInk {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .flowSubAccent,
   .flowSubInk {
-    font-size: 12px;
+    font-size: 11.5px;
   }
 
   .flowArrow {
-    width: 15px;
-    height: 15px;
+    width: 14px;
+    height: 14px;
   }
 
   .compareRow {
-    gap: 8px;
+    gap: 6px;
   }
 
   .compareBad,
   .compareGood {
-    padding: 10px 12px;
-    gap: 10px;
+    padding: 8px 10px;
+    gap: 8px;
   }
 
   .compareIconInk,
   .compareIconAccent {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   .compareLabelInk,
   .compareDescInk,
   .compareLabelAccent,
   .compareDescAccent {
-    font-size: 13px;
+    font-size: 12.5px;
   }
 
   .videoStage {
-    height: 178px;
+    height: 156px;
   }
 
   .bigPlayBtn {
-    width: 54px;
-    height: 54px;
+    width: 44px;
+    height: 44px;
   }
 
   .bigPlayIcon {
-    width: 20px;
-    height: 20px;
+    width: 17px;
+    height: 17px;
   }
 
   .videoStatusPill {
-    font-size: 12px;
-    padding: 4px 10px;
+    font-size: 11px;
+    padding: 3px 9px;
   }
 
   .playerControls {
-    min-height: 40px;
-    padding: 0 10px;
-    gap: 8px;
+    min-height: 34px;
+    padding: 0 8px;
+    gap: 6px;
   }
 
   .controlIcon {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
   }
 
   .timeText {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .transcriptHeader {
-    min-height: 40px;
-    padding: 8px 12px;
+    min-height: 36px;
+    padding: 6px 10px;
     gap: 8px;
   }
 
   .transcriptIcon {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 
   .transcriptTitle {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .transcriptBody {
-    padding: 0 12px 12px;
-    font-size: 13px;
+    padding: 0 10px 10px;
+    font-size: 12.5px;
   }
 
   .practicePrompt {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .textarea {
-    min-height: 88px;
-    padding: 10px 12px;
-    font-size: 14px;
+    min-height: 82px;
+    padding: 8px 10px;
+    font-size: 13px;
   }
 
   .draftSaved {
-    font-size: 13px;
-    gap: 6px;
+    font-size: 12px;
+    gap: 5px;
   }
 
   .draftCheckIcon {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 
   .aiBox {
-    padding: 12px 14px;
-    gap: 8px;
+    padding: 10px 12px;
+    gap: 6px;
   }
 
   .aiTitle {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .aiRow {
-    font-size: 13px;
-    gap: 8px;
+    font-size: 12px;
+    gap: 6px;
   }
 
   .practiceButtons,
@@ -893,12 +920,12 @@
   .continueBtn {
     flex: 1;
     width: 100%;
-    height: 38px;
-    font-size: 14px;
-    padding: 0 16px;
+    height: 36px;
+    font-size: 13px;
+    padding: 0 14px;
   }
 
   .continueHint {
-    font-size: 12px;
+    font-size: 11.5px;
   }
 }

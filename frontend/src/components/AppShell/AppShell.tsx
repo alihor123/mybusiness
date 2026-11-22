@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
-import type { ReactNode } from "react"
-import { NavLink, useLocation, useNavigate } from "react-router-dom"
+import { NavLink, useLocation, useNavigate, useOutlet } from "react-router-dom"
 import { AnimatePresence, motion } from "motion/react"
 import logoUrl from "../../assets/brand/logo.svg"
 import GraduationIcon from "../../assets/icons/graduation.svg?react"
@@ -33,11 +32,12 @@ function readInitialCollapsed() {
   }
 }
 
-// Оборачивает экраны кабинета адаптивным сайдбаром и анимированным мобильным меню.
-export default function AppShell({ children }: { children: ReactNode }) {
+// Общий layout кабинета: остаётся смонтированным и делает быстрый crossfade страниц через useOutlet.
+export default function AppShell() {
   const { role, setRole, mentorRequests } = useApp()
   const location = useLocation()
   const navigate = useNavigate()
+  const outlet = useOutlet()
   const isMobile = useIsMobile(768)
 
   // Управляет сворачиванием десктопного меню и открытием мобильной шторки.
@@ -240,7 +240,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.16 }}
               aria-hidden="true"
               onClick={() => setMobileMenuOpen(false)}
             />
@@ -258,15 +258,18 @@ export default function AppShell({ children }: { children: ReactNode }) {
       </AnimatePresence>
 
       <div className={styles.contentArea}>
-        <motion.div
-          key={location.pathname}
-          className={styles.contentInner}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.18, ease: "easeOut" }}
-        >
-          {children}
-        </motion.div>
+        <AnimatePresence initial={false}>
+          <motion.div
+            key={location.pathname}
+            className={styles.routePane}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className={styles.contentInner}>{outlet}</div>
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   )
