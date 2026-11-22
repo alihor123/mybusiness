@@ -100,16 +100,47 @@
   height: 18px;
 }
 
-@media (max-width: 780px) {
+@media (max-width: 768px) {
+  .page {
+    gap: 10px;
+    padding-bottom: 16px;
+  }
+
   .title {
-    font-size: 30px;
+    font-size: 20px;
   }
 
   .subtitle {
-    font-size: 17px;
+    font-size: 13px;
   }
 
   .grid {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .card {
+    padding: 12px;
+    gap: 8px;
+    border-radius: 10px;
+  }
+
+  .cardTitle {
+    font-size: 16px;
+  }
+
+  .statusPill {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+
+  .cardDesc,
+  .metaRow {
+    font-size: 13px;
+  }
+
+  .reviewBtn {
+    height: 36px;
+    font-size: 13px;
   }
 }

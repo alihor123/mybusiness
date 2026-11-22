@@ -597,52 +597,180 @@
 
 @media (max-width: 768px) {
   .page {
-    gap: 12px;
+    gap: 10px;
+    padding-bottom: 16px;
+  }
+
+  .backLink {
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .backIcon {
+    width: 14px;
+    height: 14px;
   }
 
   .title {
-    font-size: 24px;
+    font-size: 20px;
+  }
+
+  .tabsRow {
+    gap: 6px;
   }
 
   .tabBtn {
-    height: 36px;
-    padding: 0 18px;
-    font-size: 14px;
+    height: 32px;
+    padding: 0 14px;
+    font-size: 13px;
   }
 
-  .planCard {
-    padding: 14px;
+  .layout {
     gap: 12px;
   }
 
-  .taskRow {
+  .planCard {
+    padding: 12px;
     gap: 10px;
+    border-radius: 10px;
   }
 
-  .taskNumber {
-    width: 30px;
-    height: 30px;
+  .progressTitle {
     font-size: 14px;
   }
 
-  .taskCard {
-    padding: 12px 14px;
+  .progressTrack {
+    height: 7px;
+  }
+
+  .progressPercent {
+    font-size: 13px;
+  }
+
+  .tasksList {
     gap: 8px;
   }
 
+  .taskRow {
+    gap: 8px;
+  }
+
+  .taskNumber {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+
+  .taskCard {
+    padding: 10px 12px;
+    gap: 6px;
+    border-radius: 10px;
+  }
+
+  .taskCardBody {
+    gap: 3px;
+  }
+
   .taskTitle {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .taskDesc {
-    font-size: 14px;
+    font-size: 12px;
+    line-height: 1.32;
+  }
+
+  .taskStatus {
+    font-size: 11.5px;
+  }
+
+  .taskArrow {
+    width: 14px;
+    height: 14px;
+  }
+
+  .sideCol {
+    gap: 10px;
+  }
+
+  .mentorCard {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    column-gap: 12px;
+    row-gap: 4px;
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .mentorCardHeading {
+    grid-column: 1 / -1;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  .mentorPhotoWrap {
+    grid-column: 1;
+    grid-row: 2 / span 2;
+    width: 84px;
+    height: 100px;
+  }
+
+  .mentorName {
+    grid-column: 2;
+    font-size: 16px;
+  }
+
+  .mentorRole {
+    grid-column: 2;
+    font-size: 12px;
+    line-height: 1.32;
+  }
+
+  .mentorBtns {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .mentorOutlineBtn,
+  .mentorPrimaryBtn {
+    height: 36px;
+    font-size: 13px;
+  }
+
+  .maxIcon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .nextMeetingCard {
+    padding: 12px;
+    gap: 4px;
+    border-radius: 10px;
+  }
+
+  .nextMeetingLabel,
+  .nextMeetingFormat {
+    font-size: 12.5px;
+  }
+
+  .nextMeetingDate {
+    font-size: 16px;
   }
 
   .briefGrid {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 
-  .mentorPhotoWrap {
-    height: 220px;
+  .briefItem,
+  .briefItemFull {
+    padding: 10px 12px;
+  }
+
+  .briefValue {
+    font-size: 14px;
   }
 }

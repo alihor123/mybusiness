@@ -221,58 +221,95 @@
 
 @media (max-width: 768px) {
   .page {
-    gap: 14px;
+    gap: 10px;
+    padding-bottom: 16px;
+  }
+
+  .headerRow {
+    gap: 10px;
   }
 
   .title {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .subtitle {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .skipCol {
     align-items: flex-start;
+    gap: 3px;
   }
 
   .skipBtn {
-    height: 36px;
-    padding: 0 18px;
-    font-size: 12px;
+    height: 32px;
+    padding: 0 14px;
+    font-size: 11px;
+  }
+
+  .skipHint {
+    font-size: 11px;
   }
 
   .card {
-    padding: 14px;
-    gap: 12px;
+    padding: 12px;
+    gap: 10px;
+    border-radius: 10px;
+  }
+
+  .progressLabel {
+    font-size: 11.5px;
+  }
+
+  .progressTrack {
+    height: 8px;
   }
 
   .questionTitle {
-    font-size: 17px;
+    font-size: 15.5px;
   }
 
   .instruction {
-    font-size: 13px;
+    font-size: 12px;
+    margin-top: -4px;
+  }
+
+  .optionsList {
+    gap: 8px;
   }
 
   .optionBtn {
-    min-height: 44px;
-    padding: 10px 12px;
+    min-height: 40px;
+    padding: 8px 10px;
+    gap: 10px;
+    border-radius: 10px;
+  }
+
+  .radioOuter {
+    width: 18px;
+    height: 18px;
+  }
+
+  .radioInner {
+    width: 10px;
+    height: 10px;
   }
 
   .optionText {
-    font-size: 14px;
+    font-size: 13.5px;
   }
 
   .actionsRow {
     justify-content: stretch;
+    margin-top: 4px;
   }
 
   .nextBtn,
   .backBtn {
     flex: 1;
-    height: 42px;
-    font-size: 15px;
-    padding: 0 16px;
+    height: 38px;
+    font-size: 14px;
+    padding: 0 14px;
   }
 }

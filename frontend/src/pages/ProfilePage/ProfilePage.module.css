@@ -215,41 +215,53 @@
 
 @media (max-width: 768px) {
   .page {
-    gap: 14px;
+    gap: 10px;
+    padding-bottom: 16px;
   }
 
   .title {
-    font-size: 24px;
+    font-size: 20px;
+  }
+
+  .logoutBtn {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 13px;
   }
 
   .card {
-    padding: 16px;
-    gap: 12px;
+    padding: 12px;
+    gap: 10px;
+    border-radius: 10px;
   }
 
   .cardTitle {
-    font-size: 19px;
+    font-size: 17px;
   }
 
   .cardDesc {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .label {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .input {
-    height: 44px;
-    font-size: 15px;
-    padding: 0 14px;
+    height: 40px;
+    font-size: 14px;
+    padding: 0 12px;
+  }
+
+  .actionsRow {
+    gap: 8px;
   }
 
   .outlineBtn,
   .primaryBtn {
     width: 100%;
     min-width: 0;
-    height: 44px;
-    font-size: 15px;
+    height: 38px;
+    font-size: 14px;
   }
 }

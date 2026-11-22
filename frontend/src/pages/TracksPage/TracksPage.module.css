@@ -152,7 +152,7 @@
   }
 
   .title {
-    font-size: 21px;
+    font-size: 20px;
   }
 
   .subtitle {
@@ -160,7 +160,7 @@
   }
 
   .testBtn {
-    height: 32px;
+    height: 30px;
     padding: 0 12px;
     font-size: 12px;
   }
@@ -173,7 +173,7 @@
 
   .card {
     display: grid;
-    grid-template-columns: 82px minmax(0, 1fr);
+    grid-template-columns: 112px minmax(0, 1fr);
     grid-template-rows: auto auto auto auto;
     column-gap: 12px;
     row-gap: 4px;
@@ -183,15 +183,15 @@
 
   .imageWrap {
     grid-column: 1;
-    grid-row: 1 / span 4;
-    width: 82px;
-    height: 82px;
+    grid-row: 1 / span 3;
+    width: 112px;
+    height: 98px;
     align-self: center;
   }
 
   .cardTitle {
     grid-column: 2;
-    font-size: 16px;
+    font-size: 15.5px;
   }
 
   .cardDesc {
@@ -207,12 +207,12 @@
   }
 
   .cardFooter {
-    grid-column: 2;
-    margin-top: 6px;
+    grid-column: 1 / -1;
+    margin-top: 8px;
   }
 
   .startBtn {
-    height: 34px;
-    font-size: 13px;
+    height: 36px;
+    font-size: 13.5px;
   }
 }

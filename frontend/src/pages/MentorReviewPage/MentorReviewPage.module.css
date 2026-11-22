@@ -262,35 +262,75 @@
 
 @media (max-width: 768px) {
   .page {
-    gap: 12px;
+    gap: 10px;
+    padding-bottom: 16px;
+  }
+
+  .backLink {
+    font-size: 12px;
+    gap: 4px;
   }
 
   .title {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .context {
-    font-size: 15px;
+    font-size: 14px;
+  }
+
+  .statusBadge {
+    height: 30px;
+    min-width: auto;
+    padding: 0 12px;
+    font-size: 12px;
   }
 
   .criteriaCard,
   .panelCard {
-    padding: 14px;
+    padding: 12px;
+    gap: 10px;
+    border-radius: 10px;
+  }
+
+  .cardHeading,
+  .cardHeadingSmall,
+  .commentLabel {
+    font-size: 16px;
   }
 
   .criteriaText,
   .answerBox,
   .commentTextarea {
-    font-size: 15px;
+    font-size: 13.5px;
+  }
+
+  .answerBox {
+    padding: 10px 12px;
+  }
+
+  .commentTextarea {
+    min-height: 120px;
+    padding: 10px 12px;
+  }
+
+  .fileRow {
+    min-height: 46px;
+    padding: 8px 12px;
+  }
+
+  .fileName {
+    font-size: 14px;
   }
 
   .decisionRow {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   .outlineBtn,
   .primaryBtn {
-    height: 42px;
-    font-size: 15px;
+    height: 38px;
+    font-size: 14px;
   }
 }

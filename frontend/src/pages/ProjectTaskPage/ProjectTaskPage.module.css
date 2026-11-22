@@ -323,35 +323,78 @@
 
 @media (max-width: 768px) {
   .page {
-    gap: 12px;
+    gap: 10px;
+    padding-bottom: 16px;
+  }
+
+  .backLink {
+    font-size: 12px;
+    gap: 4px;
   }
 
   .title {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .taskTitle {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .instruction {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .card {
-    padding: 14px;
-    gap: 14px;
+    padding: 12px;
+    gap: 12px;
+    border-radius: 10px;
+  }
+
+  .fieldLabel,
+  .filesTitle,
+  .aiTitle {
+    font-size: 14px;
+  }
+
+  .attachBtn {
+    font-size: 13.5px;
   }
 
   .textarea {
-    font-size: 15px;
+    min-height: 100px;
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .fileItem {
+    padding: 8px 12px;
+    gap: 10px;
+  }
+
+  .fileName {
+    font-size: 14px;
+  }
+
+  .fileSize {
+    font-size: 12px;
+  }
+
+  .aiBox {
     padding: 12px 14px;
+  }
+
+  .aiRow {
+    font-size: 13px;
+  }
+
+  .actionsRow {
+    gap: 8px;
   }
 
   .outlineBtn,
   .primaryBtn {
     width: 100%;
-    height: 42px;
-    font-size: 15px;
+    height: 38px;
+    font-size: 14px;
   }
 }

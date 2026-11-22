@@ -186,32 +186,60 @@
   text-decoration: underline;
 }
 
-@media (max-width: 860px) {
-  .card {
-    grid-template-columns: 1fr;
-    gap: 24px;
-    padding: 28px 20px;
-  }
-
-  .illustration {
-    max-width: 240px;
-  }
-
-  .title {
-    font-size: 32px;
-  }
-
-  .subtitle {
-    font-size: 16px;
-  }
-}
-
-@media (max-width: 520px) {
+@media (max-width: 768px) {
   .page {
-    padding: 20px 16px 32px;
+    padding: 16px 14px 24px;
+  }
+
+  .container {
+    gap: 14px;
   }
 
   .logo {
-    height: 46px;
+    height: 38px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+
+  .card {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 18px 14px;
+  }
+
+  .illustrationCol {
+    padding: 0;
+  }
+
+  .illustration {
+    max-width: 170px;
+  }
+
+  .formCol {
+    gap: 10px;
+  }
+
+  .field {
+    height: 42px;
+    padding: 0 12px;
+  }
+
+  .input {
+    font-size: 14px;
+  }
+
+  .submitBtn {
+    height: 42px;
+    font-size: 15px;
+  }
+
+  .switchRow {
+    font-size: 13px;
   }
 }
