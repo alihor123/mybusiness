@@ -1,0 +1,115 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+.headingCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1.18;
+  color: var(--color-ink);
+}
+
+.subtitle {
+  font-size: 20px;
+  color: var(--color-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+}
+
+.cardTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.statusPill {
+  width: fit-content;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-tint);
+  color: var(--color-accent);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.cardDesc {
+  font-size: 17px;
+  color: var(--color-muted);
+  flex: 1;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.metaIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.reviewBtn {
+  height: 48px;
+  padding: 0 20px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 16px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background var(--transition-fast);
+}
+
+.reviewBtn:hover {
+  background: var(--color-accent-hover);
+}
+
+.arrowIcon {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 780px) {
+  .title {
+    font-size: 30px;
+  }
+
+  .subtitle {
+    font-size: 17px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
