@@ -103,17 +103,23 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
   padding-bottom: 16px;
 }
 
-@container (max-width: 860px) {
+@container (min-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 920px) {
   .grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@container (max-width: 580px) {
+@container (max-width: 620px) {
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
