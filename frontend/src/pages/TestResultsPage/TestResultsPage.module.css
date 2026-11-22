@@ -1,0 +1,162 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.headingCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1.18;
+  color: var(--color-ink);
+}
+
+.subtitle {
+  max-width: 780px;
+  font-size: 22px;
+  line-height: 1.38;
+  color: var(--color-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 22px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+}
+
+.iconBox {
+  width: 82px;
+  height: 82px;
+  border-radius: 15px;
+  background: var(--color-tint);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cardIcon {
+  width: 42px;
+  height: 42px;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.cardTitle {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+
+.cardDesc {
+  font-size: 16px;
+  line-height: 1.35;
+  color: var(--color-muted);
+}
+
+.divider {
+  height: 1.5px;
+  width: 100%;
+  background: var(--color-border);
+}
+
+.volumeBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.volumeLabel {
+  font-size: 16px;
+  color: var(--color-muted);
+}
+
+.levelRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.levelPill {
+  width: 30px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+}
+
+.levelPillActive {
+  background: var(--color-accent);
+}
+
+.hoursText {
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.footerRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.primaryBtn {
+  height: 50px;
+  padding: 0 32px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 18px;
+  font-weight: 600;
+  transition: background var(--transition-fast);
+}
+
+.primaryBtn:hover {
+  background: var(--color-accent-hover);
+}
+
+@media (max-width: 1040px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .title {
+    font-size: 30px;
+  }
+
+  .subtitle {
+    font-size: 17px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .primaryBtn {
+    width: 100%;
+  }
+}

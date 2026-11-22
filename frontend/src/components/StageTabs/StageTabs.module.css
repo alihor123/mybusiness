@@ -1,0 +1,48 @@
+.tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 28px;
+  margin-bottom: 24px;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  color: var(--color-muted);
+  transition: color var(--transition-fast);
+}
+
+.tab:hover {
+  color: var(--color-ink);
+}
+
+.tabActive {
+  color: var(--color-accent);
+}
+
+.tabActive:hover {
+  color: var(--color-accent);
+}
+
+.lockIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .tabs {
+    gap: 18px;
+    margin-bottom: 16px;
+  }
+
+  .tab {
+    font-size: 16px;
+    line-height: 22px;
+  }
+}
