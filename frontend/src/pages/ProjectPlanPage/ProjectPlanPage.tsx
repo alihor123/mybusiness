@@ -3,9 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
 import ArrowRightIcon from "../../assets/icons/arrow-right.svg?react"
 import MaxChatIcon from "../../assets/icons/max-chat.svg?react"
-import BriefcaseIcon from "../../assets/icons/briefcase.svg?react"
-import PlayIcon from "../../assets/icons/play.svg?react"
 import SidePanel from "../../components/SidePanel/SidePanel"
+import MentorDetailsContent from "../../components/MentorDetailsContent/MentorDetailsContent"
 import { useApp } from "../../contexts/AppContext"
 import type { ProjectTask } from "../../data/mockData"
 import styles from "./ProjectPlanPage.module.css"
@@ -272,20 +271,7 @@ export default function ProjectPlanPage() {
         subtitle={mentor.industry}
         onClose={() => setMentorPanelOpen(false)}
       >
-        <div className={styles.panelPhotoWrap}>
-          <img src={mentor.photo} alt="" className={styles.mentorPhoto} />
-        </div>
-        <div className={styles.mentorRole}>{mentor.fullRole}</div>
-        <div className={styles.panelInfoRow}>
-          <BriefcaseIcon className={styles.panelInfoIcon} aria-hidden="true" />
-          <span>{mentor.experience}</span>
-        </div>
-        <div className={styles.panelInfoRow}>
-          <PlayIcon className={styles.panelInfoIcon} aria-hidden="true" />
-          <span>{mentor.format}</span>
-        </div>
-        <div className={styles.panelAboutTitle}>О себе</div>
-        <div className={styles.panelAboutText}>{mentor.about}</div>
+        <MentorDetailsContent mentor={mentor} />
       </SidePanel>
     </div>
   )

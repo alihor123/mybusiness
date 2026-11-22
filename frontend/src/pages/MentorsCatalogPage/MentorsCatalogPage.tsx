@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import SearchIcon from "../../assets/icons/search.svg?react"
-import BriefcaseIcon from "../../assets/icons/briefcase.svg?react"
-import PlayIcon from "../../assets/icons/play.svg?react"
 import CloseIcon from "../../assets/icons/close.svg?react"
 import CustomSelect from "../../components/CustomSelect/CustomSelect"
 import SidePanel from "../../components/SidePanel/SidePanel"
+import MentorDetailsContent from "../../components/MentorDetailsContent/MentorDetailsContent"
 import { useApp } from "../../contexts/AppContext"
 import { useIsMobile } from "../../hooks/useIsMobile"
 import type { Mentor } from "../../data/mockData"
@@ -62,28 +61,10 @@ export default function MentorsCatalogPage() {
   // Рендерит содержимое профиля наставника для десктопной панели и мобильной шторки.
   function renderMentorDetails(mentor: Mentor) {
     return (
-      <div className={styles.panelContent}>
-        <div className={styles.panelPhotoWrap}>
-          <img src={mentor.photo} alt="" className={styles.panelPhoto} />
-        </div>
-        <div className={styles.panelMeta}>
-          <div className={styles.panelRole}>{mentor.fullRole}</div>
-          <div className={styles.panelInfoRow}>
-            <BriefcaseIcon className={styles.panelInfoIcon} aria-hidden="true" />
-            <span>{mentor.experience}</span>
-          </div>
-          <div className={styles.panelInfoRow}>
-            <PlayIcon className={styles.panelInfoIcon} aria-hidden="true" />
-            <span>{mentor.format}</span>
-          </div>
-        </div>
-        <div className={styles.panelDivider} />
-        <div className={styles.panelAboutTitle}>О себе</div>
-        <div className={styles.panelAboutText}>{mentor.about}</div>
-        <div className={styles.panelHint}>
-          Отправить заявку наставнику можно из анкеты вашего проекта в разделе «Мои проекты».
-        </div>
-      </div>
+      <MentorDetailsContent
+        mentor={mentor}
+        hint="Отправить заявку наставнику можно из анкеты вашего проекта в разделе «Мои проекты»."
+      />
     )
   }
 

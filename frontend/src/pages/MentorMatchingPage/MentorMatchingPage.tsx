@@ -7,6 +7,7 @@ import PlayIcon from "../../assets/icons/play.svg?react"
 import LockIcon from "../../assets/icons/lock.svg?react"
 import CheckIcon from "../../assets/icons/check.svg?react"
 import SidePanel from "../../components/SidePanel/SidePanel"
+import MentorDetailsContent from "../../components/MentorDetailsContent/MentorDetailsContent"
 import { useApp } from "../../contexts/AppContext"
 import { useIsMobile } from "../../hooks/useIsMobile"
 import styles from "./MentorMatchingPage.module.css"
@@ -166,25 +167,7 @@ export default function MentorMatchingPage() {
           onClose={() => setMobileSheetOpen(false)}
           footer={renderApplyActions()}
         >
-          <div className={styles.sheetHero}>
-            <div className={styles.sheetPhotoWrap}>
-              <img src={selectedMentor.photo} alt="" className={styles.detailPhoto} />
-            </div>
-            <div className={styles.detailRole}>{selectedMentor.fullRole}</div>
-            <div className={styles.metaRow}>
-              <BriefcaseIcon className={styles.metaIcon} aria-hidden="true" />
-              <span>{selectedMentor.experience}</span>
-            </div>
-            <div className={styles.metaRow}>
-              <PlayIcon className={styles.metaIcon} aria-hidden="true" />
-              <span>{selectedMentor.format}</span>
-            </div>
-          </div>
-          <div className={styles.divider} />
-          <div className={styles.aboutSection}>
-            <div className={styles.aboutTitle}>О себе</div>
-            <div className={styles.aboutText}>{selectedMentor.about}</div>
-          </div>
+          <MentorDetailsContent mentor={selectedMentor} />
         </SidePanel>
       )}
     </div>
