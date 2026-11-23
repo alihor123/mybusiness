@@ -280,14 +280,14 @@ export function useCachedTracks() {
   return { ...tracks, loading: !tracks.data && !tracks.error, reload: loadTracks }
 }
 
-export function useCachedDiagnostic() {
+export function useCachedDiagnostic(enabled = true) {
   const { diagnostic, loadDiagnostic, setDiagnostic, applyDiagnosticDraft } = useLearningCache()
   useEffect(() => {
-    if (!diagnostic.data && !diagnostic.error) loadDiagnostic()
-  }, [diagnostic.data, diagnostic.error, loadDiagnostic])
+    if (enabled && !diagnostic.data && !diagnostic.error) loadDiagnostic()
+  }, [enabled, diagnostic.data, diagnostic.error, loadDiagnostic])
   return {
     ...diagnostic,
-    loading: !diagnostic.data && !diagnostic.error,
+    loading: enabled && !diagnostic.data && !diagnostic.error,
     reload: loadDiagnostic,
     setData: setDiagnostic,
     applyDraft: applyDiagnosticDraft,

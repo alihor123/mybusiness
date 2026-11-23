@@ -19,7 +19,7 @@ import ProfilePage from "./pages/ProfilePage/ProfilePage"
 import MentorRequestsPage from "./pages/MentorRequestsPage/MentorRequestsPage"
 import MentorProjectsPage from "./pages/MentorProjectsPage/MentorProjectsPage"
 import MentorReviewPage from "./pages/MentorReviewPage/MentorReviewPage"
-import { LearningCacheProvider, useCachedProgress } from "./contexts/LearningCacheContext"
+import { LearningCacheProvider, useCachedDiagnostic, useCachedProgress } from "./contexts/LearningCacheContext"
 
 function ProjectAccessLayout() {
   const progress = useCachedProgress()
@@ -74,10 +74,21 @@ function RoleLayout({ role }: { role: Role }) {
   return session.profile.role === role ? <Outlet /> : <Navigate to={roleHome(session.profile.role)} replace />
 }
 
-// Направляет с корня и неизвестных маршрутов в начальный раздел.
+// На входе в кабинет направляет ученика в тест или к списку треков по статусу диагностики.
 function HomeRoute() {
   const { session } = useApp()
-  return session.status === "ready" ? <Navigate to={roleHome(session.profile.role)} replace /> : null
+  const diagnostic = useCachedDiagnostic(session.status === "ready" && session.profile.role === "student")
+  if (session.status !== "ready") return null
+  if (session.profile.role === "teacher") return <Navigate to={roleHome(session.profile.role)} replace />
+  if (diagnostic.loading) return <Loader label="Проверяем статус входного теста" />
+  if (!diagnostic.data)
+    return (
+      <ResourceError
+        message={diagnostic.error ?? "Не удалось загрузить статус входного теста"}
+        retry={diagnostic.reload}
+      />
+    )
+  return <Navigate to={diagnostic.data.status === "completed" ? "/learning" : "/learning/test"} replace />
 }
 
 // Определяет маршруты приложения и перенаправления по умолчанию.

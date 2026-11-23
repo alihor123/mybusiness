@@ -56,5 +56,5 @@ export function logout() {
 }
 
 export function roleHome(role: Role) {
-  return role === "teacher" ? "/mentor/requests" : "/learning/test"
+  return role === "teacher" ? "/mentor/requests" : "/"
 }
