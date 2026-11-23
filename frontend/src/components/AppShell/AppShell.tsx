@@ -237,6 +237,12 @@ export default function AppShell() {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 36 }}
+              onPanEnd={(event, { offset }) => {
+                // Закрываем меню только после завершённого горизонтального свайпа влево.
+                if (event.type === "pointerup" && offset.x <= -56 && -offset.x > Math.abs(offset.y)) {
+                  setMobileMenuOpen(false)
+                }
+              }}
             >
               {renderSidebarContent(false)}
             </motion.div>
