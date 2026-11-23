@@ -18,7 +18,7 @@ export type Profile = ProfileFields & {
 }
 export type SignupFields = { first_name: string, last_name: string, email: string, password: string }
 
-export const demoLoginEnabled = import.meta.env.VITE_DEMO_LOGIN === "true"
+export const testModeEnabled = import.meta.env.VITE_TEST_MODE === "true"
 
 const deviceStorageKey = "mb_device_id"
 let sessionDeviceId: string | undefined
@@ -55,8 +55,8 @@ export function authenticate(mode: "login" | "register", value: string | SignupF
 }
 
 // Открывает серверную демосессию без учётных данных на клиенте.
-export function authenticateDemo(signal?: AbortSignal) {
-  return request<Profile>("/auth/demo", {
+export function authenticateTest(signal?: AbortSignal) {
+  return request<Profile>("/auth/test", {
     method: "POST",
     auth: false,
     signal,

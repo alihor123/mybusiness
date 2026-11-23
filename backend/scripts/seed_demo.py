@@ -113,8 +113,6 @@ async def main() -> None:
         raise SystemExit("Short demo passwords are allowed only with LOCAL_DEMO_MODE or SIMPLIFIED_REGISTRATION.")
     if not 5 <= len(password) <= 256:
         raise SystemExit("Set DEMO_PASSWORD to 5–256 characters in the demo environment.")
-    if settings.test_user and settings.test_user_id not in {START_ID, COMPLETE_ID}:
-        raise SystemExit(f"TEST_USER_ID must select {START_ID} or {COMPLETE_ID}.")
     hashed = await hash_password(password)
     async with get_session_factory()() as db, db.begin():
         await create_user(db, START_ID, "demo-student-start@example.com", "student", "Алексей Миронов", hashed)

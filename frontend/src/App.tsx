@@ -36,11 +36,15 @@ function ProjectAccessLayout() {
 
 // Защищает маршруты кабинета и сохраняет кэш при переходах между экранами.
 function ProtectedLayout() {
-  const { session, restoreSession } = useApp()
+  const { session, testMode, restoreSession } = useApp()
   const location = useLocation()
   if (session.status === "loading") return <Loader label="Проверяем сессию" />
   if (session.status === "error") return <ResourceError message={session.error} retry={restoreSession} />
   if (session.status === "guest") {
+    if (testMode) {
+      if (location.pathname !== "/") return <Navigate to="/" replace />
+      return <ResourceError message="Тестовая сессия завершена" retry={restoreSession} retryLabel="Войти снова" />
+    }
     return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />
   }
   return (
@@ -52,14 +56,13 @@ function ProtectedLayout() {
 
 // При первом входе открывает диагностику, остальные переходы проверяет по роли.
 function GuestLayout() {
-  const { session } = useApp()
+  const { session, testMode } = useApp()
   const location = useLocation()
+  if (testMode) return <Navigate to="/" replace />
   if (session.status === "loading") return <Loader label="Проверяем сессию" />
   if (session.status === "ready") {
-    if (session.profile.role === "student") {
-      if (session.profile.is_demo) return <Navigate to="/" replace />
-      if (session.profile.show_diagnostic_on_login) return <Navigate to="/learning/test" replace />
-    }
+    if (session.profile.role === "student" && session.profile.show_diagnostic_on_login)
+      return <Navigate to="/learning/test" replace />
     const from: unknown = location.state?.from
     const allowed =
       typeof from === "string" &&

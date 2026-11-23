@@ -1,16 +1,16 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import {
   authenticate,
-  authenticateDemo,
-  demoLoginEnabled,
+  authenticateTest,
   getProfile,
   logout,
   saveProfile,
+  testModeEnabled,
   type EditableProfileFields,
   type Profile,
   type SignupFields,
 } from "../api/auth"
-import { ApiError, errorMessage, onSessionExpired } from "../api/client"
+import { ApiError, errorMessage, onSessionExpired, TEST_MODE_DISABLED } from "../api/client"
 
 type Session =
   | { status: "loading" | "guest", profile: null }
@@ -19,10 +19,10 @@ type Session =
 
 type AppContextValue = {
   session: Session
+  testMode: boolean
   restoreSession: () => void
   signIn: (mode: "login", email: string, password: string) => Promise<void>
   signUp: (fields: SignupFields) => Promise<void>
-  signInDemo: () => Promise<void>
   signOut: () => Promise<void>
   updateProfile: (fields: EditableProfileFields) => Promise<Profile>
 }
@@ -34,27 +34,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Состояние восстановления и номер попытки пользователя.
   const [session, setSession] = useState<Session>({ status: "loading", profile: null })
   const [attempt, setAttempt] = useState(0)
+  // Если сервер отключил режим, в текущей вкладке доступен обычный вход.
+  const [testMode, setTestMode] = useState(testModeEnabled)
 
   useEffect(() => {
     const controller = new AbortController()
 
-    // Проверяет текущий профиль, повтор с обновлением cookie выполняет клиент.
+    // В тестовой сборке получает тестовую сессию, в обычной восстанавливает текущую.
     async function loadSession() {
       try {
-        const profile = await getProfile(controller.signal)
+        const profile = testMode
+          ? await authenticateTest(controller.signal)
+          : await getProfile(controller.signal)
         if (!controller.signal.aborted) setSession({ status: "ready", profile })
       } catch (error) {
         if (controller.signal.aborted) return
-        if (error instanceof ApiError && error.status === 401) {
-          if (demoLoginEnabled && window.location.pathname === "/") {
-            try {
-              const profile = await authenticateDemo(controller.signal)
-              if (!controller.signal.aborted) setSession({ status: "ready", profile })
-              return
-            } catch {
-              if (controller.signal.aborted) return
-            }
-          }
+        if (testMode && error instanceof ApiError && (error.code === TEST_MODE_DISABLED || error.status === 404)) {
+          setTestMode(false)
+          return
+        }
+        if (!testMode && error instanceof ApiError && error.status === 401) {
           setSession({ status: "guest", profile: null })
           return
         }
@@ -66,11 +65,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    void loadSession()
+    // StrictMode успевает отменить первый эффект до отправки запроса входа.
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) void loadSession()
+    })
     return () => controller.abort()
-  }, [attempt])
+  }, [attempt, testMode])
 
-  useEffect(() => onSessionExpired(() => setSession({ status: "guest", profile: null })), [])
+  useEffect(() => onSessionExpired((code) => {
+    if (testMode && code === TEST_MODE_DISABLED) {
+      setSession({ status: "loading", profile: null })
+      setTestMode(false)
+      return
+    }
+    setSession({ status: "guest", profile: null })
+  }), [testMode])
 
   // Повторяет проверку профиля после ошибки сети.
   function restoreSession() {
@@ -86,12 +95,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   async function signUp(fields: SignupFields) {
     const profile = await authenticate("register", fields)
-    setSession({ status: "ready", profile })
-  }
-
-  // Открывает демоаккаунт с обычной сессией кабинета.
-  async function signInDemo() {
-    const profile = await authenticateDemo()
     setSession({ status: "ready", profile })
   }
 
@@ -113,7 +116,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppContext.Provider value={{ session, restoreSession, signIn, signUp, signInDemo, signOut, updateProfile }}>
+    <AppContext.Provider value={{ session, testMode, restoreSession, signIn, signUp, signOut, updateProfile }}>
       {children}
     </AppContext.Provider>
   )

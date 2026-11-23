@@ -19,7 +19,12 @@ from app.auth.tokens import (
     unauthorized,
     utcnow,
 )
+from app.config import get_settings
 from app.errors import api_error
+
+
+class TestModeDisabled(Exception):
+    """A previously issued demo session is no longer allowed in this mode."""
 
 passwords = PasswordHash.recommended()
 
@@ -136,7 +141,7 @@ async def login(db: AsyncSession, data: LoginCredentials) -> tuple[Actor, Pair]:
         return await get_actor(db, user.id), pair
 
 
-async def demo_login(db: AsyncSession, device_id: str) -> tuple[Actor, Pair]:
+async def test_login(db: AsyncSession, device_id: str) -> tuple[Actor, Pair]:
     demo_user_id = UUID("00000000-0000-4000-8000-000000000004")
     async with db.begin():
         user = await db.scalar(select(User).where(User.id == demo_user_id).with_for_update())
@@ -147,14 +152,25 @@ async def demo_login(db: AsyncSession, device_id: str) -> tuple[Actor, Pair]:
 
 
 async def active_session(db: AsyncSession, token: SessionToken, *, lock: bool = False) -> Session:
-    statement = select(Session).where(
-        Session.id == token.sid, Session.user_id == token.user_id, Session.revoked_at.is_(None)
+    statement = (
+        select(Session, User.is_demo)
+        .join(User, User.id == Session.user_id)
+        .where(
+            Session.id == token.sid,
+            Session.user_id == token.user_id,
+            Session.revoked_at.is_(None),
+        )
     )
     if lock:
-        statement = statement.with_for_update()
-    session = await db.scalar(statement)
-    if session is None or session.expires_at <= utcnow():
+        statement = statement.with_for_update(of=Session)
+    row = (await db.execute(statement)).one_or_none()
+    if row is None:
         raise unauthorized()
+    session, is_demo = row
+    if session.expires_at <= utcnow():
+        raise unauthorized()
+    if is_demo and not get_settings().test_mode:
+        raise TestModeDisabled()
     return session
 
 

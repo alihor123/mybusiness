@@ -16,6 +16,8 @@ from app.ai.client import get_deepseek
 from app.api_contract import describe_errors
 from app.applications.router import router as applications_router
 from app.auth.router import router as auth_router
+from app.auth.service import TestModeDisabled
+from app.auth.tokens import get_auth
 from app.database import get_db, get_session_factory
 from app.diagnostic.router import router as diagnostic_router
 from app.diagnostic.worker import run_diagnostic_worker
@@ -78,3 +80,13 @@ async def validation_error(_request: Request, exc: RequestValidationError) -> JS
     # Keep validation errors usable without reflecting passwords or submitted answers.
     errors = [{field: error[field] for field in ("type", "loc", "msg")} for error in exc.errors()]
     return JSONResponse({"detail": errors}, status_code=422)
+
+
+@app.exception_handler(TestModeDisabled)
+async def test_mode_disabled(_request: Request, _exc: Exception) -> JSONResponse:
+    response = JSONResponse(
+        {"detail": {"code": "TEST_MODE_DISABLED", "message": "Тестовый режим отключён"}},
+        status_code=401,
+    )
+    get_auth().unset_cookies(response)
+    return response

@@ -146,14 +146,16 @@ async def test_concurrent_login_reuses_device(client):
         )
 
 
-async def test_demo_login_requires_enabled_mode_and_uses_seeded_identity(monkeypatch, client):
-    endpoint = "/api/v1/auth/demo"
+async def test_test_mode_login_is_scoped_and_disabled_tokens_are_rejected(monkeypatch, client):
+    endpoint = "/api/v1/auth/test"
     device = {"device_id": "demo-test"}
-    monkeypatch.setenv("DEMO_LOGIN_ENABLED", "false")
+    monkeypatch.setenv("TEST_MODE", "false")
     get_settings.cache_clear()
-    assert (await client.post(endpoint, headers={"Origin": ORIGIN}, json=device)).status_code == 404
+    disabled = await client.post(endpoint, headers={"Origin": ORIGIN}, json=device)
+    assert disabled.status_code == 404
+    assert disabled.json()["detail"]["code"] == "TEST_MODE_DISABLED"
 
-    monkeypatch.setenv("DEMO_LOGIN_ENABLED", "true")
+    monkeypatch.setenv("TEST_MODE", "true")
     get_settings.cache_clear()
     assert (await client.post(endpoint, json=device)).status_code == 403
     password_hash = await hash_password(str(uuid4()))
@@ -167,4 +169,55 @@ async def test_demo_login_requires_enabled_mode_and_uses_seeded_identity(monkeyp
     assert profile["is_demo"] is True
     assert profile["show_diagnostic_on_login"] is False
     assert (await client.get("/api/v1/me")).json() == profile
-    assert (await client.post("/api/v1/auth/logout", headers=access_csrf(client))).status_code == 204
+
+    old_refresh = client.cookies[REFRESH_COOKIE]
+    csrf_refresh = client.cookies["csrf_refresh_token"]
+    rotated = await client.post(
+        "/api/v1/auth/refresh", headers={"X-CSRF-TOKEN": csrf_refresh}
+    )
+    assert rotated.status_code == 204
+    current_refresh = client.cookies[REFRESH_COOKIE]
+    current_csrf = client.cookies["csrf_refresh_token"]
+    assert current_refresh != old_refresh
+
+    # Logout keeps its ordinary contract while test mode is enabled.
+    async with open_client() as logout_client:
+        logout_response = await logout_client.post(endpoint, headers={"Origin": ORIGIN}, json={"device_id": "demo-logout"})
+        assert logout_response.status_code == 200
+        assert (
+            await logout_client.post(
+                "/api/v1/auth/logout", headers=access_csrf(logout_client)
+            )
+        ).status_code == 204
+
+    async with open_client() as normal_client:
+        await register(normal_client, device_id="ordinary-before-disable")
+
+    monkeypatch.setenv("TEST_MODE", "false")
+    get_settings.cache_clear()
+    async with open_client() as replay:
+        replay.cookies.update(client.cookies)
+        denied_access = await replay.get("/api/v1/me")
+        assert denied_access.status_code == 401
+        assert denied_access.json()["detail"]["code"] == "TEST_MODE_DISABLED"
+        cleared = "\n".join(denied_access.headers.get_list("set-cookie"))
+        assert "access_token_cookie" in cleared and "Max-Age=0" in cleared
+        assert "refresh_token_cookie" in cleared and "Max-Age=0" in cleared
+        assert "csrf_access_token" in cleared and "Max-Age=0" in cleared
+        assert "csrf_refresh_token" in cleared and "Max-Age=0" in cleared
+
+    # Present the last usable refresh independently from the cleared access cookies.
+    async with open_client() as replay:
+        replay.cookies[REFRESH_COOKIE] = current_refresh
+        denied_refresh = await replay.post(
+            "/api/v1/auth/refresh",
+            headers={"X-CSRF-TOKEN": current_csrf},
+        )
+        assert denied_refresh.status_code == 401
+        assert denied_refresh.json()["detail"]["code"] == "TEST_MODE_DISABLED"
+
+    async with open_client() as normal_replay:
+        normal_replay.cookies.update(normal_client.cookies)
+        normal_response = await normal_replay.get("/api/v1/me")
+        assert normal_response.status_code == 200
+        assert normal_response.json()["is_demo"] is False

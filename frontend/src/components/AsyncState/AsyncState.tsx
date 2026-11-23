@@ -33,11 +33,15 @@ export function Loader({ label = "Загрузка" }: { label?: string }) {
 }
 
 // Показывает ошибку первой загрузки и повтор запроса.
-export function ResourceError({ message, retry }: { message: string, retry: () => void }) {
+export function ResourceError({ message, retry, retryLabel = "Повторить" }: {
+  message: string
+  retry: () => void
+  retryLabel?: string
+}) {
   return (
     <div className={styles.state}>
       <div role="alert">{message}</div>
-      <button type="button" className={styles.retry} onClick={retry}>Повторить</button>
+      <button type="button" className={styles.retry} onClick={retry}>{retryLabel}</button>
     </div>
   )
 }

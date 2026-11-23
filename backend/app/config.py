@@ -1,6 +1,4 @@
 from functools import lru_cache
-from uuid import UUID
-
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -16,10 +14,8 @@ class Settings(BaseSettings):
     cookie_domain: str = ""
     public_origin: str = "https://localhost"
     private_upload_dir: str = "var/uploads"
-    test_user: bool = False
-    test_user_id: UUID = UUID("00000000-0000-4000-8000-000000000001")
     demo_password: SecretStr = SecretStr("")
-    demo_login_enabled: bool = False
+    test_mode: bool = False
     local_demo_mode: bool = False
     simplified_registration: bool = True
 

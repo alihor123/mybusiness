@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import service
 from app.auth.dependencies import access_cookie, get_current_user
-from app.auth.schemas import Actor, DemoLogin, LoginCredentials, Profile, ProfileUpdate, Registration
+from app.auth.schemas import Actor, LoginCredentials, Profile, ProfileUpdate, Registration, TestLogin
 from app.auth.tokens import REFRESH_COOKIE, get_auth, read_token, set_cookies
 from app.config import get_settings
 from app.database import get_db
@@ -46,13 +46,13 @@ async def login(
     return actor.profile
 
 
-@router.post("/auth/demo", dependencies=[Depends(require_origin)])
-async def demo_login(
-    data: DemoLogin, response: Response, db: AsyncSession = Depends(get_db)
+@router.post("/auth/test", dependencies=[Depends(require_origin)])
+async def test_login(
+    data: TestLogin, response: Response, db: AsyncSession = Depends(get_db)
 ) -> Profile:
-    if not get_settings().demo_login_enabled:
-        raise api_error(404, "NOT_FOUND", "Маршрут не найден")
-    actor, pair = await service.demo_login(db, data.device_id)
+    if not get_settings().test_mode:
+        raise api_error(404, "TEST_MODE_DISABLED", "Тестовый режим отключён")
+    actor, pair = await service.test_login(db, data.device_id)
     set_cookies(response, pair)
     return actor.profile
 

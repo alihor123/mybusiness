@@ -1,5 +1,6 @@
 const prefix = "/api/v1"
 const sessionExpiredEvent = "mb:session-expired"
+export const TEST_MODE_DISABLED = "TEST_MODE_DISABLED"
 
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
@@ -77,6 +78,12 @@ async function responseError(response: Response) {
   return new ApiError(businessMessages.get(code ?? "") ?? fallback, response.status, code)
 }
 
+// Передаёт причину отказа провайдеру сессии.
+function expireSession(error: ApiError) {
+  window.dispatchEvent(new CustomEvent(sessionExpiredEvent, { detail: error.code }))
+  return error
+}
+
 // Передаёт одинаковые параметры прокси и стенду и сохраняет boundary для FormData.
 async function send(path: string, options: RequestOptions) {
   const method = options.method ?? "GET"
@@ -116,7 +123,11 @@ async function refreshSession() {
   // Сохраняет сетевую ошибку, чтобы отличать потерю связи от выхода из аккаунта.
   async function refresh() {
     const response = await send("/auth/refresh", { method: "POST", auth: false })
-    if (response.status === 401) return false
+    if (response.status === 401) {
+      const error = await responseError(response)
+      if (error.code === TEST_MODE_DISABLED) throw expireSession(error)
+      return false
+    }
     if (!response.ok) throw await responseError(response)
     return true
   }
@@ -134,12 +145,18 @@ export async function requestResponse(path: string, options: RequestOptions = {}
   const previousCsrf = readCookie("csrf_access_token")
   let response = await send(path, options)
   if (response.status === 401 && options.auth !== false) {
+    const error = await responseError(response)
+    if (error.code === TEST_MODE_DISABLED) throw expireSession(error)
     const currentCsrf = readCookie("csrf_access_token")
     const alreadyRefreshed = Boolean(currentCsrf && currentCsrf !== previousCsrf)
-    if (alreadyRefreshed || (await refreshSession())) response = await send(path, options)
-    if (response.status === 401) window.dispatchEvent(new Event(sessionExpiredEvent))
+    if (!alreadyRefreshed && !(await refreshSession())) throw expireSession(error)
+    response = await send(path, options)
   }
-  if (!response.ok) throw await responseError(response)
+  if (!response.ok) {
+    const error = await responseError(response)
+    if (error.status === 401 && options.auth !== false) throw expireSession(error)
+    throw error
+  }
   return response
 }
 
@@ -155,9 +172,12 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 }
 
 // Сообщает провайдеру о подтверждённом завершении сессии.
-export function onSessionExpired(listener: () => void) {
-  window.addEventListener(sessionExpiredEvent, listener)
-  return () => window.removeEventListener(sessionExpiredEvent, listener)
+export function onSessionExpired(listener: (code?: string) => void) {
+  function handleExpiration(event: Event) {
+    listener((event as CustomEvent<string | undefined>).detail)
+  }
+  window.addEventListener(sessionExpiredEvent, handleExpiration)
+  return () => window.removeEventListener(sessionExpiredEvent, handleExpiration)
 }
 
 // Показывает точное сообщение API или текст операции для неизвестной ошибки.

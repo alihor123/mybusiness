@@ -23,7 +23,6 @@ async def database(monkeypatch):
     monkeypatch.setenv("JWT_SECRET", "test-only-very-long-jwt-signing-secret")
     monkeypatch.setenv("PUBLIC_ORIGIN", ORIGIN)
     monkeypatch.setenv("COOKIE_SECURE", "true")
-    monkeypatch.setenv("TEST_USER", "false")
     monkeypatch.setenv("SIMPLIFIED_REGISTRATION", "true")
     yield
     if get_session_factory.cache_info().currsize:
