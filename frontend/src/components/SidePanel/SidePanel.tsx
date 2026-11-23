@@ -1,6 +1,6 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import type { ReactNode } from "react"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import type { PanInfo } from "motion/react"
 import CloseIcon from "../../assets/icons/close.svg?react"
 import { useIsMobile } from "../../hooks/useIsMobile"
@@ -25,25 +25,53 @@ export default function SidePanel({
   children,
 }: SidePanelProps) {
   const isMobile = useIsMobile(768)
+  const reducedMotion = useReducedMotion()
+  // Хранит панель и актуальный обработчик без повторного переноса фокуса.
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
 
   useEffect(() => {
     if (!open) return
 
+    const previousFocus = document.activeElement
     const prevBodyOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
+    const frame = window.requestAnimationFrame(() => dialogRef.current?.focus())
 
+    // Закрывает панель с клавиатуры и удерживает Tab внутри диалога.
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        onClose()
+        event.preventDefault()
+        closeRef.current()
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return
+      const dialog = dialogRef.current
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]',
+      )).filter((element) => element.getClientRects().length > 0)
+      const first = focusable[0]
+      const last = focusable.at(-1)
+      const current = document.activeElement
+      if (event.shiftKey && (current === first || current === dialog || !dialog.contains(current))) {
+        event.preventDefault()
+        const target = last ?? dialog
+        target.focus()
+      } else if (!event.shiftKey && (current === last || !dialog.contains(current))) {
+        event.preventDefault()
+        const target = first ?? dialog
+        target.focus()
       }
     }
 
     window.addEventListener("keydown", handleKeyDown)
     return () => {
+      window.cancelAnimationFrame(frame)
       document.body.style.overflow = prevBodyOverflow
       window.removeEventListener("keydown", handleKeyDown)
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus({ preventScroll: true })
     }
-  }, [open, onClose])
+  }, [open])
 
   // Закрывает нижнюю шторку, если пользователь смахнул её вниз.
   function handleDragEnd(_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) {
@@ -56,6 +84,8 @@ export default function SidePanel({
     <AnimatePresence>
       {open && (
         <motion.div
+          ref={dialogRef}
+          tabIndex={-1}
           className={`${styles.backdrop} ${isMobile ? styles.backdropMobile : styles.backdropDesktop}`}
           role="dialog"
           aria-modal="true"
@@ -63,7 +93,7 @@ export default function SidePanel({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: reducedMotion ? 0 : 0.2 }}
           onClick={onClose}
         >
           {isMobile ? (
@@ -72,7 +102,7 @@ export default function SidePanel({
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 360, damping: 36 }}
+              transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 36 }}
               drag="y"
               dragConstraints={{ top: 0 }}
               dragElastic={{ top: 0.05, bottom: 0.35 }}
@@ -103,7 +133,7 @@ export default function SidePanel({
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 360, damping: 36 }}
+              transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 36 }}
               onClick={(event) => event.stopPropagation()}
             >
               <div className={styles.header}>

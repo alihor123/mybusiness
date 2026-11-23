@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import service
 from app.auth.dependencies import access_cookie, get_current_user
-from app.auth.schemas import Actor, Credentials, Profile, Registration
+from app.auth.schemas import Actor, LoginCredentials, Profile, ProfileUpdate, Registration
 from app.auth.tokens import REFRESH_COOKIE, get_auth, read_token, set_cookies
 from app.config import get_settings
 from app.database import get_db
@@ -23,7 +23,7 @@ def require_origin(request: Request) -> None:
     "/auth/register",
     status_code=201,
     dependencies=[Depends(require_origin)],
-    responses={409: {"description": "Логин уже занят"}},
+    responses={409: {"description": "Электронная почта уже зарегистрирована"}},
 )
 async def register(
     data: Registration, response: Response, db: AsyncSession = Depends(get_db)
@@ -39,7 +39,7 @@ async def register(
     responses={401: {"description": "Неверные данные входа"}},
 )
 async def login(
-    data: Credentials, response: Response, db: AsyncSession = Depends(get_db)
+    data: LoginCredentials, response: Response, db: AsyncSession = Depends(get_db)
 ) -> Profile:
     actor, pair = await service.login(db, data)
     set_cookies(response, pair)
@@ -62,3 +62,19 @@ async def logout(request: Request, response: Response, db: AsyncSession = Depend
 @router.get("/me")
 async def me(actor: Actor = Depends(get_current_user)) -> Profile:
     return actor.profile
+
+
+@router.patch("/me")
+async def update_me(
+    data: ProfileUpdate,
+    actor: Actor = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Profile:
+    async with db.begin():
+        user = await db.get(service.User, actor.user_id, with_for_update=True)
+        if user is None:
+            raise service.unauthorized()
+        for field, value in data.model_dump().items():
+            setattr(user, field, value)
+        await db.flush()
+        return (await service.get_actor(db, actor.user_id)).profile

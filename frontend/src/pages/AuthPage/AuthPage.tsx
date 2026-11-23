@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import type { FormEvent } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import logoUrl from "../../assets/brand/logo.svg"
 import UserIcon from "../../assets/icons/user.svg?react"
 import MailIcon from "../../assets/icons/mail.svg?react"
@@ -8,53 +8,117 @@ import LockIcon from "../../assets/icons/lock.svg?react"
 import EyeIcon from "../../assets/icons/eye.svg?react"
 import EyeOffIcon from "../../assets/icons/eye-off.svg?react"
 import { useApp } from "../../contexts/AppContext"
+import { useToast } from "../../contexts/ToastContext"
+import { ApiError, errorMessage } from "../../api/client"
 import styles from "./AuthPage.module.css"
 
 type AuthMode = "register" | "login"
+type AuthField = "first_name" | "last_name" | "email" | "password"
+type FieldErrors = Partial<Record<AuthField, string>>
 
-// Отображает страницы регистрации и входа в фирменном стиле «Мой бизнес Югра».
+const emailPattern =
+  /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$/u
+const namePattern = /^[\p{L}\p{M}]+(?:[- '’][\p{L}\p{M}]+)*$/u
+const simplifiedRegistration = import.meta.env.VITE_SIMPLIFIED_REGISTRATION
+
+// Собирает формы входа и регистрации с режимом проверки из сборки.
 export default function AuthPage({ mode }: { mode: AuthMode }) {
-  const { loginMock, registerMock } = useApp()
-  const navigate = useNavigate()
-
-  // Поля формы и переключение видимости пароля.
+  const { signIn, signUp } = useApp()
+  const { showToast } = useToast()
+  const location = useLocation()
+  // Поля, показ пароля и сообщения проверки. Данные формы остаются на экране при ошибке API.
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [errorText, setErrorText] = useState("")
-
+  const [fieldsError, setFieldsError] = useState<FieldErrors>({})
+  const [pending, setPending] = useState(false)
+  const dismissError = useRef<(() => void) | null>(null)
   const isRegister = mode === "register"
+  const canSubmit = !pending
 
-  // Проверяет заполнение полей и выполняет моковый вход или регистрацию.
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setErrorText("")
-
-    if (!email.trim() || !password.trim()) {
-      setErrorText("Заполните электронную почту и пароль.")
-      return
-    }
-
+  // Проверяет обязательные поля до отправки запроса.
+  function validate() {
+    const errors: FieldErrors = {}
     if (isRegister) {
-      if (!firstName.trim() || !lastName.trim()) {
-        setErrorText("Укажите имя и фамилию.")
-        return
-      }
-      if (password !== confirmPassword) {
-        setErrorText("Пароли не совпадают.")
-        return
-      }
-      registerMock({ firstName, lastName, email })
-      navigate("/learning/test")
-      return
+      const first = firstName.trim()
+      const last = lastName.trim()
+      if (
+        !simplifiedRegistration &&
+        (!first || first.length > 100 || !namePattern.test(first) || !/[\p{L}]/u.test(first))
+      )
+        errors.first_name = "Введите имя: буквы, пробел, дефис или апостроф"
+      if (
+        !simplifiedRegistration &&
+        (!last || last.length > 100 || !namePattern.test(last) || !/[\p{L}]/u.test(last))
+      )
+        errors.last_name = "Введите фамилию: буквы, пробел, дефис или апостроф"
     }
+    const normalizedEmail = email.trim()
+    const [localPart = "", domain = ""] = normalizedEmail.split("@")
+    if (
+      !normalizedEmail ||
+      normalizedEmail.length > 254 ||
+      (!simplifiedRegistration &&
+        (localPart.length > 64 ||
+          domain.split(".").some((part) => part.length > 63) ||
+          !emailPattern.test(normalizedEmail)))
+    )
+      errors.email = simplifiedRegistration ? "Введите почту" : "Введите корректный адрес почты"
+    const requiresLongPassword = isRegister && !simplifiedRegistration
+    if (
+      !password.trim() ||
+      password.length > 256 ||
+      (requiresLongPassword && (password.length < 8 || !/\p{L}/u.test(password) || !/[0-9]/.test(password)))
+    )
+      errors.password = requiresLongPassword
+        ? "Введите не менее 8 символов, включая букву и цифру"
+        : "Введите пароль длиной не более 256 символов"
+    return errors
+  }
 
-    loginMock(email)
-    navigate("/learning")
+  // Отправляет форму серверу и связывает его ошибки с полями.
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!canSubmit) return
+    dismissError.current?.()
+    const errors = validate()
+    setFieldsError(errors)
+    if (Object.keys(errors).length) return
+
+    setPending(true)
+    try {
+      if (isRegister)
+        await signUp({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        })
+      else await signIn("login", email.trim().toLowerCase(), password)
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "EMAIL_EXISTS") {
+        setFieldsError({ email: "Эта почта уже зарегистрирована" })
+        return
+      }
+      const message =
+        !isRegister && error instanceof ApiError && error.status === 401
+          ? "Неверная почта или пароль"
+          : errorMessage(error, isRegister ? "Не удалось создать аккаунт" : "Не удалось войти")
+      dismissError.current = showToast({ message, type: "error" })
+    } finally {
+      setPending(false)
+    }
+  }
+
+  // Привязывает сообщение об ошибке к полю через aria-describedby.
+  function inputError(field: AuthField) {
+    return fieldsError[field] ? (
+      <span className={styles.fieldError} id={`auth-${field}-error`}>
+        {fieldsError[field]}
+      </span>
+    ) : null
   }
 
   return (
@@ -63,7 +127,6 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
         <div className={styles.brandHeader}>
           <img src={logoUrl} alt="Мой бизнес Югра" className={styles.logo} />
         </div>
-
         <div className={styles.headingBlock}>
           <div className={styles.title} role="heading" aria-level={1}>
             {isRegister ? "РЕГИСТРАЦИЯ" : "ВХОД В ПЛАТФОРМУ"}
@@ -74,119 +137,110 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
               : "Войдите в аккаунт «Мой бизнес», чтобы продолжить обучение и работу над проектами."}
           </div>
         </div>
-
         <div className={styles.card}>
           <div className={styles.illustrationCol}>
-            <img
-              src="/images/tracks/idea-check.svg"
-              alt=""
-              className={styles.illustration}
-            />
+            <img src="/images/tracks/idea-check.svg" alt="" className={styles.illustration} />
           </div>
-
-          <form className={styles.formCol} onSubmit={handleSubmit} noValidate>
+          <form className={styles.formCol} onSubmit={handleSubmit} noValidate aria-busy={pending}>
             {isRegister && (
               <>
-                <label className={styles.field} htmlFor="auth-first-name">
-                  <UserIcon className={styles.fieldIcon} aria-hidden="true" />
-                  <input
-                    id="auth-first-name"
-                    type="text"
-                    className={styles.input}
-                    placeholder="Имя"
-                    value={firstName}
-                    onChange={(event) => setFirstName(event.target.value)}
-                  />
+                <label className={styles.fieldGroup} htmlFor="auth-first-name">
+                  <span className={styles.field}>
+                    <UserIcon className={styles.fieldIcon} aria-hidden="true" />
+                    <input
+                      id="auth-first-name"
+                      className={styles.input}
+                      placeholder="Имя"
+                      aria-label="Имя"
+                      autoComplete="given-name"
+                      maxLength={100}
+                      value={firstName}
+                      onChange={(event) => setFirstName(event.target.value)}
+                      aria-invalid={Boolean(fieldsError.first_name)}
+                      aria-describedby={fieldsError.first_name ? "auth-first_name-error" : undefined}
+                    />
+                  </span>
+                  {inputError("first_name")}
                 </label>
-
-                <label className={styles.field} htmlFor="auth-last-name">
-                  <UserIcon className={styles.fieldIcon} aria-hidden="true" />
-                  <input
-                    id="auth-last-name"
-                    type="text"
-                    className={styles.input}
-                    placeholder="Фамилия"
-                    value={lastName}
-                    onChange={(event) => setLastName(event.target.value)}
-                  />
+                <label className={styles.fieldGroup} htmlFor="auth-last-name">
+                  <span className={styles.field}>
+                    <UserIcon className={styles.fieldIcon} aria-hidden="true" />
+                    <input
+                      id="auth-last-name"
+                      className={styles.input}
+                      placeholder="Фамилия"
+                      aria-label="Фамилия"
+                      autoComplete="family-name"
+                      maxLength={100}
+                      value={lastName}
+                      onChange={(event) => setLastName(event.target.value)}
+                      aria-invalid={Boolean(fieldsError.last_name)}
+                      aria-describedby={fieldsError.last_name ? "auth-last_name-error" : undefined}
+                    />
+                  </span>
+                  {inputError("last_name")}
                 </label>
               </>
             )}
-
-            <label className={styles.field} htmlFor="auth-email">
-              <MailIcon className={styles.fieldIcon} aria-hidden="true" />
-              <input
-                id="auth-email"
-                type="email"
-                className={styles.input}
-                placeholder="Электронная почта"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
+            <label className={styles.fieldGroup} htmlFor="auth-email">
+              <span className={styles.field}>
+                <MailIcon className={styles.fieldIcon} aria-hidden="true" />
+                <input
+                  id="auth-email"
+                  type={simplifiedRegistration ? "text" : "email"}
+                  className={styles.input}
+                  placeholder="Почта"
+                  aria-label="Почта"
+                  autoComplete={isRegister ? "email" : "username"}
+                  autoCapitalize="none"
+                  maxLength={254}
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  aria-invalid={Boolean(fieldsError.email)}
+                  aria-describedby={fieldsError.email ? "auth-email-error" : undefined}
+                />
+              </span>
+              {inputError("email")}
             </label>
-
-            <label className={styles.field} htmlFor="auth-password">
-              <LockIcon className={styles.fieldIcon} aria-hidden="true" />
-              <input
-                id="auth-password"
-                type={showPassword ? "text" : "password"}
-                className={styles.input}
-                placeholder="Пароль"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-              <button
-                type="button"
-                className={styles.eyeBtn}
-                aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
-                onClick={() => setShowPassword((prev) => !prev)}
-              >
-                {showPassword ? (
-                  <EyeOffIcon className={styles.eyeIcon} aria-hidden="true" />
-                ) : (
-                  <EyeIcon className={styles.eyeIcon} aria-hidden="true" />
-                )}
-              </button>
-            </label>
-
-            {isRegister && (
-              <label className={styles.field} htmlFor="auth-confirm-password">
+            <label className={styles.fieldGroup} htmlFor="auth-password">
+              <span className={styles.field}>
                 <LockIcon className={styles.fieldIcon} aria-hidden="true" />
                 <input
-                  id="auth-confirm-password"
-                  type={showConfirmPassword ? "text" : "password"}
+                  id="auth-password"
+                  type={showPassword ? "text" : "password"}
                   className={styles.input}
-                  placeholder="Повторите пароль"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  placeholder="Пароль"
+                  aria-label="Пароль"
+                  autoComplete={isRegister ? "new-password" : "current-password"}
+                  maxLength={256}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  aria-invalid={Boolean(fieldsError.password)}
+                  aria-describedby={fieldsError.password ? "auth-password-error" : undefined}
                 />
                 <button
                   type="button"
                   className={styles.eyeBtn}
-                  aria-label={showConfirmPassword ? "Скрыть пароль" : "Показать пароль"}
-                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
+                  onClick={() => setShowPassword((prev) => !prev)}
                 >
-                  {showConfirmPassword ? (
+                  {showPassword ? (
                     <EyeOffIcon className={styles.eyeIcon} aria-hidden="true" />
                   ) : (
                     <EyeIcon className={styles.eyeIcon} aria-hidden="true" />
                   )}
                 </button>
-              </label>
-            )}
-
-            {errorText && <div className={styles.errorBox}>{errorText}</div>}
-
-            <button type="submit" className={styles.submitBtn}>
-              {isRegister ? "Зарегистрироваться" : "Войти"}
-            </button>
-
-            <div className={styles.switchRow}>
-              <span className={styles.switchMuted}>
-                {isRegister ? "Уже есть аккаунт?" : "Нет аккаунта?"}
               </span>
+              {inputError("password")}
+            </label>
+            <button type="submit" className={styles.submitBtn} disabled={!canSubmit}>
+              {pending ? "Подождите…" : isRegister ? "Зарегистрироваться" : "Войти"}
+            </button>
+            <div className={styles.switchRow}>
+              <span className={styles.switchMuted}>{isRegister ? "Уже есть аккаунт?" : "Нет аккаунта?"}</span>
               <Link
                 to={isRegister ? "/login" : "/register"}
+                state={location.state}
                 className={styles.switchLink}
               >
                 {isRegister ? "Войдите" : "Зарегистрируйтесь"}

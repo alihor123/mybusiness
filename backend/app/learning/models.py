@@ -104,6 +104,17 @@ class Credit(Base):
     credited_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class DiagnosticCredit(Base):
+    __tablename__ = "diagnostic_credits"
+
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    step_id: Mapped[str] = mapped_column(ForeignKey("learning_steps.id"), primary_key=True)
+    diagnostic_version: Mapped[int]
+    credited_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class Completion(Base):
     __tablename__ = "learning_completions"
 

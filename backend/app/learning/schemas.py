@@ -68,6 +68,7 @@ class StepSummary(BaseModel):
     type: StepType
     optional_by_diagnostic: bool
     credited: bool
+    credit_source: Literal["earned", "diagnostic"] | None
     can_credit: bool
 
 
@@ -118,6 +119,11 @@ class StepOut(StepSummary):
     options: Options | None
     draft: Answer | None
     last_attempt: AttemptOut | None
+
+
+class TrackStepsOut(BaseModel):
+    track: TrackDetail
+    lessons: list[StepOut]
 
 
 class DraftIn(BaseModel):

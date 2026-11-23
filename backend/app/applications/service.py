@@ -5,7 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.accompaniment.service import create_plan
 from app.applications.models import Application
-from app.applications.schemas import ApplicationDetail, ApplicationIn, ApplicationOut, DecisionIn
+from app.applications.schemas import (
+    ApplicationDetail,
+    ApplicationIn,
+    ApplicationInboxItem,
+    ApplicationOut,
+    DecisionIn,
+)
+from app.auth.models import User
 from app.auth.schemas import Actor
 from app.auth.tokens import utcnow
 from app.errors import api_error
@@ -65,17 +72,29 @@ async def apply(id: UUID, data: ApplicationIn, actor: Actor, db: AsyncSession):
     return application
 
 
-async def inbox(actor: Actor, db: AsyncSession):
+async def inbox(actor: Actor, db: AsyncSession) -> list[ApplicationInboxItem]:
     own = await mentor_id(db, actor)
     if own is None:
         return []
-    return list(
-        await db.scalars(
-            select(Application)
-            .where(Application.mentor_id == own)
-            .order_by(Application.created_at, Application.id)
-        )
+    rows = await db.execute(
+        select(Application, Project, User)
+        .join(Project, Project.id == Application.project_id)
+        .join(User, User.id == Project.user_id)
+        .where(Application.mentor_id == own)
+        .order_by(Application.created_at, Application.id)
     )
+    items = []
+    for application, project, applicant in rows:
+        item = ApplicationInboxItem.model_validate(application)
+        if application.status == "pending" or project.mentor_id == own:
+            item.project_title = project.title
+            item.applicant_name = " ".join(filter(None, (applicant.first_name, applicant.last_name)))
+            item.applicant_name = item.applicant_name or applicant.email
+            item.industry = project.industry
+            item.stage = project.stage
+            item.mentor_request = project.mentor_request
+        items.append(item)
+    return items
 
 
 async def detail(id: UUID, actor: Actor, db: AsyncSession):

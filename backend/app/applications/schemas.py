@@ -30,3 +30,11 @@ class ApplicationOut(BaseModel):
 
 class ApplicationDetail(ApplicationOut):
     project: ProjectOut
+
+
+class ApplicationInboxItem(ApplicationOut):
+    project_title: str | None = None
+    applicant_name: str = ""
+    industry: str | None = None
+    stage: str | None = None
+    mentor_request: str | None = None

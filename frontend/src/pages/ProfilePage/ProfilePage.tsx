@@ -1,49 +1,76 @@
-import { useState } from "react"
-import type { FormEvent } from "react"
+import { useState, type FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import LogoutIcon from "../../assets/icons/logout.svg?react"
-import SidePanel from "../../components/SidePanel/SidePanel"
+import type { EditableProfileFields, Profile } from "../../api/auth"
+import { errorMessage } from "../../api/client"
 import { useApp } from "../../contexts/AppContext"
+import { useToast } from "../../contexts/ToastContext"
 import styles from "./ProfilePage.module.css"
 
-// Отображает и сохраняет личные данные пользователя, а также смену пароля в выезжающей панели.
+const fields = [
+  { name: "first_name", title: "Имя", type: "text", autoComplete: "given-name", maxLength: 100 },
+  { name: "last_name", title: "Фамилия", type: "text", autoComplete: "family-name", maxLength: 100 },
+  {
+    name: "occupation",
+    title: "Учёба или работа",
+    type: "text",
+    autoComplete: "organization",
+    maxLength: 200,
+  },
+] as const
+
+// Связывает форму с профилем текущего аккаунта.
 export default function ProfilePage() {
-  const { profile, updateProfile, logoutMock } = useApp()
+  const { session } = useApp()
+  return session.profile && <ProfileForm key={session.profile.id} profile={session.profile} />
+}
+
+// Сохраняет личные данные на сервере и завершает сессию по кнопке выхода.
+function ProfileForm({ profile }: { profile: Profile }) {
+  const { updateProfile, signOut } = useApp()
+  const { showToast } = useToast()
   const navigate = useNavigate()
 
-  // Локальное состояние полей профиля и панели смены пароля.
-  const [form, setForm] = useState(profile)
-  const [savedNotice, setSavedNotice] = useState("")
-  const [passwordPanelOpen, setPasswordPanelOpen] = useState(false)
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [passwordNotice, setPasswordNotice] = useState("")
+  // Черновик профиля живёт на странице, а действия взаимно блокируют друг друга.
+  const [form, setForm] = useState<EditableProfileFields>(profile)
+  const [pending, setPending] = useState<"save" | "logout" | null>(null)
 
-  // Сохраняет изменения личных данных в моковом состоянии.
-  function handleSave(event: FormEvent<HTMLFormElement>) {
+  // Отправляет только редактируемые поля и принимает нормализованные сервером данные.
+  async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    updateProfile(form)
-    setSavedNotice("Изменения профиля сохранены.")
-  }
-
-  // Имитирует смену пароля и закрывает выезжающую панель.
-  function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (newPassword.trim().length < 6) {
-      setPasswordNotice("Новый пароль должен содержать минимум 6 символов.")
-      return
+    if (pending) return
+    setPending("save")
+    const dismiss = showToast({ message: "Сохраняем профиль", persistent: true })
+    try {
+      const next = await updateProfile({
+        first_name: form.first_name,
+        last_name: form.last_name,
+        occupation: form.occupation,
+      })
+      setForm(next)
+      showToast({ message: "Профиль сохранён", type: "success" })
+    } catch (error) {
+      showToast({ message: errorMessage(error, "Не удалось сохранить профиль"), type: "error" })
+    } finally {
+      dismiss()
+      setPending(null)
     }
-    setCurrentPassword("")
-    setNewPassword("")
-    setPasswordNotice("")
-    setPasswordPanelOpen(false)
-    setSavedNotice("Пароль успешно обновлён.")
   }
 
-  // Завершает сессию и переводит пользователя на экран входа.
-  function handleLogout() {
-    logoutMock()
-    navigate("/login")
+  // После серверного выхода вкладка возвращается на форму входа.
+  async function handleLogout() {
+    if (pending) return
+    setPending("logout")
+    const dismiss = showToast({ message: "Завершаем сеанс", persistent: true })
+    try {
+      await signOut()
+      navigate("/login", { replace: true })
+    } catch (error) {
+      showToast({ message: errorMessage(error, "Не удалось выйти"), type: "error" })
+    } finally {
+      dismiss()
+      setPending(null)
+    }
   }
 
   return (
@@ -52,46 +79,15 @@ export default function ProfilePage() {
         <div className={styles.title} role="heading" aria-level={1}>
           МОЙ ПРОФИЛЬ
         </div>
-
-        <button type="button" className={styles.logoutBtn} onClick={handleLogout}>
+        <button type="button" className={styles.logoutBtn} onClick={handleLogout} disabled={pending !== null}>
           <LogoutIcon className={styles.logoutIcon} aria-hidden="true" />
-          <span>Выйти</span>
+          <span>{pending === "logout" ? "Выходим…" : "Выйти"}</span>
         </button>
       </div>
 
-      <form className={styles.card} onSubmit={handleSave}>
+      <form className={styles.card} onSubmit={handleSave} aria-busy={pending === "save"}>
         <div className={styles.cardTitle}>Личные данные</div>
-        <div className={styles.cardDesc}>
-          Эти данные используются в профиле и для связи в рамках проектов.
-        </div>
-
-        <label className={styles.field} htmlFor="profile-first-name">
-          <span className={styles.label}>Имя</span>
-          <input
-            id="profile-first-name"
-            type="text"
-            className={styles.input}
-            value={form.firstName}
-            onChange={(event) => {
-              setForm((prev) => ({ ...prev, firstName: event.target.value }))
-              setSavedNotice("")
-            }}
-          />
-        </label>
-
-        <label className={styles.field} htmlFor="profile-last-name">
-          <span className={styles.label}>Фамилия</span>
-          <input
-            id="profile-last-name"
-            type="text"
-            className={styles.input}
-            value={form.lastName}
-            onChange={(event) => {
-              setForm((prev) => ({ ...prev, lastName: event.target.value }))
-              setSavedNotice("")
-            }}
-          />
-        </label>
+        <div className={styles.cardDesc}>{profile.role === "teacher" ? "Наставник" : "Ученик"}</div>
 
         <label className={styles.field} htmlFor="profile-email">
           <span className={styles.label}>Почта</span>
@@ -99,81 +95,34 @@ export default function ProfilePage() {
             id="profile-email"
             type="email"
             className={styles.input}
-            value={form.email}
-            onChange={(event) => {
-              setForm((prev) => ({ ...prev, email: event.target.value }))
-              setSavedNotice("")
-            }}
+            autoComplete="email"
+            value={profile.email}
+            disabled
           />
         </label>
 
-        <label className={styles.field} htmlFor="profile-org">
-          <span className={styles.label}>Учёба или работа</span>
-          <input
-            id="profile-org"
-            type="text"
-            className={styles.input}
-            value={form.organization}
-            onChange={(event) => {
-              setForm((prev) => ({ ...prev, organization: event.target.value }))
-              setSavedNotice("")
-            }}
-          />
-        </label>
-
-        {savedNotice && <div className={styles.savedBox}>{savedNotice}</div>}
+        {fields.map((field) => (
+          <label key={field.name} className={styles.field} htmlFor={`profile-${field.name}`}>
+            <span className={styles.label}>{field.title}</span>
+            <input
+              id={`profile-${field.name}`}
+              type={field.type}
+              className={styles.input}
+              autoComplete={field.autoComplete}
+              maxLength={field.maxLength}
+              value={form[field.name] ?? ""}
+              onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+              disabled={pending !== null}
+            />
+          </label>
+        ))}
 
         <div className={styles.actionsRow}>
-          <button
-            type="button"
-            className={styles.outlineBtn}
-            onClick={() => setPasswordPanelOpen(true)}
-          >
-            Изменить пароль
-          </button>
-
-          <button type="submit" className={styles.primaryBtn}>
-            Сохранить изменения
+          <button type="submit" className={styles.primaryBtn} disabled={pending !== null}>
+            {pending === "save" ? "Сохраняем…" : "Сохранить изменения"}
           </button>
         </div>
       </form>
-
-      <SidePanel
-        open={passwordPanelOpen}
-        title="Изменить пароль"
-        subtitle="Введите текущий и новый пароль учётной записи"
-        onClose={() => setPasswordPanelOpen(false)}
-      >
-        <form className={styles.passwordForm} onSubmit={handlePasswordSubmit}>
-          <label className={styles.field} htmlFor="pass-current">
-            <span className={styles.label}>Текущий пароль</span>
-            <input
-              id="pass-current"
-              type="password"
-              className={styles.input}
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-            />
-          </label>
-
-          <label className={styles.field} htmlFor="pass-new">
-            <span className={styles.label}>Новый пароль</span>
-            <input
-              id="pass-new"
-              type="password"
-              className={styles.input}
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-            />
-          </label>
-
-          {passwordNotice && <div className={styles.errorBox}>{passwordNotice}</div>}
-
-          <button type="submit" className={styles.primaryBtn}>
-            Обновить пароль
-          </button>
-        </form>
-      </SidePanel>
     </div>
   )
 }

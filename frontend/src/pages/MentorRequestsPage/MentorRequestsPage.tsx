@@ -1,28 +1,52 @@
 import { useState } from "react"
-import UserIcon from "../../assets/icons/user.svg?react"
-import GridIcon from "../../assets/icons/grid.svg?react"
-import PinIcon from "../../assets/icons/pin.svg?react"
+import {
+  getMentorApplications,
+  getApplication,
+  decideApplication,
+  type AccompanimentApplication,
+  type ApplicationDetail,
+} from "../../api/accompaniment"
+import useResource from "../../hooks/useResource"
+import { LoadingSkeleton, ResourceError, EmptyState } from "../../components/AsyncState/AsyncState"
+import { useToast } from "../../contexts/ToastContext"
 import SidePanel from "../../components/SidePanel/SidePanel"
-import { useApp } from "../../contexts/AppContext"
-import type { MentorRequest } from "../../data/mockData"
 import styles from "./MentorRequestsPage.module.css"
 
-// Показывает поступающие наставнику заявки и открывает полную анкету в выезжающей панели.
 export default function MentorRequestsPage() {
-  const { mentorRequests, decideMentorRequest } = useApp()
-
-  // Хранит заявку, открытую в выезжающей панели просмотра полной анкеты.
-  const [activeRequest, setActiveRequest] = useState<MentorRequest | null>(null)
-
-  const pendingRequests = mentorRequests.filter((req) => req.status === "pending")
-
-  // Принимает или отклоняет заявку и закрывает панель анкеты.
-  function handleDecision(decision: "accepted" | "rejected") {
-    if (!activeRequest) return
-    decideMentorRequest(activeRequest.id, decision)
-    setActiveRequest(null)
+  const { data, loading, error, reload, setData } = useResource("mentor-applications", (signal) =>
+    getMentorApplications(signal),
+  )
+  const { showToast } = useToast()
+  const [detail, setDetail] = useState<ApplicationDetail | null>(null)
+  const [busy, setBusy] = useState(false)
+  async function open(item: AccompanimentApplication) {
+    try {
+      setDetail(await getApplication(item.id))
+    } catch (error) {
+      showToast({
+        message: error instanceof Error ? error.message : "Не удалось открыть заявку",
+        type: "error",
+      })
+    }
   }
-
+  async function decide(decision: "accept" | "reject") {
+    if (!detail) return
+    setBusy(true)
+    try {
+      const result = await decideApplication(detail.id, decision, detail.project.questionnaire_version)
+      setData((items) => (items ?? []).map((item) => (item.id === result.id ? { ...item, ...result } : item)))
+      setDetail(null)
+      showToast({ message: decision === "accept" ? "Заявка принята" : "Заявка отклонена", type: "success" })
+    } catch (error) {
+      showToast({
+        message: error instanceof Error ? error.message : "Не удалось сохранить решение",
+        type: "error",
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+  const requests = (data ?? []).filter((item) => item.status === "pending")
   return (
     <div className={styles.page}>
       <div className={styles.stickyTop}>
@@ -30,111 +54,83 @@ export default function MentorRequestsPage() {
           ЗАЯВКИ НА СОПРОВОЖДЕНИЕ
         </div>
       </div>
-
       <div className={styles.scrollArea}>
-        {pendingRequests.length === 0 ? (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyTitle}>Новых заявок пока нет</div>
-            <div className={styles.emptyDesc}>
-              Все поступившие обращения рассмотрены. Принятые проекты находятся в разделе «Мои проекты».
-            </div>
-          </div>
+        {loading && !data ? <LoadingSkeleton variant="list" /> : error ? (
+          <ResourceError message={error} retry={reload} />
+        ) : requests.length === 0 ? (
+          <EmptyState message="Новых заявок пока нет" />
         ) : (
           <div className={styles.list}>
-            {pendingRequests.map((request) => (
-              <div key={request.id} className={styles.card}>
+            {requests.map((item) => (
+              <article key={item.id} className={styles.card}>
                 <div className={styles.projectCol}>
-                  <div className={styles.projectName}>{request.projectName}</div>
+                  <div className={styles.projectName}>{item.project_title || "Заявка на сопровождение"}</div>
+                  <div className={styles.metaRow}>{item.applicant_name || "Ученик"}</div>
+                  {item.industry && <div className={styles.metaRow}>Отрасль: {item.industry}</div>}
+                  {item.stage && <div className={styles.metaRow}>Стадия: {item.stage}</div>}
                   <div className={styles.metaRow}>
-                    <UserIcon className={styles.metaIcon} aria-hidden="true" />
-                    <span>{request.authorName}</span>
-                  </div>
-                  <div className={styles.metaRow}>
-                    <GridIcon className={styles.metaIcon} aria-hidden="true" />
-                    <span>{request.industry}</span>
-                  </div>
-                  <div className={styles.metaRow}>
-                    <PinIcon className={styles.metaIcon} aria-hidden="true" />
-                    <span>{request.stage}</span>
+                    Заявка от {new Date(item.created_at).toLocaleDateString("ru-RU")}
                   </div>
                 </div>
-
                 <div className={styles.divider} />
-
                 <div className={styles.requestCol}>
-                  <div className={styles.requestLabel}>ЗАПРОС НАСТАВНИКУ</div>
-                  <div className={styles.requestText}>{request.requestText}</div>
+                  <div className={styles.requestLabel}>Запрос наставнику</div>
+                  <div className={styles.requestText}>{item.mentor_request || "Не указан"}</div>
                 </div>
-
                 <div className={styles.actionCol}>
-                  <button
-                    type="button"
-                    className={styles.openBtn}
-                    onClick={() => setActiveRequest(request)}
-                  >
-                    Открыть анкету
+                  <button type="button" className={styles.openBtn} onClick={() => void open(item)}>
+                    Открыть заявку
                   </button>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         )}
       </div>
-
       <SidePanel
-        open={activeRequest !== null}
-        title={activeRequest?.projectName}
-        subtitle={
-          activeRequest
-            ? `${activeRequest.authorName} · ${activeRequest.industry} · ${activeRequest.stage}`
-            : undefined
-        }
-        onClose={() => setActiveRequest(null)}
+        open={Boolean(detail)}
+        onClose={() => setDetail(null)}
+        title={detail?.project.title || "Анкета проекта"}
         footer={
-          <div className={styles.panelActions}>
-            <button
-              type="button"
-              className={styles.rejectBtn}
-              onClick={() => handleDecision("rejected")}
-            >
-              Отклонить
-            </button>
-            <button
-              type="button"
-              className={styles.acceptBtn}
-              onClick={() => handleDecision("accepted")}
-            >
-              Принять заявку
-            </button>
-          </div>
+          detail && (
+            <div className={styles.panelActions}>
+              <button
+                type="button"
+                className={styles.rejectBtn}
+                disabled={busy}
+                onClick={() => void decide("reject")}
+              >
+                Отклонить
+              </button>
+              <button
+                type="button"
+                className={styles.acceptBtn}
+                disabled={busy}
+                onClick={() => void decide("accept")}
+              >
+                Принять заявку
+              </button>
+            </div>
+          )
         }
       >
-        {activeRequest && (
+        {detail && (
           <div className={styles.briefList}>
-            <div className={styles.briefItem}>
-              <div className={styles.briefLabel}>Целевая аудитория</div>
-              <div className={styles.briefValue}>{activeRequest.brief.audience}</div>
-            </div>
-            <div className={styles.briefItem}>
-              <div className={styles.briefLabel}>Время в неделю</div>
-              <div className={styles.briefValue}>{activeRequest.brief.weeklyHours}</div>
-            </div>
-            <div className={styles.briefItem}>
-              <div className={styles.briefLabel}>Проблема</div>
-              <div className={styles.briefValue}>{activeRequest.brief.problem}</div>
-            </div>
-            <div className={styles.briefItem}>
-              <div className={styles.briefLabel}>Польза решения</div>
-              <div className={styles.briefValue}>{activeRequest.brief.value}</div>
-            </div>
-            <div className={styles.briefItem}>
-              <div className={styles.briefLabel}>Что уже сделано</div>
-              <div className={styles.briefValue}>{activeRequest.brief.doneSoFar}</div>
-            </div>
-            <div className={styles.briefItem}>
-              <div className={styles.briefLabel}>Запрос наставнику</div>
-              <div className={styles.briefValue}>{activeRequest.brief.mentorRequest}</div>
-            </div>
+            {(
+              [
+                ["Отрасль", detail.project.industry],
+                ["Стадия", detail.project.stage],
+                ["Аудитория", detail.project.audience],
+                ["Проблема", detail.project.problem],
+                ["Польза решения", detail.project.solution_benefit],
+                ["Запрос наставнику", detail.project.mentor_request],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className={styles.briefItem}>
+                <div className={styles.briefLabel}>{label}</div>
+                <div className={styles.briefValue}>{value || "Не указано"}</div>
+              </div>
+            ))}
           </div>
         )}
       </SidePanel>

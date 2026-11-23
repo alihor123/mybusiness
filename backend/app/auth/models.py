@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, text
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -34,14 +34,17 @@ class RolePermission(Base):
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        UniqueConstraint("email", name="uq_users_email"),
+        CheckConstraint("email = lower(email)", name="ck_users_email_lowercase"),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    login: Mapped[str] = mapped_column(String(254), unique=True)
+    email: Mapped[str] = mapped_column(String(254), nullable=False)
     password_hash: Mapped[str]
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"))
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
-    email: Mapped[str | None] = mapped_column(String(254))
     occupation: Mapped[str | None] = mapped_column(String(200))
 
 

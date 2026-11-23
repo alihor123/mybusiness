@@ -1,197 +1,187 @@
 import { useRef, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
-import FileTextIcon from "../../assets/icons/file-text.svg?react"
-import CloseIcon from "../../assets/icons/close.svg?react"
-import AlertCircleIcon from "../../assets/icons/alert-circle.svg?react"
-import CheckIcon from "../../assets/icons/check.svg?react"
-import { useApp } from "../../contexts/AppContext"
-import type { ProjectFile } from "../../data/mockData"
+import { getProjectPlan } from "../../api/projects"
+import { saveTaskDraft, submitTask, previewTask } from "../../api/accompaniment"
+import useResource from "../../hooks/useResource"
+import { createRequestId, errorMessage } from "../../api/client"
+import { LoadingSkeleton, ResourceError } from "../../components/AsyncState/AsyncState"
+import AiActivity from "../../components/AsyncState/AiActivity"
+import { useToast } from "../../contexts/ToastContext"
 import styles from "./ProjectTaskPage.module.css"
 
-// Позволяет ученику заполнить результаты задачи, прикрепить файлы и проверить ответ с ИИ.
 export default function ProjectTaskPage() {
-  const { projectId, taskId } = useParams()
+  const { projectId = "", taskId = "" } = useParams()
   const navigate = useNavigate()
-  const { projects, updateTaskDraft, submitTaskToMentor } = useApp()
-
-  const project = projects.find((item) => item.id === projectId) ?? projects[0]
-  const task = project.tasks.find((item) => item.id === taskId) ?? project.tasks[1] ?? project.tasks[0]
-
-  // Локальные поля ответа, списка файлов, ИИ-замечаний и уведомлений.
-  const [answer, setAnswer] = useState(task.answer)
-  const [files, setFiles] = useState<ProjectFile[]>(task.files)
-  const [aiFeedback, setAiFeedback] = useState<string[]>(task.aiFeedback)
-  const [aiPassed, setAiPassed] = useState(false)
-  const [notice, setNotice] = useState("")
-  // Скрытый input для прикрепления файлов с устройства.
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Добавляет выбранные пользователем файлы в список прикреплённых материалов.
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const selected = event.target.files
-    if (!selected || selected.length === 0) return
-    const added: ProjectFile[] = Array.from(selected).map((file) => ({
-      id: `f-${Date.now()}-${file.name}`,
-      name: file.name,
-      size: `${Math.max(1, Math.round(file.size / 1024))} КБ`,
-    }))
-    setFiles((prev) => [...prev, ...added])
-    event.target.value = ""
-  }
-
-  // Удаляет файл из списка прикреплённых материалов.
-  function removeFile(fileId: string) {
-    setFiles((prev) => prev.filter((item) => item.id !== fileId))
-  }
-
-  // Сохраняет черновик ответа и прикреплённые файлы.
-  function handleSave() {
-    updateTaskDraft(project.id, task.id, answer, files, aiFeedback)
-    setNotice("Черновик ответа сохранён.")
-  }
-
-  // Запускает моковую предварительную проверку ИИ по критериям задачи.
-  function handleAiRecheck() {
-    const text = answer.trim()
-    const nextHints: string[] = []
-    if (text.length < 50 || /друз/i.test(text)) {
-      nextHints.push("Уточните, относятся ли собеседники к целевой аудитории.")
+  const { showToast } = useToast()
+  const {
+    data: plan,
+    loading,
+    error,
+    reload,
+  } = useResource(`project-plan-${projectId}`, (signal) => getProjectPlan(projectId, signal))
+  const task = plan?.tasks.find((item) => item.id === taskId)
+  const [text, setText] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [removeAttachment, setRemoveAttachment] = useState(false)
+  const [remarks, setRemarks] = useState<string[] | null>(null)
+  const [pending, setPending] = useState<"save" | "submit" | "preview" | null>(null)
+  const [checkError, setCheckError] = useState("")
+  const requestKey = useRef<{ signature: string, key: string } | null>(null)
+  if (loading && !plan) return (
+    <div className={styles.page}>
+      <Link to={`/projects/${projectId}`} className={styles.backLink}>← К плану проекта</Link>
+      <div className={styles.title} role="heading" aria-level={1}>ЗАДАЧА ПРОЕКТА</div>
+      <LoadingSkeleton variant="form" />
+    </div>
+  )
+  if (error) return <ResourceError message={error} retry={reload} />
+  if (!task) return <div>Задача не найдена</div>
+  const currentTask = task
+  const answer = text ?? task.draft_text ?? ""
+  const action = file ? "replace" : removeAttachment ? "remove" : "keep"
+  const signature = `${answer}\u0000${action}\u0000${file ? `${file.name}:${file.size}:${file.lastModified}` : ""}`
+  const allowed = new Set(task.allowed_actions)
+  const editable = allowed.has("save_draft") || allowed.has("submit")
+  const busy = pending !== null
+  async function run(operation: "save" | "submit" | "preview") {
+    if (busy) return
+    setPending(operation)
+    try {
+      if (operation === "preview") {
+        setCheckError("")
+        setRemarks(null)
+        const result = await previewTask(currentTask.id, answer)
+        setRemarks(result.remarks)
+      } else if (operation === "save") {
+        await saveTaskDraft(currentTask.id, answer, action, file ?? undefined)
+        showToast({ message: "Черновик сохранён", type: "success" })
+      } else {
+        if (!requestKey.current || requestKey.current.signature !== signature) {
+          requestKey.current = { signature, key: createRequestId() }
+        }
+        await submitTask(currentTask.id, answer, requestKey.current.key, action, file ?? undefined)
+        requestKey.current = null
+        showToast({ message: "Работа отправлена наставнику", type: "success" })
+        navigate(`/projects/${projectId}`)
+      }
+    } catch (error) {
+      if (operation === "preview") setCheckError(errorMessage(error, "Не удалось проверить черновик"))
+      else
+        showToast({
+          message: errorMessage(
+            error,
+            operation === "save" ? "Не удалось сохранить черновик" : "Не удалось отправить работу",
+          ),
+          type: "error",
+        })
+    } finally {
+      setPending(null)
     }
-    if (!/(вывод|очеред|проблем|опыт|студент|прим)/i.test(text)) {
-      nextHints.push("Добавьте ответы о прошлом опыте и выводы о проблеме.")
-    }
-    setAiFeedback(nextHints)
-    setAiPassed(nextHints.length === 0)
-    updateTaskDraft(project.id, task.id, answer, files, nextHints)
-    setNotice("")
   }
-
-  // Отправляет работу наставнику и возвращает к плану проекта.
-  function handleSubmit() {
-    submitTaskToMentor(project.id, task.id, answer, files)
-    navigate(`/projects/${project.id}`)
-  }
-
   return (
     <div className={styles.page}>
-      <Link to={`/projects/${project.id}`} className={styles.backLink}>
-        <ChevronLeftIcon className={styles.backIcon} aria-hidden="true" />
-        <span>К плану</span>
+      <Link to={`/projects/${projectId}`} className={styles.backLink}>
+        ← К плану
       </Link>
-
       <div className={styles.headingCol}>
         <div className={styles.title} role="heading" aria-level={1}>
-          {project.brief.name}
+          {plan?.tasks.length ? "ЗАДАЧА ПРОЕКТА" : ""}
         </div>
         <div className={styles.taskTitle}>{task.title}</div>
-        <div className={styles.instruction}>{task.instruction}</div>
+        <div className={styles.instruction}>{task.condition}</div>
       </div>
-
-      {task.status === "rework" && task.mentorComment && (
-        <div className={styles.reworkBanner}>
-          <AlertCircleIcon className={styles.aiIcon} aria-hidden="true" />
-          <div className={styles.reworkText}>
-            <div className={styles.reworkTitle}>Комментарий наставника на доработку</div>
-            <div>{task.mentorComment}</div>
-          </div>
-        </div>
-      )}
-
-      <div className={styles.card}>
-        <label className={styles.field} htmlFor="task-results-input">
-          <span className={styles.fieldLabel}>Результаты</span>
+      <section className={styles.card}>
+        <strong>Критерии</strong>
+        <ul>
+          {task.criteria.map((criterion) => (
+            <li key={criterion}>{criterion}</li>
+          ))}
+        </ul>
+        {task.submissions.map((submission) => (
+          <article key={submission.id}>
+            <strong>
+              Отправка {submission.number} · {new Date(submission.created_at).toLocaleString("ru-RU")}
+            </strong>
+            <p>{submission.text}</p>
+            {submission.decision_comment && <p>{submission.decision_comment}</p>}
+          </article>
+        ))}
+        <div className={styles.field}>
+          <label htmlFor="project-task-answer">Результаты</label>
           <textarea
-            id="task-results-input"
-            rows={5}
+            id="project-task-answer"
+            disabled={!editable}
+            readOnly={busy}
+            rows={6}
             className={styles.textarea}
             value={answer}
-            placeholder="Опишите, что сделали, какие наблюдения получили и какие выводы сделали для проекта..."
             onChange={(event) => {
-              setAnswer(event.target.value)
-              setNotice("")
+              setText(event.target.value)
+              setRemarks(null)
+              setCheckError("")
             }}
           />
-        </label>
-
+        </div>
         <div className={styles.filesSection}>
-          <div className={styles.filesHeader}>
-            <div className={styles.filesTitle}>Прикреплённые файлы</div>
-            <button
-              type="button"
-              className={styles.attachBtn}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Прикрепить файл
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              className={styles.hiddenInput}
-              onChange={handleFileChange}
-            />
-          </div>
-
-          {files.length === 0 ? (
-            <div className={styles.noFiles}>Файлы не прикреплены</div>
-          ) : (
-            <div className={styles.filesList}>
-              {files.map((file) => (
-                <div key={file.id} className={styles.fileItem}>
-                  <FileTextIcon className={styles.fileIcon} aria-hidden="true" />
-                  <div className={styles.fileMeta}>
-                    <div className={styles.fileName}>{file.name}</div>
-                    <div className={styles.fileSize}>{file.size}</div>
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.removeFileBtn}
-                    aria-label={`Удалить файл ${file.name}`}
-                    onClick={() => removeFile(file.id)}
-                  >
-                    <CloseIcon className={styles.removeIcon} aria-hidden="true" />
-                  </button>
-                </div>
-              ))}
+          <strong>Файл (PDF, JPG или PNG, до 10 МБ)</strong>
+          {task.draft_attachment && !removeAttachment && !file && (
+            <div>
+              {task.draft_attachment.filename}{" "}
+              {editable && (
+                <button type="button" onClick={() => setRemoveAttachment(true)}>
+                  Удалить
+                </button>
+              )}
             </div>
           )}
+          {editable && (
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={(event) => {
+                setFile(event.target.files?.[0] ?? null)
+                setRemoveAttachment(false)
+              }}
+            />
+          )}
+          {file && (
+            <button type="button" onClick={() => setFile(null)}>
+              Убрать выбранный файл
+            </button>
+          )}
         </div>
-
-        {aiFeedback.length > 0 && (
+        {remarks && remarks.length > 0 && (
           <div className={styles.aiBox}>
-            <div className={styles.aiTitle}>Предварительная проверка ИИ</div>
-            <div className={styles.aiList}>
-              {aiFeedback.map((item) => (
-                <div key={item} className={styles.aiRow}>
-                  <AlertCircleIcon className={styles.aiIcon} aria-hidden="true" />
-                  <span>{item}</span>
-                </div>
+            <strong>Замечания к черновику</strong>
+            <ul>
+              {remarks.map((remark) => (
+                <li key={remark}>{remark}</li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
-
-        {aiPassed && (
-          <div className={styles.successBox}>
-            <CheckIcon className={styles.successIcon} aria-hidden="true" />
-            <span>Предварительная проверка пройдена: замечаний нет. Можно отправлять наставнику.</span>
-          </div>
+        {remarks?.length === 0 && (
+          <AiActivity status="completed" compact message="Проверка завершилась без замечаний" />
         )}
-
-        {notice && <div className={styles.noticeBox}>{notice}</div>}
-      </div>
-
+        {pending === "preview" && <AiActivity status="checking" compact message="ИИ проверяет черновик" />}
+        {checkError && <AiActivity status="check_unavailable" compact message={checkError} />}
+      </section>
       <div className={styles.actionsRow}>
-        <button type="button" className={styles.outlineBtn} onClick={handleSave}>
-          Сохранить
-        </button>
-        <button type="button" className={styles.outlineBtn} onClick={handleAiRecheck}>
-          Проверить снова
-        </button>
-        <button type="button" className={styles.primaryBtn} onClick={handleSubmit}>
-          Отправить наставнику
-        </button>
+        {allowed.has("save_draft") && (
+          <button className={styles.outlineBtn} disabled={busy} onClick={() => void run("save")}>
+            Сохранить черновик
+          </button>
+        )}
+        {allowed.has("preview_check") && (
+          <button className={styles.outlineBtn} disabled={busy} onClick={() => void run("preview")}>
+            {checkError ? "Повторить проверку" : "Проверить с ИИ"}
+          </button>
+        )}
+        {allowed.has("submit") && (
+          <button className={styles.primaryBtn} disabled={busy} onClick={() => void run("submit")}>
+            Отправить наставнику
+          </button>
+        )}
       </div>
     </div>
   )

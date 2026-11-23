@@ -23,6 +23,10 @@ from app.projects.seed import seed_projects
 START_ID = UUID("00000000-0000-4000-8000-000000000001")
 COMPLETE_ID = UUID("00000000-0000-4000-8000-000000000002")
 TEACHER_ID = UUID("00000000-0000-4000-8000-000000000003")
+SHOWCASE_EMAILS = {
+    "demo-mentor-gordon-ramsay": "demo-mentor-food@example.com",
+    "demo-mentor-lisa-su": "demo-mentor-it@example.com",
+}
 PREFILL = ProjectPrefill(
     title="Кофе между парами",
     audience="Студенты, покупающие кофе на короткой перемене",
@@ -33,23 +37,35 @@ PREFILL = ProjectPrefill(
 
 
 async def create_user(
-    db: AsyncSession, user_id: UUID, login: str, role_code: str, first_name: str, hashed: str
+    db: AsyncSession,
+    user_id: UUID,
+    email: str,
+    role_code: str,
+    display_name: str,
+    hashed: str,
+    previous_email: str | None = None,
 ) -> None:
     role_id = (await db.scalars(select(Role.id).where(Role.code == role_code))).one()
+    first_name, _, last_name = display_name.partition(" ")
     await db.execute(
         insert(User)
         .values(
             id=user_id,
-            login=login,
+            email=email,
             password_hash=hashed,
             role_id=role_id,
             first_name=first_name,
+            last_name=last_name or None,
         )
         .on_conflict_do_nothing(index_elements=[User.id])
     )
     user = await db.get(User, user_id)
-    if user is None or user.login != login or user.role_id != role_id:
-        raise RuntimeError(f"Demo identity conflicts with an existing user: {login}")
+    if user is not None and user.role_id == role_id and user.email == previous_email:
+        user.email = email
+        user.first_name = first_name
+        user.last_name = last_name or None
+    if user is None or user.email != email or user.role_id != role_id:
+        raise RuntimeError(f"Demo identity conflicts with an existing user: {email}")
 
 
 async def complete_demo(db: AsyncSession) -> None:
@@ -93,27 +109,31 @@ async def complete_demo(db: AsyncSession) -> None:
 async def main() -> None:
     settings = get_settings()
     password = settings.demo_password.get_secret_value()
-    if not 8 <= len(password) <= 256:
-        raise SystemExit("Set DEMO_PASSWORD to 8–256 characters in the demo environment.")
+    if len(password) < 8 and not (settings.local_demo_mode or settings.simplified_registration):
+        raise SystemExit("Short demo passwords are allowed only with LOCAL_DEMO_MODE or SIMPLIFIED_REGISTRATION.")
+    if not 5 <= len(password) <= 256:
+        raise SystemExit("Set DEMO_PASSWORD to 5–256 characters in the demo environment.")
     if settings.test_user and settings.test_user_id not in {START_ID, COMPLETE_ID}:
         raise SystemExit(f"TEST_USER_ID must select {START_ID} or {COMPLETE_ID}.")
     hashed = await hash_password(password)
     async with get_session_factory()() as db, db.begin():
-        await create_user(db, START_ID, "demo-student-start", "student", "Алексей", hashed)
-        await create_user(db, COMPLETE_ID, "demo-student-complete", "student", "Мария", hashed)
-        await create_user(db, TEACHER_ID, "demo-teacher", "teacher", "Ирина", hashed)
+        await create_user(db, START_ID, "demo-student-start@example.com", "student", "Алексей Миронов", hashed)
+        await create_user(db, COMPLETE_ID, "demo-student-complete@example.com", "student", "Мария Соколова", hashed)
+        await create_user(db, TEACHER_ID, "demo-teacher@example.com", "teacher", "Ирина Белова", hashed)
         await complete_demo(db)
         await import_demo_mentors(db)
         for mentor in await db.scalars(select(Mentor).where(Mentor.showcase_login)):
-            login = mentor.stable_key
-            user_id = uuid5(NAMESPACE_URL, f"mybusiness:teacher:{login}")
-            await create_user(db, user_id, login, "teacher", mentor.name, hashed)
+            previous_email = f"{mentor.stable_key}@example.com"
+            email = SHOWCASE_EMAILS.get(mentor.stable_key, previous_email)
+            user_id = uuid5(NAMESPACE_URL, f"mybusiness:teacher:{mentor.stable_key}")
+            await create_user(db, user_id, email, "teacher", mentor.name, hashed, previous_email)
             mentor.user_id = user_id
         await import_demo_events(db)
         await seed_projects(db, COMPLETE_ID)
 
     print(
-        "Demo accounts ready: demo-student-start, demo-student-complete, demo-teacher, demo-mentor-gordon-ramsay, demo-mentor-lisa-su"
+        "Demo accounts ready: demo-student-start@example.com, demo-student-complete@example.com, "
+        "demo-teacher@example.com, demo-mentor-food@example.com, demo-mentor-it@example.com"
     )
 
 

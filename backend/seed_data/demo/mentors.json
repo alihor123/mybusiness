@@ -38,12 +38,12 @@
   "mentors": [
     {
       "slug": "gordon-ramsay",
-      "name": "Гордон Рамзи",
-      "headline": "Шеф-повар, ресторатор и телеведущий",
-      "about": "В 1998 году открыл свой первый ресторан Restaurant Gordon Ramsay в Лондоне. В дальнейшем рестораны его бренда появились в разных странах. Также известен телевизионными кулинарными проектами.",
-      "experience_label": "28 лет",
-      "experience_anchor_year": 1998,
-      "experience_basis": "1998–2026, условный ориентир от открытия Restaurant Gordon Ramsay, кулинарная карьера началась раньше.",
+      "name": "Анна Сазонова",
+      "headline": "Ресторатор и шеф-повар",
+      "about": "Открыла небольшое кафе и выстроила работу кухни в часы пик. Помогает посчитать себестоимость, выбрать формат заведения и настроить сервис.",
+      "experience_label": "13 лет",
+      "experience_anchor_year": 2013,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "food_service"
       ],
@@ -51,38 +51,31 @@
         "first_clients"
       ],
       "help_topics": [
-        "Открытие заведения",
-        "Качество сервиса",
-        "Масштабирование ресторанов"
+        "Запуск кафе",
+        "Себестоимость меню",
+        "Сервис"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://www.gordonramsay.com/gr/about-gordon/",
-        "https://www.gordonramsayrestaurants.com/en/us/about"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/gordon-ramsay.jpg",
-        "url": "/media/mentors/gordon-ramsay.jpg",
-        "width": 676,
-        "height": 1039,
-        "source": "https://commons.wikimedia.org/wiki/File:Gordon_Ramsay_(cropped).jpg",
-        "author": "Dave Pullig",
-        "license": "CC BY 2.0",
-        "license_url": "https://creativecommons.org/licenses/by/2.0/"
+        "file": "public_media/mentors/generated/anya-sazonova.webp",
+        "url": "/media/mentors/generated/anya-sazonova.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-gordon-ramsay",
-      "showcase_login": true
+      "showcase_login": true,
+      "display_slug": "anya-sazonova"
     },
     {
       "slug": "massimo-bottura",
-      "name": "Массимо Боттура",
-      "headline": "Шеф-повар и владелец Osteria Francescana",
-      "about": "В 1995 году открыл Osteria Francescana в Модене. В ресторане соединяет итальянские кулинарные традиции и современные техники. В 2015 году запустил Refettorio Ambrosiano, где из излишков продуктов готовили блюда для нуждающихся.",
-      "experience_label": "31 год",
-      "experience_anchor_year": 1995,
-      "experience_basis": "1995–2026, условный ориентир от открытия Osteria Francescana, первый ресторанный проект появился раньше.",
+      "name": "Тимур Каримов",
+      "headline": "Разработчик меню и совладелец гастробара",
+      "about": "Разрабатывает меню из сезонных продуктов. Пробует новые блюда небольшими партиями и собирает отзывы гостей до полноценного запуска.",
+      "experience_label": "9 лет",
+      "experience_anchor_year": 2017,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "food_service"
       ],
@@ -91,37 +84,30 @@
       ],
       "help_topics": [
         "Концепция меню",
-        "Локальные продукты",
-        "Сокращение пищевых отходов"
+        "Тест спроса",
+        "Работа с поставщиками"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://www.eib.org/en/authors/massimo-bottura",
-        "https://osteriafrancescana.it/it/massimo-bottura/"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/massimo-bottura.jpg",
-        "url": "/media/mentors/massimo-bottura.jpg",
-        "width": 960,
-        "height": 640,
-        "source": "https://commons.wikimedia.org/wiki/File:Massimo_Bottura%2C_from_World%27s_50_Best_Restaurants_Awards_2012.JPG",
-        "author": "Alice.jessica.north",
-        "license": "CC BY-SA 3.0",
-        "license_url": "https://creativecommons.org/licenses/by-sa/3.0/"
+        "file": "public_media/mentors/generated/timur-karimov.webp",
+        "url": "/media/mentors/generated/timur-karimov.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-massimo-bottura",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "timur-karimov"
     },
     {
       "slug": "wolfgang-puck",
-      "name": "Вольфганг Пак",
-      "headline": "Шеф-повар и ресторатор, основатель Spago",
-      "about": "В 1982 году открыл флагманский ресторан Spago. Позднее развивал несколько форматов ресторанов и отдельное направление кейтеринга.",
-      "experience_label": "44 года",
-      "experience_anchor_year": 1982,
-      "experience_basis": "1982–2026, условный ориентир от открытия первого Spago.",
+      "name": "Нина Волкова",
+      "headline": "Владелица кейтеринговой студии",
+      "about": "Начала с выездных завтраков и выросла до команды с собственной кухней. Помогает спланировать пробное мероприятие и подготовить первый заказ.",
+      "experience_label": "12 лет",
+      "experience_anchor_year": 2014,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "food_service"
       ],
@@ -129,37 +115,31 @@
         "mvp"
       ],
       "help_topics": [
-        "Форматы ресторанов",
         "Кейтеринг",
-        "Ресторанные операции"
+        "Первый заказ",
+        "Организация кухни"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://wolfgangpuck.com/about-us/"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/wolfgang-puck.jpg",
-        "url": "/media/mentors/wolfgang-puck.jpg",
-        "width": 960,
-        "height": 1440,
-        "source": "https://commons.wikimedia.org/wiki/File:Wolfgang_Puck_2012.jpg",
-        "author": "Glenn Francis, www.PacificProDigital.com (Toglenn)",
-        "license": "CC BY-SA 3.0",
-        "license_url": "https://creativecommons.org/licenses/by-sa/3.0/"
+        "file": "public_media/mentors/generated/nina-volkova.webp",
+        "url": "/media/mentors/generated/nina-volkova.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-wolfgang-puck",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "nina-volkova"
     },
     {
       "slug": "enzo-ferrari",
-      "name": "Энцо Феррари",
-      "headline": "Предприниматель, основатель Ferrari",
-      "about": "В 1929 году создал гоночную команду Scuderia Ferrari. В 1947 году его компания выпустила Ferrari 125 S, первый автомобиль под маркой Ferrari.",
-      "experience_label": "Первый автомобиль Ferrari в 1947 году",
-      "experience_anchor_year": 1947,
-      "experience_basis": "От выпуска Ferrari 125 S в 1947 году до конца жизни в 1988 году, около 41 года. Гоночная команда появилась раньше.",
+      "name": "Илья Морозов",
+      "headline": "Руководитель мебельной мастерской",
+      "about": "Выпускает мебель малыми сериями. Помогает перейти от эскиза к образцу, выбрать материал и оценить затраты первой партии.",
+      "experience_label": "11 лет",
+      "experience_anchor_year": 2015,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "manufacturing"
       ],
@@ -167,38 +147,31 @@
         "mvp"
       ],
       "help_topics": [
-        "автомобилестроение",
-        "гоночная инженерия",
-        "запуск марки"
+        "Прототип изделия",
+        "Малая серия",
+        "Подбор материалов"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://cdn.ferrari.com/download/Ferrari_Annual_Report_2024.pdf",
-        "https://www.sec.gov/Archives/edgar/data/1648416/000164841617000016/ferrarinv20-f12312016.htm"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/enzo-ferrari.jpg",
-        "url": "/media/mentors/enzo-ferrari.jpg",
-        "width": 960,
-        "height": 1440,
-        "source": "https://commons.wikimedia.org/wiki/File:Enzo_Ferrari_1920.jpg",
-        "author": "Автор неизвестен, источник - публикация Ferrari of Fort Lauderdale",
-        "license": "Public domain (PD-Italy и PD-1996, по Commons общественное достояние в Италии и США)",
-        "license_url": "https://commons.wikimedia.org/wiki/Template:PD-Italy"
+        "file": "public_media/mentors/generated/ilya-morozov.webp",
+        "url": "/media/mentors/generated/ilya-morozov.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-enzo-ferrari",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "ilya-morozov"
     },
     {
       "slug": "limor-fried",
-      "name": "Лимор Фрид",
-      "headline": "Инженер, основательница Adafruit Industries",
-      "about": "В 2005 году основала Adafruit. Вместе с командой разрабатывает наборы и компоненты для самостоятельной сборки электроники и учебные материалы к ним.",
-      "experience_label": "Adafruit основана в 2005 году",
-      "experience_anchor_year": 2005,
-      "experience_basis": "Компания подтверждает основание в 2005 году. Это точка отсчёта предпринимательского опыта в электронике.",
+      "name": "Алина Ким",
+      "headline": "Инженер и основательница студии электроники",
+      "about": "Собирает прототипы небольших электронных устройств. Помогает проверить техническую идею и подготовить первую рабочую версию.",
+      "experience_label": "8 лет",
+      "experience_anchor_year": 2018,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "manufacturing"
       ],
@@ -206,37 +179,31 @@
         "idea"
       ],
       "help_topics": [
-        "электроника",
-        "наборы для сборки",
-        "открытые аппаратные разработки"
+        "Электроника",
+        "Быстрые прототипы",
+        "Подготовка производства"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://www.adafruit.com/about/?auto=done"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/limor-fried.jpg",
-        "url": "/media/mentors/limor-fried.jpg",
-        "width": 500,
-        "height": 725,
-        "source": "https://commons.wikimedia.org/wiki/File:Limor_Fried_TC2013.jpg",
-        "author": "Max Morse / TechCrunch, кадрирование FMSky и предыдущая версия Sirex98",
-        "license": "CC BY 2.0",
-        "license_url": "https://creativecommons.org/licenses/by/2.0/"
+        "file": "public_media/mentors/generated/alina-kim.webp",
+        "url": "/media/mentors/generated/alina-kim.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-limor-fried",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "alina-kim"
     },
     {
       "slug": "kiichiro-toyoda",
-      "name": "Киитиро Тоёда",
-      "headline": "Инженер, основатель Toyota Motor",
-      "about": "Возглавлял развитие автомобильного производства в группе Toyoda. В 1937 году основал Toyota Motor, с 1941 года был её президентом.",
-      "experience_label": "Toyota Motor основана в 1937 году",
-      "experience_anchor_year": 1937,
-      "experience_basis": "Год основания автокомпании в её официальной истории. 1937–1952 - период от основания до конца жизни, а не срок на должности президента.",
+      "name": "Руслан Данилов",
+      "headline": "Руководитель малого производства",
+      "about": "Работает с серийным выпуском комплектующих. Помогает выстроить контроль качества и планировать работу цеха после первых заказов.",
+      "experience_label": "17 лет",
+      "experience_anchor_year": 2009,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "manufacturing"
       ],
@@ -244,38 +211,31 @@
         "first_clients"
       ],
       "help_topics": [
-        "автомобилестроение",
-        "производство",
-        "масштабирование"
+        "Контроль качества",
+        "Масштабирование",
+        "Производственные процессы"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://www.jahfa.jp/en/inductees/083KiichiroToyoda.html",
-        "https://global.toyota/en/company/trajectory-of-toyota/history/01/"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/kiichiro-toyoda.jpg",
-        "url": "/media/mentors/kiichiro-toyoda.jpg",
-        "width": 960,
-        "height": 1261,
-        "source": "https://commons.wikimedia.org/wiki/File:Kiichiro_Toyoda.jpg",
-        "author": "Автор неизвестен, источник - архив Toyota Motor",
-        "license": "Public domain (PD-Japan-oldphoto, по Commons общественное достояние в Японии и США)",
-        "license_url": "https://commons.wikimedia.org/wiki/Template:PD-Japan-oldphoto"
+        "file": "public_media/mentors/generated/ruslan-danilov.webp",
+        "url": "/media/mentors/generated/ruslan-danilov.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-kiichiro-toyoda",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "ruslan-danilov"
     },
     {
       "slug": "sara-blakely",
-      "name": "Сара Блейкли",
-      "headline": "Предпринимательница, основательница Spanx",
-      "about": "Создала продукт для конкретной проблемы покупателей и запустила Spanx в 2000 году после разработки прототипов. Первые продажи развивала через розничных партнёров и телевизионный магазин QVC.",
-      "experience_label": "26 лет",
-      "experience_anchor_year": 2000,
-      "experience_basis": "2000–2026, условный ориентир от коммерческого запуска Spanx. Разработка идеи началась в 1998 году.",
+      "name": "Вера Лытина",
+      "headline": "Основательница магазина домашнего текстиля",
+      "about": "Проверяет новые модели небольшими партиями в своём магазине. Помогает сформировать ассортимент и понять, за что покупатели готовы платить.",
+      "experience_label": "7 лет",
+      "experience_anchor_year": 2019,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "retail"
       ],
@@ -284,37 +244,30 @@
       ],
       "help_topics": [
         "Проверка спроса",
-        "Прототип товара",
-        "Переговоры с ритейлом"
+        "Товарная линейка",
+        "Первая выкладка"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://www.invent.org/inductees/sara-blakely",
-        "https://spanx.com/pages/the-spanxeffect"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/sara-blakely.jpg",
-        "url": "/media/mentors/sara-blakely.jpg",
-        "width": 500,
-        "height": 721,
-        "source": "https://commons.wikimedia.org/wiki/File:Sara_Blakely.jpg",
-        "author": "Gillian Zoe Segal",
-        "license": "CC BY-SA 4.0",
-        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+        "file": "public_media/mentors/generated/vera-lytina.webp",
+        "url": "/media/mentors/generated/vera-lytina.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-sara-blakely",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "vera-lytina"
     },
     {
       "slug": "levi-strauss",
-      "name": "Леви Страусс",
-      "headline": "Предприниматель, основатель Levi Strauss & Co.",
-      "about": "В 1853 году открыл оптовую торговлю в Сан-Франциско. Вместе с портным Джейкобом Дэвисом получил в 1873 году патент на рабочие брюки с металлическими заклёпками, ставшие основой джинсов Levi’s.",
-      "experience_label": "49 лет",
-      "experience_anchor_year": 1853,
-      "experience_basis": "1853–1902, ориентир от основания бизнеса в Сан-Франциско до конца жизни.",
+      "name": "Никита Орлов",
+      "headline": "Предприниматель в онлайн-торговле",
+      "about": "Запустил интернет-магазин и наладил упаковку и отгрузку. Помогает проверить карточку товара и подготовить первые продажи на маркетплейсе.",
+      "experience_label": "10 лет",
+      "experience_anchor_year": 2016,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "retail"
       ],
@@ -322,38 +275,31 @@
         "mvp"
       ],
       "help_topics": [
-        "Оптовая торговля",
-        "Партнёрство с производителем",
-        "Разработка товарной категории"
+        "Карточка товара",
+        "Логистика",
+        "Первый запуск на маркетплейсе"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://www.levistrauss.com/wp-content/uploads/2014/01/Levi-Strauss_A-Short-Biography.pdf",
-        "https://www.levistrauss.com/who-we-are/company/"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/levi-strauss.jpg",
-        "url": "/media/mentors/levi-strauss.jpg",
-        "width": 960,
-        "height": 1095,
-        "source": "https://commons.wikimedia.org/wiki/File:Levi_Strauss_1.jpg",
-        "author": "Неизвестный фотограф",
-        "license": "Public domain (U.S.)",
-        "license_url": "https://commons.wikimedia.org/wiki/File:Levi_Strauss_1.jpg#Licensing"
+        "file": "public_media/mentors/generated/nikita-orlov.webp",
+        "url": "/media/mentors/generated/nikita-orlov.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-levi-strauss",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "nikita-orlov"
     },
     {
       "slug": "sam-walton",
-      "name": "Сэм Уолтон",
-      "headline": "Предприниматель, основатель сети Walmart",
-      "about": "Открыл первый магазин Walmart в 1962 году в Роджерсе, штат Арканзас. Развивал розничную сеть с доступными ценами и опорой на небольшие города.",
-      "experience_label": "30 лет",
-      "experience_anchor_year": 1962,
-      "experience_basis": "1962–1992, ориентир от открытия первого Walmart до конца жизни. В рознице работал и раньше.",
+      "name": "Ольга Беляева",
+      "headline": "Владелица магазина товаров для дома",
+      "about": "Управляет ассортиментом и закупками в небольшом магазине. Помогает понять маржу, выбрать поставщиков и наладить повторные продажи.",
+      "experience_label": "16 лет",
+      "experience_anchor_year": 2010,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "retail"
       ],
@@ -361,38 +307,31 @@
         "first_clients"
       ],
       "help_topics": [
-        "Розничные операции",
-        "Ценовое позиционирование",
-        "Масштабирование сети"
+        "Закупки",
+        "Ценообразование",
+        "Повторные продажи"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://corporate.walmart.com/about/sam-walton",
-        "https://corporate.walmart.com/about/history"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/sam-walton.jpg",
-        "url": "/media/mentors/sam-walton.jpg",
-        "width": 500,
-        "height": 625,
-        "source": "https://commons.wikimedia.org/wiki/File:Sam_Walton_(1992).jpg",
-        "author": "George Bush Presidential Library and Museum, кадрирование User-duck",
-        "license": "Public domain (U.S. federal government work)",
-        "license_url": "https://creativecommons.org/publicdomain/mark/1.0/"
+        "file": "public_media/mentors/generated/olga-belyaeva.webp",
+        "url": "/media/mentors/generated/olga-belyaeva.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-sam-walton",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "olga-belyaeva"
     },
     {
       "slug": "lisa-su",
-      "name": "Лиза Су",
-      "headline": "Инженер и руководитель AMD",
-      "about": "Лиза Су работала над полупроводниковыми технологиями в IBM и Freescale. В 2012 году пришла в AMD, в 2014 году возглавила компанию и руководила развитием её вычислительных продуктов.",
-      "experience_label": "С 2014 года во главе AMD",
-      "experience_anchor_year": 2014,
-      "experience_basis": "Год назначения генеральным директором AMD, подтверждённый компанией. Это ориентир управленческого опыта в AMD. Инженерная карьера началась раньше.",
+      "name": "Мария Волкова",
+      "headline": "Руководительница продуктовой IT-студии",
+      "about": "Помогает командам собрать первую рабочую версию цифрового продукта. На встречах разбирает пользовательские сценарии и границы пилота.",
+      "experience_label": "11 лет",
+      "experience_anchor_year": 2015,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "it"
       ],
@@ -400,38 +339,31 @@
         "mvp"
       ],
       "help_topics": [
-        "полупроводники",
-        "продуктовая стратегия",
-        "инженерные команды"
+        "Продуктовая стратегия",
+        "MVP",
+        "Пилот цифрового продукта"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://www.amd.com/en/corporate/leadership/lisa-su.html",
-        "https://ir.amd.com/news-events/press-releases/detail/568/amd-appoints-dr-lisa-su-as-president-and-chief-executive-officer"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/lisa-su.jpg",
-        "url": "/media/mentors/lisa-su.jpg",
-        "width": 500,
-        "height": 588,
-        "source": "https://commons.wikimedia.org/wiki/File:AMD_CEO_Lisa_Su_20130415_cropped.jpg",
-        "author": "AMD Global, кадрирование Softlavender",
-        "license": "CC BY-SA 2.0",
-        "license_url": "https://creativecommons.org/licenses/by-sa/2.0/"
+        "file": "public_media/mentors/generated/mariya-volkova.webp",
+        "url": "/media/mentors/generated/mariya-volkova.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-lisa-su",
-      "showcase_login": true
+      "showcase_login": true,
+      "display_slug": "mariya-volkova"
     },
     {
       "slug": "steve-jobs",
-      "name": "Стив Джобс",
-      "headline": "Предприниматель, сооснователь Apple",
-      "about": "В 1976 году стал одним из основателей Apple. Позднее руководил Apple и анимационной студией Pixar.",
-      "experience_label": "Apple основана в 1976 году",
-      "experience_anchor_year": 1976,
-      "experience_basis": "Год основания Apple - начало отсчёта. Для исторической карточки подтверждённый отрезок по календарным годам 1976–2011, около 35 лет.",
+      "name": "Антон Лапин",
+      "headline": "Основатель команды разработки",
+      "about": "Запускал прикладные цифровые сервисы для малого бизнеса. Помогает подготовить релиз, обсудить метрики и привести продукт к первым клиентам.",
+      "experience_label": "15 лет",
+      "experience_anchor_year": 2011,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "it"
       ],
@@ -439,38 +371,31 @@
         "first_clients"
       ],
       "help_topics": [
-        "создание технологической компании",
-        "потребительская электроника",
-        "продуктовый дизайн"
+        "Релиз продукта",
+        "Первые B2B-клиенты",
+        "Продуктовые метрики"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://news.stanford.edu/stories/2005/01/apple-co-founder-steve-jobs-give-commencement-address",
-        "https://www.apple.com/newsroom/2026/03/apple-to-celebrate-50-years-of-thinking-different/"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/steve-jobs.jpg",
-        "url": "/media/mentors/steve-jobs.jpg",
-        "width": 1557,
-        "height": 2489,
-        "source": "https://commons.wikimedia.org/wiki/File:Steve_Jobs_Headshot_2010-CROP2.jpg",
-        "author": "Matthew Yohe, кадрирование MetalGearLiquid",
-        "license": "CC BY-SA 3.0",
-        "license_url": "https://creativecommons.org/licenses/by-sa/3.0/"
+        "file": "public_media/mentors/generated/anton-lapin.webp",
+        "url": "/media/mentors/generated/anton-lapin.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-steve-jobs",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "anton-lapin"
     },
     {
       "slug": "kevin-systrom",
-      "name": "Кевин Систром",
-      "headline": "Предприниматель, сооснователь Instagram",
-      "about": "В 2010 году стал сооснователем Instagram. Руководил развитием сервиса в период быстрого роста и после его приобретения Facebook в 2012 году.",
-      "experience_label": "Instagram основан в 2010 году",
-      "experience_anchor_year": 2010,
-      "experience_basis": "Год основания Instagram подтверждён биографией в материалах Walmart для акционеров. Это точка отсчёта предпринимательского опыта, а не срок на должности CEO Instagram.",
+      "name": "Денис Ли",
+      "headline": "Дизайнер мобильных продуктов",
+      "about": "Проверяет идеи мобильных сервисов с помощью прототипов и интервью. Помогает заметить сложные шаги для пользователя до начала разработки.",
+      "experience_label": "7 лет",
+      "experience_anchor_year": 2019,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "it"
       ],
@@ -478,38 +403,31 @@
         "idea"
       ],
       "help_topics": [
-        "мобильные продукты",
-        "пользовательские сценарии",
-        "рост аудитории"
+        "Исследование интерфейсов",
+        "Мобильные продукты",
+        "Проверка гипотез"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://stvp.stanford.edu/people/kevin-systrom",
-        "https://stock.walmart.com/_assets/_272528fec2baf54d79fba1e216a6b44e/walmart/db/950/9644/proxy_statement/2017-proxy.pdf"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/kevin-systrom.jpg",
-        "url": "/media/mentors/kevin-systrom.jpg",
-        "width": 960,
-        "height": 1237,
-        "source": "https://commons.wikimedia.org/wiki/File:Kevin_Systrom_2018_(40980041741)_(cropped).jpg",
-        "author": "Christopher Michel, кадрирование Emphrase",
-        "license": "CC BY 2.0",
-        "license_url": "https://creativecommons.org/licenses/by/2.0/"
+        "file": "public_media/mentors/generated/denis-lee.webp",
+        "url": "/media/mentors/generated/denis-lee.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-kevin-systrom",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "denis-lee"
     },
     {
       "slug": "stelios-haji-ioannou",
-      "name": "Стелиос Хаджи-Иоанну",
-      "headline": "Основатель easyJet",
-      "about": "В 1995 году запустил easyJet как авиакомпанию с доступными тарифами. Первый рейс связал лондонский аэропорт Лутон с Глазго. Позднее распространил бренд easy на другие сферы, в том числе автобусные перевозки и отели.",
-      "experience_label": "Основание easyJet в 1995 году",
-      "experience_anchor_year": 1995,
-      "experience_basis": "Год запуска easyJet",
+      "name": "Карина Зуева",
+      "headline": "Руководительница компании бытовых услуг",
+      "about": "Выстроила запись и обслуживание в локальном сервисном бизнесе. Помогает подобрать цену, организовать приём заявок и поднять качество сервиса.",
+      "experience_label": "12 лет",
+      "experience_anchor_year": 2014,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "services"
       ],
@@ -518,38 +436,30 @@
       ],
       "help_topics": [
         "Ценообразование услуг",
-        "Запуск нового сервиса",
-        "Развитие бренда"
+        "Приём заявок",
+        "Качество сервиса"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://easy.com/about-us/",
-        "https://www.npg.org.uk/collections/search/person/mp19023/sir-stelios-haji-ioannou",
-        "https://easy.com/sir-stelios-visits-easyjet-at-luton-airport-where-it-all-began-more-than-30-years-ago/"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/stelios-haji-ioannou.jpg",
-        "url": "/media/mentors/stelios-haji-ioannou.jpg",
-        "width": 500,
-        "height": 328,
-        "source": "https://commons.wikimedia.org/wiki/File:31._ISC-Symposium-Stelios_Haji-loannou-HSGN_028-01566.JPG",
-        "author": "St. Gallen Symposium / Universitätsarchiv St.Gallen | HSGN 028/01566",
-        "license": "CC BY-SA 4.0",
-        "license_url": "https://creativecommons.org/licenses/by-sa/4.0/"
+        "file": "public_media/mentors/generated/karina-zueva.webp",
+        "url": "/media/mentors/generated/karina-zueva.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-stelios-haji-ioannou",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "karina-zueva"
     },
     {
       "slug": "david-kelley",
-      "name": "Дэвид Келли",
-      "headline": "Сооснователь IDEO",
-      "about": "Сооснователь дизайн-компании IDEO и один из основателей школы дизайна при Стэнфордском университете. Работает с проектированием продуктов и услуг на основе потребностей пользователей.",
-      "experience_label": "Основание IDEO в 1991 году",
-      "experience_anchor_year": 1991,
-      "experience_basis": "Год запуска IDEO",
+      "name": "Павел Савин",
+      "headline": "Консультант по проектированию услуг",
+      "about": "Исследует путь клиента в небольших сервисных командах. Помогает подготовить интервью и проверить новую услугу на простом прототипе.",
+      "experience_label": "9 лет",
+      "experience_anchor_year": 2017,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "services"
       ],
@@ -557,39 +467,31 @@
         "idea"
       ],
       "help_topics": [
-        "Исследование потребностей клиентов",
+        "Интервью с клиентами",
         "Проектирование услуг",
-        "Прототипирование"
+        "Прототип сервиса"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://www.ideo.com/about",
-        "https://dschool.stanford.edu/directory/david-kelley"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/david-kelley.jpg",
-        "url": "/media/mentors/david-kelley.jpg",
-        "width": 500,
-        "height": 500,
-        "source": "https://commons.wikimedia.org/wiki/File:David_M_Kelley_(9375796736)_(cropped).jpg",
-        "author": "Jonathan Chen",
-        "license": "CC BY 2.0",
-        "license_url": "https://creativecommons.org/licenses/by/2.0/",
-        "source_note": "В Wikimedia Commons опубликована обрезанная версия снимка с коррекцией яркости и цвета."
+        "file": "public_media/mentors/generated/pavel-savin.webp",
+        "url": "/media/mentors/generated/pavel-savin.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-david-kelley",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "pavel-savin"
     },
     {
       "slug": "guy-laliberte",
-      "name": "Ги Лалиберте",
-      "headline": "Основатель Cirque du Soleil",
-      "about": "Канадский предприниматель и бывший уличный артист. В 1984 году вместе с командой создал Cirque du Soleil, который вырос из выступлений уличных артистов Квебека в международную компанию.",
-      "experience_label": "Основание Cirque du Soleil в 1984 году",
-      "experience_anchor_year": 1984,
-      "experience_basis": "Год запуска Cirque du Soleil",
+      "name": "Елена Арсеньева",
+      "headline": "Продюсер культурных событий",
+      "about": "Организует небольшие выставки и мероприятия. Помогает собрать первую программу, составить бюджет и договориться с площадкой.",
+      "experience_label": "8 лет",
+      "experience_anchor_year": 2018,
+      "experience_basis": "Демонстрационный профиль",
       "industry_codes": [
         "services"
       ],
@@ -597,29 +499,22 @@
         "mvp"
       ],
       "help_topics": [
-        "Запуск творческих проектов",
-        "Событийные услуги",
-        "Развитие команды"
+        "Пробное мероприятие",
+        "Бюджет события",
+        "Сбор команды"
       ],
       "meeting_format": "online",
-      "bio_sources": [
-        "https://www.cirquedusoleil.com/press/kits/corporate/about-cirque",
-        "https://www.ordre-national.gouv.qc.ca/membres/membre.asp?id=259"
-      ],
+      "bio_sources": [],
       "portrait": {
-        "file": "assets/media/mentors/guy-laliberte.jpg",
-        "url": "/media/mentors/guy-laliberte.jpg",
-        "width": 960,
-        "height": 1440,
-        "source": "https://commons.wikimedia.org/wiki/File:Lalibert%C3%A9_Soyuz_TMA16.jpg",
-        "author": "NASA / James Blair",
-        "license": "Public domain (PD-USGov-NASA)",
-        "license_url": "https://commons.wikimedia.org/wiki/Template:PD-USGov-NASA"
+        "file": "public_media/mentors/generated/lena-arsenyeva.webp",
+        "url": "/media/mentors/generated/lena-arsenyeva.webp",
+        "source": "ImageGen"
       },
       "is_demo": true,
       "accepts_demo_applications": true,
       "teacher_seed_key": "demo-mentor-guy-laliberte",
-      "showcase_login": false
+      "showcase_login": false,
+      "display_slug": "lena-arsenyeva"
     }
   ]
 }

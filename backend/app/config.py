@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     test_user: bool = False
     test_user_id: UUID = UUID("00000000-0000-4000-8000-000000000001")
     demo_password: SecretStr = SecretStr("")
+    local_demo_mode: bool = False
+    simplified_registration: bool = True
 
     deepseek_api_key: SecretStr = SecretStr("")
     deepseek_base_url: str = "https://api.deepseek.com"

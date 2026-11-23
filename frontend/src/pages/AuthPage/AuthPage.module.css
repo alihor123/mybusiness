@@ -79,6 +79,12 @@
   gap: 14px;
 }
 
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
 .field {
   display: flex;
   align-items: center;
@@ -92,6 +98,11 @@
 }
 
 .field:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+
+.field:has(input[aria-invalid="true"]) {
   border-color: var(--color-accent);
 }
 
@@ -128,6 +139,19 @@
 
 .eyeBtn:hover {
   color: var(--color-ink);
+}
+
+.eyeBtn:focus-visible,
+.switchLink:focus-visible,
+.submitBtn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.fieldError {
+  color: var(--color-accent);
+  font-size: 13px;
+  line-height: 1.3;
 }
 
 .eyeIcon {

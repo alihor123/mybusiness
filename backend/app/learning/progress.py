@@ -6,8 +6,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.tokens import utcnow
-from app.diagnostic.models import Diagnostic
-from app.learning.models import Attempt, Completion, Credit, Step, Track, TrackPosition
+from app.learning.models import (
+    Attempt,
+    Completion,
+    Credit,
+    DiagnosticCredit,
+    Step,
+    Track,
+    TrackPosition,
+)
 from app.learning.schemas import Progress, StepSummary, TrackOut, TrackProgress
 from app.projects.bootstrap import ProjectPrefill
 from app.projects.models import Project
@@ -24,12 +31,11 @@ class Route:
     tracks: list[Track]
     steps: dict[str, list[Step]]
     credits: set[str]
-    scores: dict[str, int]
+    diagnostic_credits: set[str]
     positions: dict[str, str]
 
     def is_optional(self, step: Step) -> bool:
-        score = self.scores.get(step.track_id, 0)
-        return step.optional_rank is not None and step.optional_rank <= score - 1
+        return step.id in self.diagnostic_credits
 
     def next_required(self, track_id: str) -> str | None:
         return next(
@@ -42,7 +48,9 @@ class Route:
         )
 
     def summarize(self, step: Step) -> StepSummary:
-        credited = step.id in self.credits
+        earned = step.id in self.credits
+        diagnostic = step.id in self.diagnostic_credits
+        credited = earned or diagnostic
         optional = self.is_optional(step)
         return StepSummary(
             id=step.id,
@@ -51,13 +59,14 @@ class Route:
             type=step.type,
             optional_by_diagnostic=optional,
             credited=credited,
-            can_credit=not credited and (optional or step.id == self.next_required(step.track_id)),
+            credit_source="earned" if earned else "diagnostic" if diagnostic else None,
+            can_credit=not earned and (optional or step.id == self.next_required(step.track_id)),
         )
 
     def track_progress(self, track_id: str) -> TrackProgress:
         steps = self.steps[track_id]
         required = [step for step in steps if not self.is_optional(step)]
-        credited = sum(step.id in self.credits for step in steps)
+        credited = sum(step.id in self.credits or step.id in self.diagnostic_credits for step in steps)
         next_step = self.next_required(track_id)
         return TrackProgress(
             track_id=track_id,
@@ -88,11 +97,8 @@ async def get_route(db: AsyncSession, user_id: UUID) -> Route:
     for step in await db.scalars(select(Step).order_by(Step.position)):
         steps[step.track_id].append(step)
     credits = set(await db.scalars(select(Credit.step_id).where(Credit.user_id == user_id)))
-    scores = await db.scalar(
-        select(Diagnostic.scores).where(
-            Diagnostic.user_id == user_id,
-            Diagnostic.status == "completed",
-        )
+    diagnostic_credits = set(
+        await db.scalars(select(DiagnosticCredit.step_id).where(DiagnosticCredit.user_id == user_id))
     )
     positions = dict(
         (
@@ -104,7 +110,7 @@ async def get_route(db: AsyncSession, user_id: UUID) -> Route:
             )
         ).all()
     )
-    return Route(tracks, steps, credits, scores or {}, positions)
+    return Route(tracks, steps, credits, diagnostic_credits, positions)
 
 
 async def get_progress(db: AsyncSession, user_id: UUID) -> Progress:

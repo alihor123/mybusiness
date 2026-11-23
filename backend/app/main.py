@@ -1,4 +1,5 @@
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
@@ -16,6 +17,7 @@ from app.applications.router import router as applications_router
 from app.auth.router import router as auth_router
 from app.database import get_db, get_session_factory
 from app.diagnostic.router import router as diagnostic_router
+from app.diagnostic.worker import run_diagnostic_worker
 from app.errors import api_error
 from app.events.router import router as events_router
 from app.learning.router import router as learning_router
@@ -25,9 +27,15 @@ from app.projects.router import router as projects_router
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    stop_diagnostics = asyncio.Event()
+    diagnostics = asyncio.create_task(run_diagnostic_worker(stop_diagnostics))
     try:
         yield
     finally:
+        stop_diagnostics.set()
+        diagnostics.cancel()
+        with suppress(asyncio.CancelledError):
+            await diagnostics
         if get_deepseek.cache_info().currsize:
             await get_deepseek().close()
             get_deepseek.cache_clear()
@@ -41,8 +49,6 @@ describe_errors(app)
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(diagnostic_router, prefix="/api/v1")
 app.include_router(learning_router, prefix="/api/v1")
-app.include_router(mentors_router, prefix="/api/v1")
-app.include_router(events_router, prefix="/api/v1")
 for router in (
     projects_router,
     mentors_router,
@@ -65,6 +71,8 @@ async def health(db: AsyncSession = Depends(get_db)) -> dict[str, str]:
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(_request: Request, exc: RequestValidationError) -> JSONResponse:
+    if _request.url.path in {"/api/v1/auth/register", "/api/v1/auth/login"}:
+        return JSONResponse({"detail": "Некорректные данные"}, status_code=422)
     # Keep validation errors usable without reflecting passwords or submitted answers.
     errors = [{field: error[field] for field in ("type", "loc", "msg")} for error in exc.errors()]
     return JSONResponse({"detail": errors}, status_code=422)

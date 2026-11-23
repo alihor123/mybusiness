@@ -5,7 +5,13 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.applications import service
-from app.applications.schemas import ApplicationDetail, ApplicationIn, ApplicationOut, DecisionIn
+from app.applications.schemas import (
+    ApplicationDetail,
+    ApplicationIn,
+    ApplicationInboxItem,
+    ApplicationOut,
+    DecisionIn,
+)
 from app.auth.dependencies import require_permission
 from app.auth.schemas import Actor
 from app.database import get_db
@@ -27,7 +33,7 @@ async def apply(id: UUID, data: ApplicationIn, actor: Student, db: Db):
     return await service.apply(id, data, actor, db)
 
 
-@router.get("/mentor/applications", response_model=list[ApplicationOut])
+@router.get("/mentor/applications", response_model=list[ApplicationInboxItem])
 async def inbox(actor: Teacher, db: Db):
     return await service.inbox(actor, db)
 

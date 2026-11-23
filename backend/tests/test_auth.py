@@ -1,17 +1,79 @@
 import asyncio
+from uuid import uuid4
 
 from conftest import ORIGIN, PASSWORD, access_csrf, open_client, register
 from sqlalchemy import func, select
 
 from app.auth.models import Session
 from app.auth.tokens import REFRESH_COOKIE
+from app.config import get_settings
 from app.database import get_session_factory
+
+
+async def test_simplified_registration_accepts_short_values(client):
+    email = str(uuid4().int)
+    response = await client.post(
+        "/api/v1/auth/register",
+        headers={"Origin": ORIGIN},
+        json={"first_name": "123", "last_name": "", "email": email, "password": "x", "device_id": "d"},
+    )
+    assert response.status_code == 201, response.text
+    async with open_client() as second:
+        login = await second.post(
+            "/api/v1/auth/login",
+            headers={"Origin": ORIGIN},
+            json={"email": email, "password": "x", "device_id": "device-2"},
+        )
+    assert login.status_code == 200, login.text
+
+
+async def test_strict_registration_returns_generic_validation(monkeypatch, client):
+    monkeypatch.setenv("SIMPLIFIED_REGISTRATION", "false")
+    get_settings.cache_clear()
+    response = await client.post(
+        "/api/v1/auth/register",
+        headers={"Origin": ORIGIN},
+        json={"first_name": "Invalid1", "last_name": "User", "email": "bad", "password": "x", "device_id": "d"},
+    )
+    assert response.status_code == 422
+    assert response.json() == {"detail": "Некорректные данные"}
+
+    fields = {
+        "first_name": "Анна",
+        "last_name": "Соколова",
+        "email": f"strict-{uuid4()}@example.com",
+        "device_id": "strict-test",
+    }
+    weak = await client.post(
+        "/api/v1/auth/register", headers={"Origin": ORIGIN}, json={**fields, "password": "12345678"}
+    )
+    assert weak.status_code == 422
+    assert weak.json() == response.json()
+    valid = await client.post(
+        "/api/v1/auth/register", headers={"Origin": ORIGIN}, json={**fields, "password": "Пример-2026"}
+    )
+    assert valid.status_code == 201, valid.text
+
+
+async def test_email_is_unique_and_profile_email_is_immutable(client):
+    user = await register(client)
+    duplicate = await client.post(
+        "/api/v1/auth/register",
+        headers={"Origin": ORIGIN},
+        json={"first_name": "Other", "last_name": "Person", "email": user["email"].upper(), "password": PASSWORD, "device_id": "other"},
+    )
+    assert duplicate.status_code == 409
+    response = await client.patch(
+        "/api/v1/me", headers=access_csrf(client), json={"email": "changed@example.com"}
+    )
+    assert response.status_code == 200
+    assert response.json()["email"] == user["email"]
 
 
 async def test_rotation_logout_and_devices(client):
     assert (await client.post("/api/v1/auth/refresh")).status_code == 401
     response = await client.post(
-        "/api/v1/auth/register", json={"login": "origin", "password": PASSWORD, "device_id": "d"}
+        "/api/v1/auth/register", json={"first_name": "Test", "last_name": "User", "email": "origin@example.com", "password": PASSWORD, "device_id": "d"}
     )
     assert response.status_code == 403
     user = await register(client)
@@ -22,7 +84,7 @@ async def test_rotation_logout_and_devices(client):
         login = await second.post(
             "/api/v1/auth/login",
             headers={"Origin": ORIGIN},
-            json={"login": user["login"], "password": PASSWORD, "device_id": "device-2"},
+            json={"email": user["email"], "password": PASSWORD, "device_id": "device-2"},
         )
         assert login.status_code == 200, login.text
         rival.cookies.update(client.cookies)
@@ -55,7 +117,7 @@ async def test_concurrent_login_reuses_device(client):
                     "/api/v1/auth/login",
                     headers={"Origin": ORIGIN},
                     json={
-                        "login": user["login"],
+                        "email": user["email"],
                         "password": PASSWORD,
                         "device_id": "device-1",
                     },

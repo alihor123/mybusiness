@@ -69,6 +69,18 @@
   gap: 18px;
 }
 
+.skeletonGrid {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+.skeletonGrid > :only-child { grid-column: 1 / -1; }
+.placeholder { background: var(--color-soft); border-radius: var(--radius-sm); }
+.headingPlaceholder { height: 24px; width: 63%; }
+.descriptionPlaceholder { height: 48px; width: 90%; }
+.actionPlaceholder { height: 46px; border-radius: var(--radius-pill); }
+
 .card {
   display: flex;
   flex-direction: column;
@@ -114,6 +126,39 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--color-muted);
+}
+
+.detailBtn {
+  align-self: flex-start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--color-accent);
+  font-size: 14px;
+  text-align: left;
+}
+
+.creditedSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.creditedStep {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  background: var(--color-white);
+  color: var(--color-ink);
+  text-align: left;
+}
+
+.creditSource {
+  color: var(--color-accent);
+  font-size: 12px;
 }
 
 .cardFooter {

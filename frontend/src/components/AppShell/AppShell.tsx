@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react"
-import { NavLink, useLocation, useNavigate, useOutlet } from "react-router-dom"
-import { AnimatePresence, motion } from "motion/react"
+import { NavLink, useLocation, useOutlet } from "react-router-dom"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import logoUrl from "../../assets/brand/logo.svg"
 import GraduationIcon from "../../assets/icons/graduation.svg?react"
 import FolderIcon from "../../assets/icons/folder.svg?react"
+import FolderLockIcon from "../../assets/icons/folder-lock.svg?react"
 import UsersIcon from "../../assets/icons/users.svg?react"
 import ProfileIcon from "../../assets/icons/profile.svg?react"
 import UserPlusIcon from "../../assets/icons/user-plus.svg?react"
@@ -11,6 +12,8 @@ import MenuIcon from "../../assets/icons/menu.svg?react"
 import CloseIcon from "../../assets/icons/close.svg?react"
 import SidebarToggleIcon from "../../assets/icons/sidebar-toggle.svg?react"
 import { useApp } from "../../contexts/AppContext"
+import { useToast } from "../../contexts/ToastContext"
+import { useCachedProgress } from "../../contexts/LearningCacheContext"
 import { useIsMobile } from "../../hooks/useIsMobile"
 import styles from "./AppShell.module.css"
 
@@ -20,7 +23,6 @@ type NavItem = {
   to: string
   label: string
   icon: "learning" | "projects" | "mentors" | "requests"
-  badgeCount?: number
 }
 
 // Считывает сохранённое состояние свёрнутости бокового меню из localStorage.
@@ -34,28 +36,31 @@ function readInitialCollapsed() {
 
 // Общий layout кабинета: остаётся смонтированным и делает быстрый crossfade страниц через useOutlet.
 export default function AppShell() {
-  const { role, setRole, mentorRequests } = useApp()
+  const { session } = useApp()
+  const { showToast } = useToast()
+  const role = session.profile?.role
   const location = useLocation()
-  const navigate = useNavigate()
   const outlet = useOutlet()
   const isMobile = useIsMobile(768)
+  const reducedMotion = useReducedMotion()
+  const learningProgress = useCachedProgress(role === "student")
+  const canCreateProject = learningProgress.data?.can_create_project ?? false
 
   // Управляет сворачиванием десктопного меню и открытием мобильной шторки.
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readInitialCollapsed)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const pendingRequestsCount = mentorRequests.filter((req) => req.status === "pending").length
-
-  const navItems: NavItem[] = role === "student"
-    ? [
-        { to: "/learning", label: "Обучение", icon: "learning" },
-        { to: "/projects", label: "Мои проекты", icon: "projects" },
-        { to: "/mentors", label: "Наставники", icon: "mentors" },
-      ]
-    : [
-        { to: "/mentor/requests", label: "Заявки", icon: "requests", badgeCount: pendingRequestsCount },
-        { to: "/mentor/projects", label: "Мои проекты", icon: "projects" },
-      ]
+  const navItems: NavItem[] =
+    role === "student"
+      ? [
+          { to: "/learning", label: "Обучение", icon: "learning" },
+          { to: "/projects", label: "Мои проекты", icon: "projects" },
+          { to: "/mentors", label: "Наставники", icon: "mentors" },
+        ]
+      : [
+          { to: "/mentor/requests", label: "Заявки", icon: "requests" },
+          { to: "/mentor/projects", label: "Мои проекты", icon: "projects" },
+        ]
 
   useEffect(() => {
     setMobileMenuOpen(false)
@@ -85,22 +90,15 @@ export default function AppShell() {
     })
   }
 
-  // Переключает демо-роль и переводит пользователя на стартовый экран выбранного кабинета.
-  function switchRole(nextRole: "student" | "mentor") {
-    if (nextRole === role) return
-    setRole(nextRole)
-    setMobileMenuOpen(false)
-    if (nextRole === "mentor") {
-      navigate("/mentor/requests")
-    } else {
-      navigate("/learning/test")
-    }
-  }
-
   // Возвращает SVG-иконку пункта навигации по его ключу.
   function renderNavIcon(icon: NavItem["icon"]) {
     if (icon === "learning") return <GraduationIcon className={styles.navIcon} aria-hidden="true" />
-    if (icon === "projects") return <FolderIcon className={styles.navIcon} aria-hidden="true" />
+    if (icon === "projects")
+      return role !== "student" || canCreateProject ? (
+        <FolderIcon className={styles.navIcon} aria-hidden="true" />
+      ) : (
+        <FolderLockIcon className={styles.navIcon} aria-hidden="true" />
+      )
     if (icon === "mentors") return <UsersIcon className={styles.navIcon} aria-hidden="true" />
     return <UserPlusIcon className={styles.navIcon} aria-hidden="true" />
   }
@@ -112,10 +110,7 @@ export default function AppShell() {
         <div className={styles.sidebarTop}>
           <div className={styles.brandRow}>
             {!compact && (
-              <NavLink
-                to={role === "student" ? "/learning" : "/mentor/requests"}
-                className={styles.logoLink}
-              >
+              <NavLink to={role === "student" ? "/learning" : "/mentor/requests"} className={styles.logoLink}>
                 <img src={logoUrl} alt="Мой бизнес Югра" className={styles.logo} />
               </NavLink>
             )}
@@ -145,47 +140,41 @@ export default function AppShell() {
           </div>
 
           <div className={styles.navList} role="navigation" aria-label="Основная навигация">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                title={compact ? item.label : undefined}
-                className={({ isActive }) =>
-                  `${styles.navItem} ${isActive ? styles.navItemActive : ""}`
-                }
-              >
-                {renderNavIcon(item.icon)}
-                {!compact && <span className={styles.navLabel}>{item.label}</span>}
-                {!compact && item.badgeCount !== undefined && item.badgeCount > 0 && (
-                  <span className={styles.navBadge}>{item.badgeCount}</span>
-                )}
-              </NavLink>
-            ))}
+            {navItems.map((item) =>
+              item.icon === "projects" && role === "student" && !canCreateProject ? (
+                <button
+                  key={item.to}
+                  type="button"
+                  className={`${styles.navItem} ${styles.navItemLocked}`}
+                  aria-label={compact ? item.label : undefined}
+                  title={compact ? item.label : undefined}
+                  onClick={() =>
+                    showToast({ message: "Завершите обучение, чтобы открыть проекты", type: "neutral" })
+                  }
+                >
+                  {renderNavIcon(item.icon)}
+                  {!compact && <span className={styles.navLabel}>{item.label}</span>}
+                </button>
+              ) : (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMobileMenuOpen(false)}
+                  title={compact ? item.label : undefined}
+                  className={({ isActive }) => `${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
+                >
+                  {renderNavIcon(item.icon)}
+                  {!compact && <span className={styles.navLabel}>{item.label}</span>}
+                </NavLink>
+              ),
+            )}
           </div>
         </div>
 
         <div className={styles.sidebarBottom}>
-          {!compact && (
-            <div className={styles.roleSwitch} role="group" aria-label="Переключение роли">
-              <button
-                type="button"
-                className={`${styles.roleBtn} ${role === "student" ? styles.roleBtnActive : ""}`}
-                onClick={() => switchRole("student")}
-              >
-                Ученик
-              </button>
-              <button
-                type="button"
-                className={`${styles.roleBtn} ${role === "mentor" ? styles.roleBtnActive : ""}`}
-                onClick={() => switchRole("mentor")}
-              >
-                Наставник
-              </button>
-            </div>
-          )}
-
           <NavLink
             to="/profile"
+            onClick={() => setMobileMenuOpen(false)}
             title={compact ? "Профиль" : undefined}
             className={({ isActive }) =>
               `${styles.navItem} ${styles.profileItem} ${isActive ? styles.navItemActive : ""}`
@@ -225,9 +214,7 @@ export default function AppShell() {
       )}
 
       {!isMobile && (
-        <div
-          className={`${styles.sidebar} ${sidebarCollapsed ? styles.sidebarCollapsed : ""}`}
-        >
+        <div className={`${styles.sidebar} ${sidebarCollapsed ? styles.sidebarCollapsed : ""}`}>
           {renderSidebarContent(sidebarCollapsed)}
         </div>
       )}
@@ -240,7 +227,7 @@ export default function AppShell() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.16 }}
+              transition={{ duration: reducedMotion ? 0 : 0.16 }}
               aria-hidden="true"
               onClick={() => setMobileMenuOpen(false)}
             />
@@ -249,7 +236,7 @@ export default function AppShell() {
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
-              transition={{ type: "spring", stiffness: 360, damping: 36 }}
+              transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 36 }}
             >
               {renderSidebarContent(false)}
             </motion.div>
@@ -265,7 +252,7 @@ export default function AppShell() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: reducedMotion ? 0 : 0.16, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className={styles.contentInner}>{outlet}</div>
           </motion.div>

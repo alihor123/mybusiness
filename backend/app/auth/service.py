@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from app.auth.models import Permission, Role, RolePermission, Session, User
-from app.auth.schemas import Actor, Credentials, Profile
+from app.auth.schemas import Actor, LoginCredentials, Profile, Registration
 from app.auth.tokens import (
     Pair,
     SessionToken,
@@ -51,7 +51,6 @@ async def get_actor(db: AsyncSession, user_id: UUID) -> Actor:
         profile=Profile(
             id=user.id,
             role=role,
-            login=user.login,
             first_name=user.first_name,
             last_name=user.last_name,
             email=user.email,
@@ -95,25 +94,31 @@ async def start_session(db: AsyncSession, user_id: UUID, device_id: str) -> Pair
     return pair
 
 
-async def register(db: AsyncSession, data: Credentials) -> tuple[Actor, Pair]:
+async def register(db: AsyncSession, data: Registration) -> tuple[Actor, Pair]:
     password_hash = await hash_password(data.password)
     async with db.begin():
         role_id = await db.scalar(select(Role.id).where(Role.code == "student"))
         user_id = await db.scalar(
             insert(User)
-            .values(login=data.login, password_hash=password_hash, role_id=role_id)
-            .on_conflict_do_nothing(index_elements=[User.login])
+            .values(
+                email=data.email,
+                first_name=data.first_name,
+                last_name=data.last_name,
+                password_hash=password_hash,
+                role_id=role_id,
+            )
+            .on_conflict_do_nothing(index_elements=[User.email])
             .returning(User.id)
         )
         if user_id is None:
-            raise api_error(409, "LOGIN_EXISTS", "Логин уже занят")
+            raise api_error(409, "EMAIL_EXISTS", "Электронная почта уже зарегистрирована")
         pair = await start_session(db, user_id, data.device_id)
         return await get_actor(db, user_id), pair
 
 
-async def login(db: AsyncSession, data: Credentials) -> tuple[Actor, Pair]:
+async def login(db: AsyncSession, data: LoginCredentials) -> tuple[Actor, Pair]:
     async with db.begin():
-        user = await db.scalar(select(User).where(User.login == data.login))
+        user = await db.scalar(select(User).where(User.email == data.email))
     match = (
         await run_in_threadpool(passwords.verify, data.password, user.password_hash)
         if user

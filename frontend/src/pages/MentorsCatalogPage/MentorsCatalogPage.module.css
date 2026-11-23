@@ -107,6 +107,21 @@
   padding-bottom: 16px;
 }
 
+.placeholder { background: var(--color-soft); border-radius: var(--radius-sm); }
+.namePlaceholder { height: 18px; width: 70%; }
+.rolePlaceholder { height: 34px; width: 87%; }
+.buttonPlaceholder { height: 40px; border-radius: var(--radius-pill); }
+.sentinel { flex: 0 0 1px; }
+
+.moreStatus {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 12px;
+  text-align: center;
+  color: var(--color-muted);
+}
+
 @container (min-width: 1280px) {
   .grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -153,7 +168,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top center;
+  object-position: center 38%;
 }
 
 .cardName {
@@ -218,6 +233,14 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+@media (max-width: 1150px) {
+  .pushPanel { width: 304px; min-width: 304px; }
+}
+
+@container (max-width: 340px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 .pushHeader {

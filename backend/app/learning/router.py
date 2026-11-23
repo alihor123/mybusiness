@@ -20,6 +20,7 @@ from app.learning.schemas import (
     SubmissionOut,
     TrackDetail,
     TrackOut,
+    TrackStepsOut,
 )
 
 router = APIRouter(tags=["learning"])
@@ -36,6 +37,11 @@ async def tracks(actor: Student, db: Database) -> list[TrackOut]:
 @router.get("/tracks/{track_id}")
 async def track(track_id: str, actor: Student, db: Database) -> TrackDetail:
     return await service.track_detail(db, actor.user_id, track_id)
+
+
+@router.get("/tracks/{track_id}/steps")
+async def track_steps(track_id: str, actor: Student, db: Database) -> TrackStepsOut:
+    return await service.track_steps(db, actor.user_id, track_id)
 
 
 @router.get("/learning/steps/{step_id}")

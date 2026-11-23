@@ -29,6 +29,7 @@ from app.learning.schemas import (
     SubmissionOut,
     TrackDetail,
     TrackOut,
+    TrackStepsOut,
 )
 from app.projects.bootstrap import ProjectPrefill
 
@@ -93,6 +94,46 @@ async def track_detail(db: AsyncSession, user_id: UUID, track_id: str) -> TrackD
         **route.track_out(track).model_dump(),
         steps=[route.summarize(step) for step in route.steps[track_id]],
     )
+
+
+async def track_steps(db: AsyncSession, user_id: UUID, track_id: str) -> TrackStepsOut:
+    track = await db.get(Track, track_id)
+    if track is None:
+        raise api_error(404, "TRACK_NOT_FOUND", "Трек не найден")
+    route = await get_route(db, user_id)
+    track_detail_out = TrackDetail(
+        **route.track_out(track).model_dump(),
+        steps=[route.summarize(step) for step in route.steps[track_id]],
+    )
+    steps = route.steps[track_id]
+    step_ids = [step.id for step in steps]
+    drafts = {
+        draft.step_id: draft
+        for draft in await db.scalars(
+            select(Draft).where(Draft.user_id == user_id, Draft.step_id.in_(step_ids))
+        )
+    }
+    attempts = await db.scalars(
+        select(Attempt)
+        .where(Attempt.user_id == user_id, Attempt.step_id.in_(step_ids))
+        .order_by(Attempt.number.desc())
+    )
+    latest_attempts: dict[str, Attempt] = {}
+    for attempt in attempts:
+        latest_attempts.setdefault(attempt.step_id, attempt)
+    lessons = [
+        StepOut(
+            **route.summarize(step).model_dump(),
+            track_id=step.track_id,
+            blocks=step.blocks,
+            prompt=step.prompt,
+            options=step.options,
+            draft=drafts[step.id].answer if step.id in drafts else None,
+            last_attempt=attempt_out(latest_attempts[step.id]) if step.id in latest_attempts else None,
+        )
+        for step in steps
+    ]
+    return TrackStepsOut(track=track_detail_out, lessons=lessons)
 
 
 async def update_position(db: AsyncSession, user_id: UUID, step: Step) -> None:
@@ -397,6 +438,8 @@ async def extract_prefill(
 async def help_with_step(db: AsyncSession, ai: DeepSeekClient, step_id: str, data: HelpIn) -> Hint:
     async with db.begin():
         step = await get_step(db, step_id)
+        if step.type not in {"written", "final"}:
+            raise api_error(422, "HELP_UNAVAILABLE", "Подсказка доступна для задания с открытым ответом")
         context = {"title": step.title, "prompt": step.prompt, "blocks": step.blocks}
     try:
         return await ai.complete(

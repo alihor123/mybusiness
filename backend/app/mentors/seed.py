@@ -19,6 +19,7 @@ async def import_demo_mentors(db: AsyncSession) -> int:
     rows = []
     for item in mentors:
         slug = item["slug"]
+        display_slug = item.get("display_slug", slug)
         showcase = item["showcase_login"]
         rows.append(
             {
@@ -38,8 +39,8 @@ async def import_demo_mentors(db: AsyncSession) -> int:
                 "portrait_url": item["portrait"]["url"],
                 "contacts": (
                     {
-                        "email": f"{slug}@demo.example",
-                        "max": f"@demo-{slug}",
+                        "email": f"{display_slug}@example.com",
+                        "max": f"@demo-{display_slug}",
                     }
                     if showcase
                     else {}

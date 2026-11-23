@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from app.ai.client import CheckUnavailable, get_deepseek
 from app.database import get_session_factory
 from app.diagnostic.schemas import FreeScores
+from app.diagnostic.worker import process_pending_once
 from app.learning.assessment import CheckDecision
 from app.learning.schemas import Hint
 from app.main import app
@@ -64,6 +65,25 @@ async def do_step(client, step):
     )
 
 
+async def test_track_batch_contains_step_data_and_updates_credits(client):
+    await register(client)
+    track = TRACKS[0]
+    path = f"{BASE}/tracks/{track['id']}/steps"
+    response = await client.get(path)
+    assert response.status_code == 200
+    bundle = response.json()
+    assert [step["id"] for step in bundle["lessons"]] == [step["id"] for step in track["steps"]]
+    assert bundle["lessons"][0]["blocks"] and bundle["lessons"][0]["can_credit"]
+    assert not bundle["lessons"][1]["can_credit"]
+    assert "answer_key" not in response.text
+
+    completed = await do_step(client, track["steps"][0])
+    assert completed.status_code == 200
+    updated = (await client.get(path)).json()
+    assert updated["lessons"][0]["credit_source"] == "earned"
+    assert updated["lessons"][1]["can_credit"]
+
+
 async def test_skip_get_back_to_diagnostic_and_shorter_route(client):
     await register(client)
     ai = FakeAI(fail_first=True)
@@ -89,21 +109,27 @@ async def test_skip_get_back_to_diagnostic_and_shorter_route(client):
         response = await do_step(client, step)
         assert response.status_code == 200, response.text
 
-    failed = await send(client, "POST", "/diagnostic/submit", json={"answers": answers})
-    assert failed.status_code == 503
-    assert failed.json()["detail"]["code"] == "CHECK_UNAVAILABLE"
+    pending = await send(client, "POST", "/diagnostic/submit", json={"answers": answers})
+    assert pending.status_code == 202 and pending.json()["status"] == "checking"
+    await process_pending_once(ai_client=ai)
     saved = (await client.get(f"{BASE}/diagnostic")).json()
-    assert saved["answers"] == answers and saved["check_unavailable"]
+    assert saved["answers"] == answers and saved["status"] == "in_progress" and saved["check_unavailable"]
     completed = await send(client, "POST", "/diagnostic/submit", json={"answers": answers})
-    assert completed.status_code == 200, completed.text
+    assert completed.status_code == 202 and completed.json()["status"] == "checking", completed.text
+    await process_pending_once(ai_client=ai)
+    completed = await client.get(f"{BASE}/diagnostic")
+    assert completed.status_code == 200
     assert {result["score"] for result in completed.json()["results"]} == {3}
     await send(client, "POST", "/diagnostic/submit", json={"answers": answers})
+    await process_pending_once(ai_client=ai)
     assert ai.calls == [FreeScores, FreeScores]
     track = (await client.get(f"{BASE}/tracks/idea-validation")).json()
-    assert track["required_count"] == 8 and track["credited_count"] == 3
+    assert track["required_count"] == 8 and track["credited_count"] == 4
     assert track["credited_required_count"] == 2
     assert track["steps"][2]["optional_by_diagnostic"] and track["steps"][2]["credited"]
-    assert track["steps"][4]["optional_by_diagnostic"] and not track["steps"][4]["credited"]
+    assert track["steps"][2]["credit_source"] == "earned"
+    assert track["steps"][4]["optional_by_diagnostic"] and track["steps"][4]["credited"]
+    assert track["steps"][4]["credit_source"] == "diagnostic"
     assert not track["steps"][9]["optional_by_diagnostic"]
     assert (await client.get(f"{BASE}/learning/steps/idea-validation-10")).status_code == 200
 
@@ -178,9 +204,10 @@ async def test_short_route_skips_both_exercises_and_keeps_final_required(client)
     answers = {
         q["id"]: q.get("answer_key") or "Клиенты подтвердили потребность." for q in QUESTIONS
     }
-    assert (
-        await send(client, "POST", "/diagnostic/submit", json={"answers": answers})
-    ).status_code == 200
+    submitted = await send(client, "POST", "/diagnostic/submit", json={"answers": answers})
+    assert submitted.status_code == 202 and submitted.json()["status"] == "checking"
+    await process_pending_once(ai_client=ai)
+    assert (await client.get(f"{BASE}/diagnostic")).json()["status"] == "completed"
     for track in TRACKS:
         for step in track["steps"]:
             if step.get("optional_rank"):
@@ -198,3 +225,48 @@ async def test_short_route_skips_both_exercises_and_keeps_final_required(client)
                 )
             )
         ).prefill == {"title": "Кофе между парами"}
+
+
+async def test_retake_keeps_prior_result_and_diagnostic_credits(client):
+    await register(client)
+    ai = FakeAI()
+    answers = {
+        question["id"]: question.get("answer_key") or "Клиенты подтвердили потребность."
+        for question in QUESTIONS
+    }
+    pending = await send(client, "POST", "/diagnostic/submit", json={"answers": answers})
+    assert pending.json()["status"] == "checking"
+    await process_pending_once(ai_client=ai)
+    first = (await client.get(f"{BASE}/diagnostic")).json()
+    assert first["status"] == "completed"
+    first_score = next(row["score"] for row in first["results"] if row["track_id"] == "idea-validation")
+    first_track = (await client.get(f"{BASE}/tracks/idea-validation")).json()
+    assert first_track["steps"][4]["credit_source"] == "diagnostic"
+
+    restarted = await send(client, "POST", "/diagnostic/restart")
+    assert restarted.json()["status"] == "in_progress"
+    assert restarted.json()["results"] == first["results"]
+    low_answers = {question["id"]: question.get("answer_key") or "Клиенты подтвердили потребность." for question in QUESTIONS}
+    for question in QUESTIONS:
+        if question["type"] in {"choice", "matching"}:
+            low_answers[question["id"]] = "incorrect-answer"
+    # Для ответов с выбором берём допустимый вариант, отличающийся от ключа.
+    for question in QUESTIONS:
+        if question["type"] == "choice":
+            choices = question["options"]["choices"]
+            low_answers[question["id"]] = next(choice["id"] for choice in choices if choice["id"] != question["answer_key"])
+        elif question["type"] == "matching":
+            left = question["options"]["left"]
+            right = question["options"]["right"]
+            low_answers[question["id"]] = {item["id"]: right[-1 - index]["id"] for index, item in enumerate(left)}
+    pending_low = await send(client, "POST", "/diagnostic/submit", json={"answers": low_answers})
+    assert pending_low.json()["status"] == "checking"
+    assert pending_low.json()["results"] == first["results"]
+    await process_pending_once(ai_client=ai)
+
+    after = (await client.get(f"{BASE}/diagnostic")).json()
+    new_score = next(row["score"] for row in after["results"] if row["track_id"] == "idea-validation")
+    assert new_score < first_score
+    track_after = (await client.get(f"{BASE}/tracks/idea-validation")).json()
+    assert track_after["steps"][4]["credited"] and track_after["steps"][4]["credit_source"] == "diagnostic"
+    assert track_after["required_count"] == first_track["required_count"]

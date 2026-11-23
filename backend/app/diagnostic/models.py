@@ -42,3 +42,4 @@ class Diagnostic(Base):
     scores: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True))
     check_id: Mapped[UUID | None]
     check_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    check_unavailable: Mapped[bool] = mapped_column(default=False)

@@ -24,6 +24,7 @@ async def database(monkeypatch):
     monkeypatch.setenv("PUBLIC_ORIGIN", ORIGIN)
     monkeypatch.setenv("COOKIE_SECURE", "true")
     monkeypatch.setenv("TEST_USER", "false")
+    monkeypatch.setenv("SIMPLIFIED_REGISTRATION", "true")
     yield
     if get_session_factory.cache_info().currsize:
         await get_session_factory().kw["bind"].dispose()
@@ -45,11 +46,11 @@ async def client():
 
 
 async def register(client, *, device_id="device-1"):
-    login = f"pytest-{uuid4()}"
+    email = f"pytest-{uuid4()}@example.com"
     response = await client.post(
         "/api/v1/auth/register",
         headers={"Origin": ORIGIN},
-        json={"login": login, "password": PASSWORD, "device_id": device_id},
+        json={"first_name": "Test", "last_name": "Student", "email": email, "password": PASSWORD, "device_id": device_id},
     )
     assert response.status_code == 201, response.text
     return response.json()

@@ -1,59 +1,66 @@
 import { useNavigate } from "react-router-dom"
 import PlusIcon from "../../assets/icons/plus.svg?react"
-import GraduationIcon from "../../assets/icons/graduation.svg?react"
-import FileTextIcon from "../../assets/icons/file-text.svg?react"
-import SendIcon from "../../assets/icons/send.svg?react"
-import UserIcon from "../../assets/icons/user.svg?react"
 import CloseIcon from "../../assets/icons/close.svg?react"
-import { useApp } from "../../contexts/AppContext"
+import { useToast } from "../../contexts/ToastContext"
 import { useIsMobile } from "../../hooks/useIsMobile"
-import type { ProjectItem } from "../../data/mockData"
+import useResource from "../../hooks/useResource"
+import { LoadingSkeleton, ResourceError, EmptyState } from "../../components/AsyncState/AsyncState"
+import { createProject, deleteProject, listProjects } from "../../api/projects"
+import { fetchLearningProgress } from "../../api/learning"
+import type { ProjectOut } from "../../api/projects"
 import styles from "./ProjectsPage.module.css"
 
-// Показывает список проектов ученика с фиксированной шапкой и компактной мобильной версией.
+// Показывает проекты ученика и использует серверный прогресс для допуска к созданию.
 export default function ProjectsPage() {
-  const { projects, deleteProject } = useApp()
   const navigate = useNavigate()
   const isMobile = useIsMobile(768)
+  const { showToast } = useToast()
+  const projects = useResource("projects", listProjects)
+  const progress = useResource("learning-progress", fetchLearningProgress)
+  const canCreate = progress.data?.can_create_project ?? false
 
-  // Определяет маршрут при клике по основной кнопке карточки проекта.
-  function openProject(project: ProjectItem) {
-    if (project.status === "draft") {
+  async function startProject() {
+    try {
+      const project = await createProject()
       navigate(`/projects/${project.id}/brief`)
-      return
+    } catch (error) {
+      showToast({
+        message: error instanceof Error ? error.message : "Не удалось создать проект",
+        type: "error",
+      })
+      progress.reload()
     }
-    if (project.status === "pending_mentor") {
-      navigate(`/projects/${project.id}/mentors`)
-      return
-    }
-    navigate(`/projects/${project.id}`)
   }
 
-  // Возвращает текст статуса и подпись для нижней строки карточки.
-  function getStatusMeta(project: ProjectItem) {
-    if (project.status === "draft") {
-      return {
-        badge: "Черновик",
-        badgeTone: "soft" as const,
-        detail: "Дополнить анкету",
-        buttonLabel: "Дополнить анкету",
-      }
+  async function removeProject(project: ProjectOut) {
+    if (project.status !== "draft") return
+    try {
+      await deleteProject(project.id)
+      projects.setData((items) => items?.filter((item) => item.id !== project.id) ?? [])
+      showToast({ message: "Черновик удалён", type: "success" })
+    } catch (error) {
+      showToast({
+        message: error instanceof Error ? error.message : "Не удалось удалить проект",
+        type: "error",
+      })
     }
-    if (project.status === "pending_mentor") {
-      return {
-        badge: "Ожидает наставника",
-        badgeTone: "tint" as const,
-        detail: "Заявка отправлена",
-        buttonLabel: "Открыть",
-      }
-    }
-    const doneCount = project.tasks.filter((task) => task.status === "completed").length
-    return {
-      badge: "Сопровождение",
-      badgeTone: "tint" as const,
-      detail: `${doneCount} из ${project.tasks.length} задач`,
-      buttonLabel: "Открыть",
-    }
+  }
+
+  function openProject(project: ProjectOut) {
+    navigate(
+      project.status === "draft"
+        ? `/projects/${project.id}/brief`
+        : project.status === "waiting_mentor"
+          ? `/projects/${project.id}/mentors`
+          : `/projects/${project.id}`,
+    )
+  }
+
+  function statusLabel(project: ProjectOut) {
+    if (project.status === "draft") return "Черновик"
+    if (project.status === "waiting_mentor") return "Ожидает наставника"
+    if (project.status === "archived") return "В архиве"
+    return "Сопровождение"
   }
 
   return (
@@ -63,94 +70,73 @@ export default function ProjectsPage() {
           <div className={styles.title} role="heading" aria-level={1}>
             МОИ ПРОЕКТЫ
           </div>
-
-          {!isMobile && (
-            <button
-              type="button"
-              className={styles.newBtn}
-              onClick={() => navigate("/projects/new")}
-            >
+          {canCreate && (
+            <button type="button" className={styles.newBtn} onClick={startProject}>
               <PlusIcon className={styles.plusIcon} aria-hidden="true" />
               <span>Новый проект</span>
             </button>
           )}
         </div>
-
-        <div className={styles.hintBanner}>
-          <GraduationIcon className={styles.hintIcon} aria-hidden="true" />
-          <span>Новые проекты можно создавать без повторного обучения</span>
-        </div>
+        <div className={styles.hintBanner}>Завершите обязательные шаги обучения, чтобы создать проект.</div>
       </div>
-
       <div className={styles.scrollArea}>
-        {projects.length === 0 ? (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyTitle}>У вас пока нет проектов</div>
-            <div className={styles.emptyDesc}>
-              Нажмите «{isMobile ? "+" : "Новый проект"}», чтобы заполнить анкету и подобрать наставника.
-            </div>
-          </div>
-        ) : (
+        {projects.loading && <LoadingSkeleton variant="cards" />}
+        {projects.error && <ResourceError message={projects.error} retry={projects.reload} />}
+        {!projects.loading && !projects.error && projects.data?.length === 0 && (
+          <EmptyState message="У вас пока нет проектов.">
+            {canCreate && (
+              <button type="button" className={styles.newBtn} onClick={startProject}>
+                {isMobile ? "+ Создать проект" : "Новый проект"}
+              </button>
+            )}
+          </EmptyState>
+        )}
+        {!projects.loading && !projects.error && (projects.data?.length ?? 0) > 0 && (
           <div className={styles.grid}>
-            {projects.map((project) => {
-              const meta = getStatusMeta(project)
-              return (
-                <div key={project.id} className={styles.card}>
-                  <div className={styles.cardTopRow}>
-                    <div className={styles.cardTitle}>{project.brief.name}</div>
+            {projects.data?.map((project) => (
+              <div key={project.id} className={styles.card}>
+                <div className={styles.cardTopRow}>
+                  <div className={styles.cardTitle}>{project.title || "Новый проект"}</div>
+                  {project.status === "draft" && (
                     <button
                       type="button"
                       className={styles.deleteBtn}
-                      aria-label={`Удалить проект ${project.brief.name}`}
-                      title="Удалить проект"
-                      onClick={() => deleteProject(project.id)}
+                      aria-label="Удалить черновик"
+                      onClick={() => void removeProject(project)}
                     >
                       <CloseIcon className={styles.deleteIcon} aria-hidden="true" />
                     </button>
-                  </div>
-
-                  <div
-                    className={`${styles.statusPill} ${meta.badgeTone === "tint" ? styles.statusTint : styles.statusSoft}`}
-                  >
-                    {meta.badge}
-                  </div>
-
-                  <div className={styles.cardDesc}>{project.shortDescription}</div>
-
-                  <div className={styles.spacer} />
-                  <div className={styles.divider} />
-
-                  <div className={styles.detailRow}>
-                    {project.status === "draft" && <FileTextIcon className={styles.detailIcon} aria-hidden="true" />}
-                    {project.status === "pending_mentor" && <SendIcon className={styles.detailIcon} aria-hidden="true" />}
-                    {project.status === "accompaniment" && <UserIcon className={styles.detailIcon} aria-hidden="true" />}
-                    <span>{meta.detail}</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    className={styles.cardBtn}
-                    onClick={() => openProject(project)}
-                  >
-                    {meta.buttonLabel}
-                  </button>
+                  )}
                 </div>
-              )
-            })}
+                <div className={styles.statusPill}>{statusLabel(project)}</div>
+                <div className={styles.cardDesc}>
+                  {project.problem || "Заполните анкету проекта, чтобы подобрать наставника."}
+                </div>
+                <div className={styles.spacer} />
+                <div className={styles.divider} />
+                <div className={styles.detailRow}>
+                  {project.status === "draft"
+                    ? "Дополнить анкету"
+                    : project.status === "waiting_mentor"
+                      ? "Заявки наставникам"
+                      : "Открыть план проекта"}
+                </div>
+                <button type="button" className={styles.cardBtn} onClick={() => openProject(project)}>
+                  {project.status === "draft" ? "Дополнить анкету" : "Открыть"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {progress.error && (
+          <div role="status">
+            Не удалось проверить доступ к созданию.{" "}
+            <button type="button" onClick={progress.reload}>
+              Повторить
+            </button>
           </div>
         )}
       </div>
-
-      {isMobile && (
-        <button
-          type="button"
-          className={styles.fabBtn}
-          aria-label="Новый проект"
-          onClick={() => navigate("/projects/new")}
-        >
-          <PlusIcon className={styles.fabIcon} aria-hidden="true" />
-        </button>
-      )}
     </div>
   )
 }

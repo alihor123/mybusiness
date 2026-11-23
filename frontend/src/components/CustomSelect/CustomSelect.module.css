@@ -42,6 +42,7 @@
   border-color: var(--color-muted);
 }
 
+.trigger:focus-visible,
 .trigger[data-focus-visible],
 .trigger[data-pressed],
 .root[data-open] .trigger {

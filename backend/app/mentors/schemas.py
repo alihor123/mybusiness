@@ -22,3 +22,8 @@ class MentorOut(BaseModel):
     is_demo: bool
     accepts_demo_applications: bool
     active: bool
+
+
+class MentorPage(BaseModel):
+    items: list[MentorOut]
+    next_offset: int | None

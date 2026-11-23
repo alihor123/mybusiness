@@ -95,6 +95,42 @@
   background: var(--color-accent-hover);
 }
 
+.meetingForm,
+.meetingForm label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.meetingForm {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.meetingTitle {
+  font-weight: 600;
+}
+
+.meetingForm label {
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.meetingForm input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink);
+  background: var(--color-white);
+}
+
+.meetingForm input:focus {
+  border-color: var(--color-accent);
+}
+
 .arrowIcon {
   width: 18px;
   height: 18px;

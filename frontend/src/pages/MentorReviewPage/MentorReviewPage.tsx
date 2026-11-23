@@ -1,147 +1,174 @@
 import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
-import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
-import FileTextIcon from "../../assets/icons/file-text.svg?react"
-import DownloadIcon from "../../assets/icons/download.svg?react"
-import { useApp } from "../../contexts/AppContext"
+import { getProjectPlan } from "../../api/projects"
+import { decideSubmission, downloadAttachment } from "../../api/accompaniment"
+import useResource from "../../hooks/useResource"
+import { LoadingSkeleton, ResourceError } from "../../components/AsyncState/AsyncState"
+import AiActivity from "../../components/AsyncState/AiActivity"
+import { useToast } from "../../contexts/ToastContext"
 import styles from "./MentorReviewPage.module.css"
 
-// Позволяет наставнику проверить ответ ученика, скачать материалы и вынести решение.
+// Загружает задачи проекта наставника и показывает решения по выбранной работе.
 export default function MentorReviewPage() {
-  const { projectId, taskId } = useParams()
-  const { projects, reviewStudentTask } = useApp()
-
-  const project = projects.find((item) => item.id === projectId) ?? projects[0]
-  const task = project.tasks.find((item) => item.id === taskId) ?? project.tasks[1] ?? project.tasks[0]
-
-  // Комментарий наставника и уведомление о принятом решении.
-  const [comment, setComment] = useState(
-    task.mentorComment || "Добавьте конкретные примеры и уточните выводы.",
+  const { projectId = "", taskId = "" } = useParams()
+  const {
+    data: plan,
+    loading,
+    error,
+    reload,
+  } = useResource(`mentor-plan-${projectId}`, (signal) => getProjectPlan(projectId, signal))
+  const { showToast } = useToast()
+  // Черновик комментария, ответ сервера и защита от повторного решения.
+  const [comment, setComment] = useState("")
+  const [decisionError, setDecisionError] = useState(false)
+  const [busy, setBusy] = useState(false)
+  if (loading && !plan) return (
+    <div className={styles.page}>
+      <Link to="/mentor/projects" className={styles.backLink}>← К списку проектов</Link>
+      <div className={styles.headerRow}>
+        <div className={styles.headingCol}>
+          <div className={styles.title} role="heading" aria-level={1}>ПРОВЕРКА РАБОТ</div>
+        </div>
+      </div>
+      <LoadingSkeleton variant="lesson" />
+    </div>
   )
-  const [statusNotice, setStatusNotice] = useState("")
+  if (error) return <ResourceError message={error} retry={reload} />
+  const task = plan?.tasks.find((item) => item.id === taskId)
+  if (!task) return <div>Задача не найдена</div>
+  const submission = task.submissions[task.submissions.length - 1]
+  const canAccept = task.allowed_actions.includes("accept")
+  const canRequestRevision = task.allowed_actions.includes("request_revision")
 
-  // Определяет подпись бейджа статуса проверки в шапке.
-  function getBadgeLabel() {
-    if (task.status === "completed") return "Принято"
-    if (task.status === "rework") return "На доработке"
-    return "На проверке"
+  // Перечитывает историю и оставляет на экране подтверждение решения.
+  async function decide(decision: "accept" | "revision_requested") {
+    if (!submission || busy) return
+    setBusy(true)
+    setDecisionError(false)
+    try {
+      await decideSubmission(submission.id, decision, comment)
+      const message = decision === "accept" ? "Работа принята" : "Работа возвращена на доработку"
+      showToast({ message, type: "success" })
+      reload()
+    } catch (error) {
+      setDecisionError(true)
+    } finally {
+      setBusy(false)
+    }
   }
 
-  // Сохраняет решение наставника по текущей задаче.
-  function handleDecision(decision: "completed" | "rework") {
-    reviewStudentTask(project.id, task.id, decision, comment)
-    setStatusNotice(
-      decision === "completed"
-        ? "Результат принят. Прогресс проекта обновлён."
-        : "Работа возвращена ученику на доработку с вашим комментарием.",
-    )
+  // Скачивает защищённое вложение в текущей сессии наставника.
+  async function download(id: string, name: string) {
+    try {
+      const blob = await downloadAttachment(id)
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = url
+      anchor.download = name
+      anchor.click()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (error) {
+      showToast({
+        message: error instanceof Error ? error.message : "Не удалось скачать файл",
+        type: "error",
+      })
+    }
   }
-
-  // Имитирует скачивание прикреплённого файла ученика.
-  function handleDownload(fileName: string) {
-    setStatusNotice(`Файл «${fileName}» подготовлен к скачиванию (мок).`)
-  }
-
-  const studentAnswer =
-    task.answer.trim() ||
-    "Провёл 5 интервью со студентами. Трое покупают кофе перед парами и жалуются на очередь."
-
-  const attachedFiles =
-    task.files.length > 0
-      ? task.files
-      : [{ id: "mock-pdf", name: "Интервью.pdf", size: "1,2 МБ" }]
-
   return (
     <div className={styles.page}>
       <Link to="/mentor/projects" className={styles.backLink}>
-        <ChevronLeftIcon className={styles.backIcon} aria-hidden="true" />
-        <span>К списку проектов</span>
+        ← К списку проектов
       </Link>
-
       <div className={styles.headerRow}>
         <div className={styles.headingCol}>
           <div className={styles.title} role="heading" aria-level={1}>
             ПРОВЕРКА РАБОТ
           </div>
-          <div className={styles.context}>
-            {project.brief.name} / {task.title}
-          </div>
+          <div className={styles.context}>{task.title}</div>
         </div>
-
-        <div
-          className={`${styles.statusBadge} ${task.status === "completed" ? styles.statusBadgeSuccess : ""}`}
-        >
-          {getBadgeLabel()}
+        <div className={styles.statusBadge}>
+          {task.status === "accepted"
+            ? "Принято"
+            : task.status === "revision_requested"
+              ? "На доработке"
+              : task.status === "submitted"
+                ? "На проверке"
+                : "Черновик"}
         </div>
       </div>
-
-      <div className={styles.criteriaCard}>
-        <div className={styles.cardHeadingSmall}>Задача</div>
-        <div className={styles.criteriaText}>{task.criteriaText}</div>
-      </div>
-
+      <section className={styles.criteriaCard}>
+        <div className={styles.cardHeadingSmall}>Условие</div>
+        <div className={styles.criteriaText}>{task.condition}</div>
+        <ul>
+          {task.criteria.map((criterion) => (
+            <li key={criterion}>{criterion}</li>
+          ))}
+        </ul>
+      </section>
       <div className={styles.reviewGrid}>
-        <div className={styles.panelCard}>
-          <div className={styles.cardHeading}>Ответ ученика</div>
-
-          <div className={styles.answerBox}>{studentAnswer}</div>
-
-          <div className={styles.filesList}>
-            {attachedFiles.map((file) => (
-              <div key={file.id} className={styles.fileRow}>
-                <FileTextIcon className={styles.fileIcon} aria-hidden="true" />
-                <div className={styles.fileMeta}>
-                  <div className={styles.fileName}>{file.name}</div>
-                  <div className={styles.fileSize}>{file.size}</div>
-                </div>
+        <section className={styles.panelCard}>
+          <div className={styles.cardHeading}>История отправок</div>
+          {task.submissions.map((item) => {
+            const attachment = item.attachment
+            return (
+              <article key={item.id}>
+                <strong>
+                  Работа {item.number} · {new Date(item.created_at).toLocaleString("ru-RU")}
+                </strong>
+                <p>{item.text}</p>
+                {item.decision_comment && <p>{item.decision_comment}</p>}
+                {attachment && (
+                  <button
+                    type="button"
+                    className={styles.downloadBtn}
+                    onClick={() => void download(attachment.id, attachment.filename)}
+                  >
+                    Скачать {attachment.filename}
+                  </button>
+                )}
+              </article>
+            )
+          })}
+          {!submission && <p>Отправок пока нет</p>}
+        </section>
+        {(canAccept || canRequestRevision) && (
+          <section className={styles.panelCard}>
+            <label className={styles.commentLabel}>
+              Комментарий наставника
+              <textarea
+                className={styles.commentTextarea}
+                value={comment}
+                maxLength={4000}
+                onChange={(event) => setComment(event.target.value)}
+              />
+            </label>
+            <div className={styles.decisionRow}>
+              {canRequestRevision && (
                 <button
                   type="button"
-                  className={styles.downloadBtn}
-                  aria-label={`Скачать ${file.name}`}
-                  onClick={() => handleDownload(file.name)}
+                  className={styles.outlineBtn}
+                  disabled={busy || !comment.trim()}
+                  onClick={() => void decide("revision_requested")}
                 >
-                  <DownloadIcon className={styles.downloadIcon} aria-hidden="true" />
+                  На доработку
                 </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.panelCard}>
-          <label className={styles.commentLabel} htmlFor="mentor-comment-input">
-            Комментарий наставника
-          </label>
-          <textarea
-            id="mentor-comment-input"
-            className={styles.commentTextarea}
-            value={comment}
-            placeholder="Напишите обратную связь по критериям задачи..."
-            onChange={(event) => {
-              setComment(event.target.value)
-              setStatusNotice("")
-            }}
-          />
-
-          <div className={styles.decisionRow}>
-            <button
-              type="button"
-              className={styles.outlineBtn}
-              onClick={() => handleDecision("rework")}
-            >
-              На доработку
-            </button>
-            <button
-              type="button"
-              className={styles.primaryBtn}
-              onClick={() => handleDecision("completed")}
-            >
-              Принять результат
-            </button>
-          </div>
-        </div>
+              )}
+              {canAccept && (
+                <button
+                  type="button"
+                  className={styles.primaryBtn}
+                  disabled={busy}
+                  onClick={() => void decide("accept")}
+                >
+                  Принять результат
+                </button>
+              )}
+            </div>
+          </section>
+        )}
       </div>
-
-      {statusNotice && <div className={styles.noticeBox}>{statusNotice}</div>}
+      {busy && <AiActivity status="checking" compact message="Сохраняем решение наставника" />}
+      {decisionError && <AiActivity status="check_unavailable" compact message="Не удалось сохранить решение" onRetry={() => void decide(canAccept ? "accept" : "revision_requested")} />}
     </div>
   )
 }

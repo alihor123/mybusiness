@@ -1,71 +1,116 @@
 import { useEffect, useRef, useState } from "react"
-import { AnimatePresence, motion } from "motion/react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import SearchIcon from "../../assets/icons/search.svg?react"
 import CloseIcon from "../../assets/icons/close.svg?react"
 import CustomSelect from "../../components/CustomSelect/CustomSelect"
 import SidePanel from "../../components/SidePanel/SidePanel"
 import MentorDetailsContent from "../../components/MentorDetailsContent/MentorDetailsContent"
-import { useApp } from "../../contexts/AppContext"
+import { EmptyState, ResourceError } from "../../components/AsyncState/AsyncState"
 import { useIsMobile } from "../../hooks/useIsMobile"
-import type { Mentor } from "../../data/mockData"
+import useResource from "../../hooks/useResource"
+import { errorMessage } from "../../api/client"
+import { searchMentors, type MentorOut } from "../../api/projects"
+import { industryLabels } from "../../components/MentorDetailsContent/mentorLabels"
 import styles from "./MentorsCatalogPage.module.css"
 
-// Каталог наставников: на десктопе панель плавно сдвигает сетку (4 → 3 колонки), на мобилке — нижняя шторка.
-export default function MentorsCatalogPage() {
-  const { mentors } = useApp()
-  const isMobile = useIsMobile(768)
+const industries = [
+  { id: "all", label: "Все отрасли" },
+  ...Object.entries(industryLabels).map(([id, label]) => ({ id, label })),
+]
+const panelHint = "Отправить заявку наставнику можно из анкеты в разделе «Мои проекты»."
 
-  // Локальные фильтры каталога и выбранный наставник для панели подробностей.
+// Показывает каталог, поиск и профиль наставника в исходной раскладке.
+export default function MentorsCatalogPage() {
+  const isMobile = useIsMobile(768)
+  const compactPanel = useIsMobile(1150)
+  const reducedMotion = useReducedMotion()
+  // Ввод и готовый поисковый запрос разделены паузой в 200 мс.
   const [query, setQuery] = useState("")
-  const [industryFilter, setIndustryFilter] = useState("all")
-  const [activeMentor, setActiveMentor] = useState<Mentor | null>(null)
-  // Ссылка на поле поиска для возврата фокуса после сброса.
-  const searchRef = useRef<HTMLInputElement>(null)
+  const [term, setTerm] = useState("")
+  const [industry, setIndustry] = useState("all")
+  const [activeMentor, setActiveMentor] = useState<MentorOut | null>(null)
+  // Нижняя загрузка сохраняет уже показанные карточки при сбое.
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [pageError, setPageError] = useState("")
+  const scrollArea = useRef<HTMLDivElement>(null)
+  const sentinel = useRef<HTMLDivElement>(null)
+  const closePanel = useRef<HTMLButtonElement>(null)
+  const openedBy = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setTerm(query.trim()), 200)
+    return () => window.clearTimeout(timer)
+  }, [query])
+
+  const filter = JSON.stringify([term, industry])
+  const params = { q: term, industry: industry === "all" ? "" : industry }
+  const results = useResource(filter, (signal) => searchMentors({ ...params, offset: 0 }, signal))
+  const nextOffset = results.data?.next_offset
+
+  useEffect(() => {
+    scrollArea.current?.scrollTo({ top: 0 })
+    setActiveMentor(null)
+    setLoadingMore(false)
+    setPageError("")
+  }, [filter])
+
+  useEffect(() => {
+    const root = scrollArea.current
+    const target = sentinel.current
+    if (!root || !target || nextOffset == null || pageError) return
+    const controller = new AbortController()
+
+    async function loadPage(offset: number) {
+      setLoadingMore(true)
+      try {
+        const page = await searchMentors({ ...params, offset }, controller.signal)
+        if (controller.signal.aborted) return
+        results.setData((current) => {
+          if (!current) return current
+          const seen = new Set(current.items.map((mentor) => mentor.id))
+          return {
+            items: [...current.items, ...page.items.filter((mentor) => !seen.has(mentor.id))],
+            next_offset: page.next_offset,
+          }
+        })
+      } catch (error) {
+        if (!controller.signal.aborted)
+          setPageError(errorMessage(error, "Не удалось загрузить ещё наставников"))
+      } finally {
+        if (!controller.signal.aborted) setLoadingMore(false)
+      }
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return
+        observer.unobserve(target)
+        void loadPage(nextOffset)
+      },
+      { root: isMobile ? null : root, rootMargin: "120px" },
+    )
+
+    observer.observe(target)
+    return () => {
+      observer.disconnect()
+      controller.abort()
+    }
+  }, [filter, nextOffset, pageError, isMobile])
 
   useEffect(() => {
     if (!activeMentor || isMobile) return
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setActiveMentor(null)
-      }
+    closePanel.current?.focus({ preventScroll: true })
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") dismissPanel()
     }
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
   }, [activeMentor, isMobile])
 
-  const industries = Array.from(new Set(mentors.map((mentor) => mentor.industry)))
-  const filterOptions = [
-    { id: "all", label: "Все отрасли" },
-    ...industries.map((industry) => ({ id: industry, label: industry })),
-  ]
-
-  const searchText = query.trim().toLowerCase()
-  const visibleMentors = mentors.filter((mentor) => {
-    const matchesIndustry = industryFilter === "all" || mentor.industry === industryFilter
-    if (!matchesIndustry) return false
-    if (!searchText) return true
-    return (
-      mentor.name.toLowerCase().includes(searchText) ||
-      mentor.role.toLowerCase().includes(searchText) ||
-      mentor.industry.toLowerCase().includes(searchText)
-    )
-  })
-
-  // Сбрасывает строку поиска и фильтр отрасли, возвращая фокус в поиск.
-  function resetFilters() {
-    setQuery("")
-    setIndustryFilter("all")
-    searchRef.current?.focus()
-  }
-
-  // Рендерит содержимое профиля наставника для десктопной панели и мобильной шторки.
-  function renderMentorDetails(mentor: Mentor) {
-    return (
-      <MentorDetailsContent
-        mentor={mentor}
-        hint="Отправить заявку наставнику можно из анкеты вашего проекта в разделе «Мои проекты»."
-      />
-    )
+  // Возвращает фокус на открывавшую профиль кнопку.
+  function dismissPanel() {
+    setActiveMentor(null)
+    openedBy.current?.focus({ preventScroll: true })
   }
 
   return (
@@ -75,129 +120,154 @@ export default function MentorsCatalogPage() {
           <div className={styles.title} role="heading" aria-level={1}>
             НАСТАВНИКИ
           </div>
-          <div className={styles.subtitle}>
-            Познакомьтесь со специалистами и их опытом.
-          </div>
+          <div className={styles.subtitle}>Познакомьтесь со специалистами и их опытом.</div>
         </div>
-
         <div className={styles.filtersRow}>
-          <label className={styles.searchField} htmlFor="mentors-search-input">
+          <label className={styles.searchField}>
             <SearchIcon className={styles.searchIcon} aria-hidden="true" />
             <input
-              ref={searchRef}
-              id="mentors-search-input"
-              type="text"
+              type="search"
+              aria-label="Поиск по имени или специализации"
               className={styles.searchInput}
               placeholder="Поиск по имени или специализации"
               value={query}
+              maxLength={200}
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
-
           <div className={styles.filterWrap}>
             <CustomSelect
               ariaLabel="Фильтр по отрасли"
               variant="pill"
-              value={industryFilter}
-              options={filterOptions}
-              onChange={setIndustryFilter}
+              value={industry}
+              options={industries}
+              onChange={setIndustry}
             />
           </div>
         </div>
       </div>
-
       <div className={styles.workspace}>
-        <div className={styles.scrollArea}>
-          {visibleMentors.length === 0 ? (
-            <div className={styles.emptyState}>
-              <div className={styles.emptyTitle}>Наставники не найдены</div>
-              <div className={styles.emptyDesc}>
-                Попробуйте изменить запрос или сбросить фильтр по отрасли.
-              </div>
-              <button type="button" className={styles.resetBtn} onClick={resetFilters}>
+        <div className={styles.scrollArea} ref={scrollArea}>
+          {!results.data && results.loading && (
+            <div className={styles.grid} role="status" aria-label="Загружаем наставников">
+              {Array.from({ length: 4 }, (_, index) => (
+                <div key={index} className={styles.card} aria-hidden="true">
+                  <div className={styles.photoWrap} />
+                  <div className={`${styles.placeholder} ${styles.namePlaceholder}`} />
+                  <div className={`${styles.placeholder} ${styles.rolePlaceholder}`} />
+                  <div className={`${styles.placeholder} ${styles.buttonPlaceholder}`} />
+                </div>
+              ))}
+            </div>
+          )}
+          {results.error && !results.data && <ResourceError message={results.error} retry={results.reload} />}
+          {results.data?.items.length === 0 && (
+            <EmptyState message="Наставники не найдены.">
+              <button
+                type="button"
+                className={styles.resetBtn}
+                onClick={() => {
+                  setQuery("")
+                  setTerm("")
+                  setIndustry("all")
+                }}
+              >
                 Сбросить фильтры
               </button>
-            </div>
-          ) : (
+            </EmptyState>
+          )}
+          {Boolean(results.data?.items.length) && (
             <div className={styles.grid}>
-              {visibleMentors.map((mentor) => {
-                const isSelected = !isMobile && activeMentor?.id === mentor.id
+              {results.data?.items.map((mentor) => {
+                const selected = activeMentor?.id === mentor.id
                 return (
-                  <motion.div
+                  <div
                     key={mentor.id}
-                    layout
-                    transition={{ type: "spring", stiffness: 320, damping: 32 }}
-                    className={`${styles.card} ${isSelected ? styles.cardSelected : ""}`}
+                    className={`${styles.card} ${selected && !isMobile ? styles.cardSelected : ""}`}
                   >
                     <div className={styles.photoWrap}>
-                      <img src={mentor.photo} alt="" loading="lazy" className={styles.photo} />
+                      <img src={mentor.portrait_url} alt="" loading="lazy" className={styles.photo} />
                     </div>
-
                     <div className={styles.cardName}>{mentor.name}</div>
-                    <div className={styles.cardRole}>{mentor.role}</div>
-                    <div className={styles.cardExp}>{mentor.experience}</div>
-
+                    <div className={styles.cardRole}>{mentor.headline}</div>
+                    <div className={styles.cardExp}>{mentor.experience_label}</div>
                     <div className={styles.cardFooter}>
                       <button
                         type="button"
                         className={styles.moreBtn}
-                        onClick={() =>
-                          setActiveMentor((prev) =>
-                            !isMobile && prev?.id === mentor.id ? null : mentor,
-                          )
-                        }
+                        aria-expanded={selected}
+                        onClick={(event) => {
+                          if (selected) dismissPanel()
+                          else {
+                            openedBy.current = event.currentTarget
+                            setActiveMentor(mentor)
+                          }
+                        }}
                       >
-                        {isSelected ? "Скрыть" : "Подробнее"}
+                        {selected && !isMobile ? "Скрыть" : "Подробнее"}
                       </button>
                     </div>
-                  </motion.div>
+                  </div>
                 )
               })}
             </div>
           )}
+          {loadingMore && (
+            <div className={styles.moreStatus} role="status">
+              Загружаем ещё наставников…
+            </div>
+          )}
+          {pageError && (
+            <div className={styles.moreStatus} role="alert">
+              {pageError}
+              <button type="button" className={styles.resetBtn} onClick={() => setPageError("")}>
+                Повторить
+              </button>
+            </div>
+          )}
+          {nextOffset != null && <div ref={sentinel} className={styles.sentinel} aria-hidden="true" />}
         </div>
-
         <AnimatePresence initial={false}>
           {!isMobile && activeMentor && (
             <motion.div
               className={styles.pushPanelWrap}
               initial={{ width: 0, opacity: 0, marginLeft: 0 }}
-              animate={{ width: 390, opacity: 1, marginLeft: 18 }}
+              animate={{ width: compactPanel ? 304 : 390, opacity: 1, marginLeft: 18 }}
               exit={{ width: 0, opacity: 0, marginLeft: 0 }}
-              transition={{ type: "spring", stiffness: 320, damping: 34 }}
+              transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 320, damping: 34 }}
             >
-              <div className={styles.pushPanel}>
+              <div className={styles.pushPanel} role="region" aria-label={`Наставник: ${activeMentor.name}`}>
                 <div className={styles.pushHeader}>
                   <div className={styles.pushHeaderText}>
                     <div className={styles.pushTitle}>{activeMentor.name}</div>
-                    <div className={styles.pushSubtitle}>{activeMentor.industry}</div>
+                    <div className={styles.pushSubtitle}>{activeMentor.headline}</div>
                   </div>
                   <button
+                    ref={closePanel}
                     type="button"
                     className={styles.pushCloseBtn}
                     aria-label="Закрыть панель"
-                    onClick={() => setActiveMentor(null)}
+                    onClick={dismissPanel}
                   >
                     <CloseIcon className={styles.pushCloseIcon} aria-hidden="true" />
                   </button>
                 </div>
                 <div className={styles.pushBody}>
-                  {renderMentorDetails(activeMentor)}
+                  <MentorDetailsContent mentor={activeMentor} hint={panelHint} />
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-
       {isMobile && (
         <SidePanel
-          open={activeMentor !== null}
+          open={Boolean(activeMentor)}
           title={activeMentor?.name}
-          subtitle={activeMentor?.industry}
-          onClose={() => setActiveMentor(null)}
+          subtitle={activeMentor?.headline}
+          onClose={dismissPanel}
         >
-          {activeMentor && renderMentorDetails(activeMentor)}
+          {activeMentor && <MentorDetailsContent mentor={activeMentor} hint={panelHint} />}
         </SidePanel>
       )}
     </div>

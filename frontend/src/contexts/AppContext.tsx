@@ -1,330 +1,109 @@
-import { createContext, useContext, useState } from "react"
-import type { ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import {
-  INITIAL_MENTORS,
-  INITIAL_MENTOR_REQUESTS,
-  INITIAL_PROFILE,
-  INITIAL_PROJECTS,
-  INITIAL_TRACKS,
-  createBaseTasks,
-} from "../data/mockData"
-import type {
-  LearningTrack,
-  Mentor,
-  MentorRequest,
-  ProjectBrief,
-  ProjectFile,
-  ProjectItem,
-  UserProfile,
-  UserRole,
-} from "../data/mockData"
+  authenticate,
+  getProfile,
+  logout,
+  saveProfile,
+  type EditableProfileFields,
+  type Profile,
+  type SignupFields,
+} from "../api/auth"
+import { ApiError, errorMessage, onSessionExpired } from "../api/client"
+
+type Session =
+  | { status: "loading" | "guest", profile: null }
+  | { status: "error", profile: null, error: string }
+  | { status: "ready", profile: Profile }
 
 type AppContextValue = {
-  isAuthenticated: boolean
-  role: UserRole
-  profile: UserProfile
-  testCompleted: boolean
-  testSkipped: boolean
-  tracks: LearningTrack[]
-  mentors: Mentor[]
-  projects: ProjectItem[]
-  mentorRequests: MentorRequest[]
-  accompanimentUnlocked: boolean
-  loginMock: (email: string) => void
-  registerMock: (data: { firstName: string, lastName: string, email: string }) => void
-  logoutMock: () => void
-  setRole: (role: UserRole) => void
-  updateProfile: (profile: UserProfile) => void
-  completeTest: () => void
-  skipTest: () => void
-  completeTrackStep: (trackId: string, stepId: string) => void
-  saveProjectBrief: (projectId: string | null, brief: ProjectBrief) => string
-  deleteProject: (projectId: string) => void
-  applyToMentor: (projectId: string, mentorId: string) => void
-  cancelMentorApplication: (projectId: string) => void
-  updateTaskDraft: (projectId: string, taskId: string, answer: string, files: ProjectFile[], aiFeedback: string[]) => void
-  submitTaskToMentor: (projectId: string, taskId: string, answer: string, files: ProjectFile[]) => void
-  decideMentorRequest: (requestId: string, decision: "accepted" | "rejected") => void
-  reviewStudentTask: (projectId: string, taskId: string, decision: "completed" | "rework", comment: string) => void
+  session: Session
+  restoreSession: () => void
+  signIn: (mode: "login", email: string, password: string) => Promise<void>
+  signUp: (fields: SignupFields) => Promise<void>
+  signOut: () => Promise<void>
+  updateProfile: (fields: EditableProfileFields) => Promise<Profile>
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
 
-// Хранит единое моковое состояние платформы для ученика и наставника.
+// Восстанавливает серверную сессию и передаёт профилю изменения учётной записи.
 export function AppProvider({ children }: { children: ReactNode }) {
-  // Авторизация, роль и профиль пользователя в моковом режиме.
-  const [isAuthenticated, setIsAuthenticated] = useState(true)
-  const [role, setRole] = useState<UserRole>("student")
-  const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE)
+  // Состояние восстановления и номер попытки пользователя.
+  const [session, setSession] = useState<Session>({ status: "loading", profile: null })
+  const [attempt, setAttempt] = useState(0)
 
-  // Состояние входного тестирования и прохождения учебных треков.
-  const [testCompleted, setTestCompleted] = useState(false)
-  const [testSkipped, setTestSkipped] = useState(false)
-  const [tracks, setTracks] = useState<LearningTrack[]>(INITIAL_TRACKS)
+  useEffect(() => {
+    const controller = new AbortController()
 
-  // Список проектов ученика и заявок, видимых в кабинете наставника.
-  const [projects, setProjects] = useState<ProjectItem[]>(INITIAL_PROJECTS)
-  const [mentorRequests, setMentorRequests] = useState<MentorRequest[]>(INITIAL_MENTOR_REQUESTS)
-
-  // В моковом режиме раздел проектов доступен сразу, но замок в обучении отражает статус треков.
-  const accompanimentUnlocked = tracks.every((track) => track.steps.every((step) => step.completed))
-
-  // Выполняет моковый вход пользователя и обновляет почту в профиле.
-  function loginMock(email: string) {
-    if (email.trim()) {
-      setProfile((prev) => ({ ...prev, email: email.trim() }))
-    }
-    setIsAuthenticated(true)
-  }
-
-  // Сохраняет данные регистрации и авторизует пользователя.
-  function registerMock(data: { firstName: string, lastName: string, email: string }) {
-    setProfile((prev) => ({
-      ...prev,
-      firstName: data.firstName.trim() || prev.firstName,
-      lastName: data.lastName.trim() || prev.lastName,
-      email: data.email.trim() || prev.email,
-    }))
-    setIsAuthenticated(true)
-  }
-
-  // Завершает текущую моковую сессию и возвращает на экран входа.
-  function logoutMock() {
-    setIsAuthenticated(false)
-  }
-
-  // Обновляет личные данные в профиле пользователя.
-  function updateProfile(nextProfile: UserProfile) {
-    setProfile(nextProfile)
-  }
-
-  // Отмечает входной тест завершённым.
-  function completeTest() {
-    setTestCompleted(true)
-    setTestSkipped(false)
-  }
-
-  // Отмечает входной тест пропущенным с полным маршрутом обучения.
-  function skipTest() {
-    setTestSkipped(true)
-  }
-
-  // Отмечает конкретный шаг учебного трека выполненным.
-  function completeTrackStep(trackId: string, stepId: string) {
-    setTracks((prev) =>
-      prev.map((track) => {
-        if (track.id !== trackId) return track
-        return {
-          ...track,
-          steps: track.steps.map((step) => (step.id === stepId ? { ...step, completed: true } : step)),
+    // Проверяет текущий профиль, повтор с обновлением cookie выполняет клиент.
+    async function loadSession() {
+      try {
+        const profile = await getProfile(controller.signal)
+        if (!controller.signal.aborted) setSession({ status: "ready", profile })
+      } catch (error) {
+        if (controller.signal.aborted) return
+        if (error instanceof ApiError && error.status === 401) {
+          setSession({ status: "guest", profile: null })
+          return
         }
-      }),
-    )
-  }
-
-  // Создаёт новый проект или обновляет анкету существующего и возвращает его id.
-  function saveProjectBrief(projectId: string | null, brief: ProjectBrief): string {
-    const shortText = brief.value.trim() || brief.problem.trim() || "Новый предпринимательский проект."
-    if (projectId) {
-      setProjects((prev) =>
-        prev.map((project) =>
-          project.id === projectId
-            ? { ...project, brief, shortDescription: shortText }
-            : project,
-        ),
-      )
-      return projectId
-    }
-
-    const newId = `project-${Date.now()}`
-    const newProject: ProjectItem = {
-      id: newId,
-      shortDescription: shortText,
-      status: "draft",
-      mentorId: null,
-      brief,
-      tasks: createBaseTasks(),
-      meetings: [],
-    }
-    setProjects((prev) => [newProject, ...prev])
-    return newId
-  }
-
-  // Удаляет проект из списка ученика.
-  function deleteProject(projectId: string) {
-    setProjects((prev) => prev.filter((project) => project.id !== projectId))
-  }
-
-  // Отправляет заявку выбранному наставнику и переводит проект в ожидание.
-  function applyToMentor(projectId: string, mentorId: string) {
-    const targetProject = projects.find((item) => item.id === projectId)
-    setProjects((prev) =>
-      prev.map((project) =>
-        project.id === projectId
-          ? { ...project, mentorId, status: "pending_mentor" }
-          : project,
-      ),
-    )
-
-    if (!targetProject) return
-
-    setMentorRequests((prev) => {
-      const exists = prev.some((req) => req.projectId === projectId && req.status === "pending")
-      if (exists) return prev
-      const nextReq: MentorRequest = {
-        id: `req-${Date.now()}`,
-        projectId,
-        projectName: targetProject.brief.name,
-        authorName: `${profile.firstName} ${profile.lastName}`.trim(),
-        industry: targetProject.brief.industry,
-        stage: targetProject.brief.stage,
-        requestText: targetProject.brief.mentorRequest,
-        brief: targetProject.brief,
-        status: "pending",
+        setSession({
+          status: "error",
+          profile: null,
+          error: errorMessage(error, "Не удалось проверить сессию"),
+        })
       }
-      return [nextReq, ...prev]
-    })
+    }
+
+    void loadSession()
+    return () => controller.abort()
+  }, [attempt])
+
+  useEffect(() => onSessionExpired(() => setSession({ status: "guest", profile: null })), [])
+
+  // Повторяет проверку профиля после ошибки сети.
+  function restoreSession() {
+    setSession({ status: "loading", profile: null })
+    setAttempt((current) => current + 1)
   }
 
-  // Отменяет заявку наставнику и возвращает проект в черновик для нового выбора.
-  function cancelMentorApplication(projectId: string) {
-    setProjects((prev) =>
-      prev.map((project) =>
-        project.id === projectId
-          ? { ...project, mentorId: null, status: "draft" }
-          : project,
-      ),
-    )
-    setMentorRequests((prev) => prev.filter((req) => req.projectId !== projectId))
+  // Получает роль из ответа авторизации.
+  async function signIn(mode: "login", email: string, password: string) {
+    const profile = await authenticate(mode, email, password)
+    setSession({ status: "ready", profile })
   }
 
-  // Сохраняет черновик ответа, файлы и результаты предварительной проверки ИИ.
-  function updateTaskDraft(
-    projectId: string,
-    taskId: string,
-    answer: string,
-    files: ProjectFile[],
-    aiFeedback: string[],
-  ) {
-    setProjects((prev) =>
-      prev.map((project) => {
-        if (project.id !== projectId) return project
-        return {
-          ...project,
-          tasks: project.tasks.map((task) =>
-            task.id === taskId ? { ...task, answer, files, aiFeedback } : task,
-          ),
-        }
-      }),
-    )
+  async function signUp(fields: SignupFields) {
+    const profile = await authenticate("register", fields)
+    setSession({ status: "ready", profile })
   }
 
-  // Отправляет выполненную задачу проекта на проверку наставнику.
-  function submitTaskToMentor(projectId: string, taskId: string, answer: string, files: ProjectFile[]) {
-    setProjects((prev) =>
-      prev.map((project) => {
-        if (project.id !== projectId) return project
-        return {
-          ...project,
-          tasks: project.tasks.map((task) =>
-            task.id === taskId ? { ...task, answer, files, status: "review" } : task,
-          ),
-        }
-      }),
-    )
+  // Закрывает локальный кабинет после выхода или подтверждённого истечения сессии.
+  async function signOut() {
+    try {
+      await logout()
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 401) throw error
+    }
+    setSession({ status: "guest", profile: null })
   }
 
-  // Принимает или отклоняет заявку ученика в кабинете наставника.
-  function decideMentorRequest(requestId: string, decision: "accepted" | "rejected") {
-    const targetRequest = mentorRequests.find((req) => req.id === requestId)
-    setMentorRequests((prev) =>
-      prev.map((req) => (req.id === requestId ? { ...req, status: decision } : req)),
-    )
-    if (!targetRequest) return
-
-    setProjects((prev) =>
-      prev.map((project) => {
-        if (project.id !== targetRequest.projectId) return project
-        if (decision === "accepted") {
-          return {
-            ...project,
-            status: "accompaniment",
-            mentorId: project.mentorId ?? INITIAL_MENTORS[0].id,
-          }
-        }
-        return { ...project, status: "draft", mentorId: null }
-      }),
-    )
-  }
-
-  // Сохраняет решение наставника по задаче и открывает следующий шаг при принятии.
-  function reviewStudentTask(
-    projectId: string,
-    taskId: string,
-    decision: "completed" | "rework",
-    comment: string,
-  ) {
-    setProjects((prev) =>
-      prev.map((project) => {
-        if (project.id !== projectId) return project
-        const currentIndex = project.tasks.findIndex((task) => task.id === taskId)
-        return {
-          ...project,
-          tasks: project.tasks.map((task, index) => {
-            if (task.id === taskId) {
-              return { ...task, status: decision, mentorComment: comment }
-            }
-            if (decision === "completed" && index === currentIndex + 1 && task.status === "locked") {
-              return { ...task, status: "current" }
-            }
-            return task
-          }),
-        }
-      }),
-    )
+  // Синхронизирует профиль с ответом сервера.
+  async function updateProfile(fields: EditableProfileFields) {
+    const profile = await saveProfile(fields)
+    setSession({ status: "ready", profile })
+    return profile
   }
 
   return (
-    <AppContext.Provider
-      value={{
-        isAuthenticated,
-        role,
-        profile,
-        testCompleted,
-        testSkipped,
-        tracks,
-        mentors: INITIAL_MENTORS,
-        projects,
-        mentorRequests,
-        accompanimentUnlocked,
-        loginMock,
-        registerMock,
-        logoutMock,
-        setRole,
-        updateProfile,
-        completeTest,
-        skipTest,
-        completeTrackStep,
-        saveProjectBrief,
-        deleteProject,
-        applyToMentor,
-        cancelMentorApplication,
-        updateTaskDraft,
-        submitTaskToMentor,
-        decideMentorRequest,
-        reviewStudentTask,
-      }}
-    >
+    <AppContext.Provider value={{ session, restoreSession, signIn, signUp, signOut, updateProfile }}>
       {children}
     </AppContext.Provider>
   )
 }
 
-// Возвращает состояние и действия платформы из контекста.
+// Даёт страницам доступ к текущему аккаунту.
 export function useApp() {
   const context = useContext(AppContext)
-  if (!context) {
-    throw new Error("useApp должен вызываться внутри AppProvider")
-  }
+  if (!context) throw new Error("useApp требует AppProvider")
   return context
 }
