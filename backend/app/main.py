@@ -1,4 +1,5 @@
 import asyncio
+import mimetypes
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
@@ -57,6 +58,7 @@ for router in (
     events_router,
 ):
     app.include_router(router, prefix="/api/v1")
+mimetypes.add_type("image/webp", ".webp")
 app.mount("/media", StaticFiles(directory=Path(__file__).resolve().parents[1] / "public_media"))
 
 
