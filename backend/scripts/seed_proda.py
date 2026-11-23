@@ -3,7 +3,6 @@
 import asyncio
 import json
 import secrets
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import UUID
 
@@ -11,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.accompaniment.models import AccompanimentPlan, AccompanimentTask, ProjectMeeting
+from app.accompaniment.models import AccompanimentPlan, AccompanimentTask
 from app.accompaniment.service import create_plan
 from app.auth.models import Role, User
 from app.auth.service import hash_password, lock_user
@@ -83,17 +82,6 @@ async def seed_projects(db: AsyncSession) -> None:
             )
             if not tasks or any(task.status != "todo" for task in tasks):
                 raise RuntimeError("PRODA mentor tasks must all start in todo status.")
-            await db.execute(
-                insert(ProjectMeeting)
-                .values(
-                    project_id=project_id,
-                    title="Планирование пилота",
-                    starts_at=datetime.now(timezone.utc) + timedelta(days=7),
-                    url="https://demo.example/meeting",
-                    updated_at=datetime.now(timezone.utc),
-                )
-                .on_conflict_do_nothing(index_elements=[ProjectMeeting.project_id])
-            )
 
 
 async def seed_learning(db: AsyncSession) -> None:
