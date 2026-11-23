@@ -12,6 +12,7 @@ class TextBlock(BaseModel):
     type: Literal["text"]
     title: str | None = None
     text: str
+    is_video_summary: bool = False
 
 
 class ImageBlock(BaseModel):

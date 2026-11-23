@@ -503,6 +503,14 @@
   text-align: left;
 }
 
+.transcriptHeader:hover {
+  background: var(--color-soft);
+}
+
+.transcriptHeader:focus-visible {
+  outline-offset: -3px;
+}
+
 .transcriptIcon {
   width: 22px;
   height: 22px;
@@ -527,11 +535,23 @@
   transform: rotate(180deg);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .transcriptChevron {
+    transition: none;
+  }
+}
+
 .transcriptBody {
+  display: grid;
+  gap: 10px;
   padding: 0 18px 18px;
   font-size: 16px;
   line-height: 1.5;
   color: var(--color-ink);
+}
+
+.transcriptBody p {
+  margin: 0;
 }
 
 .practiceField {

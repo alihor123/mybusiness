@@ -221,7 +221,6 @@ function LessonCard({ step, advance, onReplay }: {
   const [hintError, setHintError] = useState("")
   const [checkError, setCheckError] = useState("")
   const [videoFailed, setVideoFailed] = useState(false)
-  const [videoReady, setVideoReady] = useState(false)
   const [replayCount, setReplayCount] = useState(0)
   // Уход со страницы не должен переводить пользователя на соседний шаг после позднего ответа.
   const mounted = useRef(false)
@@ -347,12 +346,9 @@ function LessonCard({ step, advance, onReplay }: {
       )}
       {step.blocks.map((block, index) => (
         <LessonMaterial
-          key={`${index}-${replayCount}`}
+          key={block.type === "video" ? `${index}-${replayCount}` : index}
           block={block}
-          onVideoEnded={() => setVideoReady(true)}
           onVideoError={() => setVideoFailed(true)}
-          onVideoOpenedExternally={() => setVideoReady(true)}
-          onVideoHalfway={() => setVideoReady(true)}
         />
       ))}
       {!material && (
@@ -520,7 +516,6 @@ function LessonCard({ step, advance, onReplay }: {
               onClick={() => {
                 if (step.type === "video") {
                   setReplayCount((count) => count + 1)
-                  setVideoReady(false)
                   setVideoFailed(false)
                 }
                 onReplay(reducedMotion ? "instant" : "smooth")
@@ -532,11 +527,7 @@ function LessonCard({ step, advance, onReplay }: {
           <button
             type="button"
             className={`${styles.primaryBtn} ${buttonStyles.withIcon}`}
-            disabled={
-              busy ||
-              (!step.credited &&
-                (!step.can_credit || (step.type === "video" && !videoReady)))
-            }
+            disabled={busy || (!step.credited && !step.can_credit)}
             onClick={() => {
               if (step.credited) advance()
               else void finishMaterial(step.type === "theory" ? "text_end" : "video_end")

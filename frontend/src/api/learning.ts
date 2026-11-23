@@ -68,7 +68,7 @@ export type LearningProgress = {
   draft_project_id: string | null
 }
 export type LearningBlock =
-  | { type: "text", title?: string | null, text: string }
+  | { type: "text", title?: string | null, text: string, is_video_summary?: boolean }
   | { type: "image", url: string, alt: string, caption?: string | null }
   | { type: "video", url: string, poster_url?: string | null }
   | { type: "attachment", url: string, title: string }

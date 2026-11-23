@@ -4,41 +4,25 @@ import styles from "./TrackLessonPage.module.css"
 type VideoProps = {
   url: string
   poster?: string | null
-  onEnded: () => void
   onError: () => void
-  onOpenedExternally: () => void
-  onHalfway: () => void
 }
 const rutubeOrigin = "https://rutube.ru"
 const rutubeEmbed = /^https:\/\/rutube\.ru\/play\/embed\/([a-f0-9]{32})\/?$/u
 
-// У встроенного плеера завершение приходит сообщением от конкретного iframe.
-function RutubePlayer({
-  id,
-  onEnded,
-  onError,
-  onOpenedExternally,
-}: { id: string } & Pick<VideoProps, "onEnded" | "onError" | "onOpenedExternally">) {
-  // Ссылка нужна для проверки источника сообщения. Обработчики остаются актуальными между рендерами.
+// Ошибки встроенного плеера приходят сообщением от его iframe.
+function RutubePlayer({ id, onError }: { id: string, onError: () => void }) {
+  // Ссылка нужна для проверки источника сообщения и вызова актуального обработчика.
   const frame = useRef<HTMLIFrameElement>(null)
-  const handlers = useRef({ onEnded, onError })
-  handlers.current = { onEnded, onError }
+  const reportError = useRef(onError)
+  reportError.current = onError
 
   useEffect(() => {
-    let played = false
     function onMessage(event: MessageEvent) {
       if (event.origin !== rutubeOrigin || event.source !== frame.current?.contentWindow) return
       if (typeof event.data !== "string") return
       try {
         const message = JSON.parse(event.data)
-        if (message?.type === "player:playStart" || message?.data?.state === "playing") played = true
-        if (message?.type === "player:error") handlers.current.onError()
-        if (
-          played &&
-          (message?.type === "player:playComplete" ||
-            (message?.type === "player:changeState" && message?.data?.state === "stopped"))
-        )
-          handlers.current.onEnded()
+        if (message?.type === "player:error") reportError.current()
       } catch {
         // Плеер может отправить служебное сообщение вне JSON-контракта.
       }
@@ -64,7 +48,6 @@ function RutubePlayer({
         href={`${rutubeOrigin}/video/${id}/`}
         target="_blank"
         rel="noreferrer"
-        onClick={onOpenedExternally}
       >
         Открыть видео на RUTUBE
       </a>
@@ -73,17 +56,12 @@ function RutubePlayer({
 }
 
 // Поддерживает встроенный RUTUBE и видеофайлы из учебных материалов.
-export default function LessonVideo({ url, poster, onEnded, onError, onOpenedExternally, onHalfway }: VideoProps) {
+export default function LessonVideo({ url, poster, onError }: VideoProps) {
   const rutubeId = rutubeEmbed.exec(url)?.[1]
 
   return rutubeId ? (
     <div className={styles.videoMaterial}>
-      <RutubePlayer
-        id={rutubeId}
-        onEnded={onEnded}
-        onError={onError}
-        onOpenedExternally={onOpenedExternally}
-      />
+      <RutubePlayer id={rutubeId} onError={onError} />
     </div>
   ) : (
     <div className={styles.playerBox}>
@@ -94,12 +72,6 @@ export default function LessonVideo({ url, poster, onEnded, onError, onOpenedExt
         src={url}
         poster={poster ?? undefined}
         className={styles.playerVideo}
-        onTimeUpdate={({ currentTarget: video }) => {
-          if (Number.isFinite(video.duration) && video.duration > 0 && video.currentTime >= video.duration / 2) {
-            onHalfway()
-          }
-        }}
-        onEnded={onEnded}
         onError={onError}
       />
     </div>
