@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -43,3 +43,4 @@ class Diagnostic(Base):
     check_id: Mapped[UUID | None]
     check_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     check_unavailable: Mapped[bool] = mapped_column(default=False)
+    saved_at_ms: Mapped[int | None] = mapped_column(BigInteger)

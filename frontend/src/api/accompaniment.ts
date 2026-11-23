@@ -30,23 +30,27 @@ export async function decideApplication(
   })
 }
 
-function taskForm(text: string, fileAction: "keep" | "replace" | "remove", file?: File) {
+// Текст и файл черновика можно обновлять независимо.
+function taskForm(text: string | null, fileAction: "keep" | "replace" | "remove", savedAt: number, file?: File) {
   const body = new FormData()
-  body.append("text", text)
+  if (text === null) body.append("file_only", "true")
+  else body.append("text", text)
   body.append("file_action", fileAction)
+  body.append("saved_at_ms", String(savedAt))
   if (file) body.append("file", file)
   return body
 }
 
 export async function saveTaskDraft(
   taskId: string,
-  text: string,
+  text: string | null,
   fileAction: "keep" | "replace" | "remove",
+  savedAt: number,
   file?: File,
 ) {
   return request<ProjectTask>(`/tasks/${taskId}/draft`, {
     method: "PUT",
-    body: taskForm(text, fileAction, file),
+    body: taskForm(text, fileAction, savedAt, file),
   })
 }
 
@@ -64,7 +68,7 @@ export async function submitTask(
   fileAction: "keep" | "replace" | "remove",
   file?: File,
 ) {
-  const body = taskForm(text, fileAction, file)
+  const body = taskForm(text, fileAction, Date.now(), file)
   body.append("request_key", requestKey)
   return request<ProjectTask>(`/tasks/${taskId}/submissions`, { method: "POST", body })
 }

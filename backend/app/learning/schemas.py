@@ -128,6 +128,7 @@ class TrackStepsOut(BaseModel):
 
 class DraftIn(BaseModel):
     answer: Answer | None = None
+    saved_at_ms: int | None = Field(None, ge=0)
 
 
 class CompletionIn(BaseModel):
@@ -137,6 +138,7 @@ class CompletionIn(BaseModel):
 class SubmissionIn(BaseModel):
     answer: Answer
     request_key: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_.:-]+$")
+    saved_at_ms: int | None = Field(None, ge=0)
 
 
 class SubmissionOut(BaseModel):

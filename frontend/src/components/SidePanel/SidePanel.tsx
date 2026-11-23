@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import type { ReactNode } from "react"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, motion, useDragControls, useReducedMotion } from "motion/react"
 import type { PanInfo } from "motion/react"
 import CloseIcon from "../../assets/icons/close.svg?react"
 import { useIsMobile } from "../../hooks/useIsMobile"
@@ -13,6 +13,7 @@ type SidePanelProps = {
   onClose: () => void
   footer?: ReactNode
   children: ReactNode
+  dragHandleOnly?: boolean
 }
 
 // Анимированная панель на motion: выезжает справа на десктопе и шторкой снизу на мобилке (со свайпом).
@@ -23,9 +24,11 @@ export default function SidePanel({
   onClose,
   footer,
   children,
+  dragHandleOnly = false,
 }: SidePanelProps) {
   const isMobile = useIsMobile(768)
   const reducedMotion = useReducedMotion()
+  const dragControls = useDragControls()
   // Хранит панель и актуальный обработчик без повторного переноса фокуса.
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef(onClose)
@@ -104,12 +107,20 @@ export default function SidePanel({
               exit={{ y: "100%" }}
               transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 36 }}
               drag="y"
+              dragListener={!dragHandleOnly}
+              dragControls={dragControls}
               dragConstraints={{ top: 0 }}
               dragElastic={{ top: 0.05, bottom: 0.35 }}
               onDragEnd={handleDragEnd}
               onClick={(event) => event.stopPropagation()}
             >
-              <div className={styles.sheetHandle} aria-hidden="true" />
+              <div
+                className={`${styles.sheetHandleArea} ${dragHandleOnly ? styles.dragHandleArea : ""}`}
+                aria-hidden="true"
+                onPointerDown={dragHandleOnly ? (event) => dragControls.start(event) : undefined}
+              >
+                <div className={styles.sheetHandle} />
+              </div>
               <div className={styles.header}>
                 <div className={styles.headerText}>
                   {title && <div className={styles.title}>{title}</div>}

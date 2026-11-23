@@ -9,6 +9,7 @@ import { useApp } from "../../contexts/AppContext"
 import { useToast } from "../../contexts/ToastContext"
 import { useCachedTrack, useLearningCache } from "../../contexts/LearningCacheContext"
 import { useIsMobile } from "../../hooks/useIsMobile"
+import useDraftAutosave from "../../hooks/useDraftAutosave"
 import {
   completeLearningStep,
   requestLearningHelp,
@@ -19,6 +20,7 @@ import {
   type TrackStep,
 } from "../../api/learning"
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
+import ArrowRightIcon from "../../assets/icons/arrow-right.svg?react"
 import BookIcon from "../../assets/icons/book.svg?react"
 import PlayIcon from "../../assets/icons/play.svg?react"
 import PencilIcon from "../../assets/icons/pencil.svg?react"
@@ -28,6 +30,7 @@ import AlertCircleIcon from "../../assets/icons/alert-circle.svg?react"
 import LightbulbIcon from "../../assets/icons/lightbulb.svg?react"
 import LockIcon from "../../assets/icons/lock.svg?react"
 import LessonMaterial from "./LessonMaterial"
+import buttonStyles from "../../styles/ButtonContent.module.css"
 import styles from "./TrackLessonPage.module.css"
 
 const stepIcons: Record<TrackStep["type"], typeof BookIcon> = {
@@ -40,7 +43,7 @@ const stepIcons: Record<TrackStep["type"], typeof BookIcon> = {
 }
 const lockedStepMessage = "Сначала завершите предыдущий обязательный шаг"
 
-// Зачтённый шаг можно открыть повторно, даже если он уже не принимает ответ.
+// Доступны зачтённые и следующие обязательные шаги.
 function canOpenStep(step: TrackStep) {
   return step.credited || step.can_credit
 }
@@ -64,8 +67,8 @@ export default function TrackLessonPage() {
   // Прокручивает только панель урока при смене шага.
   const scrollBody = useRef<HTMLDivElement>(null)
   const stepsNav = useRef<HTMLDivElement>(null)
-  // Прямой переход обрабатывается один раз, пока заменяется адрес страницы.
-  const redirectedFrom = useRef<string | undefined>(undefined)
+  // Предупреждение относится только к попытке нажать на закрытый шаг.
+  const dismissLockNotice = useRef<(() => void) | undefined>(undefined)
 
   useEffect(() => {
     scrollBody.current?.scrollTo({ top: 0 })
@@ -82,19 +85,17 @@ export default function TrackLessonPage() {
   }, [selectedId, track?.id, isMobile])
 
   useEffect(() => {
-    if (!requestedIsLocked) redirectedFrom.current = undefined
-    if (!selected) return
-    if (requestedIsLocked) {
-      if (redirectedFrom.current === requestedId) return
-      redirectedFrom.current = requestedId
-      if (searchParams.has("step")) showToast({ message: lockedStepMessage })
+    if (selected && (requestedIsLocked || !searchParams.has("step"))) {
+      setSearchParams({ step: selected.id }, { replace: true })
     }
-    if (requestedIsLocked || !searchParams.has("step")) setSearchParams({ step: selected.id }, { replace: true })
-  }, [selected?.id, requestedId, requestedIsLocked, searchParams, setSearchParams, showToast])
+  }, [selected?.id, requestedIsLocked, searchParams, setSearchParams])
+
+  useEffect(() => () => dismissLockNotice.current?.(), [])
 
   // Берёт первый доступный следующий шаг с учётом только что сохранённого зачёта.
   function advance(nextRequiredId?: string | null) {
     if (!selected || !track) return
+    dismissLockNotice.current?.()
     const following = track.steps.find((step) => step.position > selected.position && (
       canOpenStep(step) || step.id === nextRequiredId
     ))
@@ -123,7 +124,7 @@ export default function TrackLessonPage() {
           <nav ref={stepsNav} className={styles.stepsNav} aria-label="Шаги трека">
             {track.steps.map((step) => {
               const locked = !canOpenStep(step)
-              const Icon = locked ? LockIcon : stepIcons[step.type]
+              const Icon = stepIcons[step.type]
               const current = step.id === selectedId
               const credit =
                 step.credit_source === "diagnostic"
@@ -141,8 +142,12 @@ export default function TrackLessonPage() {
                   title={locked ? `${step.title}. ${lockedStepMessage}` : step.title}
                   className={`${styles.stepBtn} ${step.credited ? styles.stepBtnDone : ""} ${current ? styles.stepBtnActive : ""} ${locked ? styles.stepBtnLocked : ""}`}
                   onClick={() => {
-                    if (locked) showToast({ message: lockedStepMessage })
-                    else if (!current) setSearchParams({ step: step.id })
+                    if (locked) {
+                      dismissLockNotice.current = showToast({ message: lockedStepMessage })
+                    } else {
+                      dismissLockNotice.current?.()
+                      if (!current) setSearchParams({ step: step.id })
+                    }
                   }}
                 >
                   <Icon className={styles.stepIcon} aria-hidden="true" />
@@ -151,6 +156,7 @@ export default function TrackLessonPage() {
                       <CheckIcon className={styles.doneBadgeIcon} aria-hidden="true" />
                     </span>
                   )}
+                  {locked && <span className={styles.doneBadge}><LockIcon className={styles.doneBadgeIcon} aria-hidden="true" /></span>}
                 </button>
               )
             })}
@@ -174,7 +180,15 @@ export default function TrackLessonPage() {
             <div className={`${styles.placeholder} ${styles.linePlaceholder}`} />
           </div>
         ) : selected ? (
-          <LessonCard key={selected.id} step={selected} advance={advance} />
+          <LessonCard
+            key={selected.id}
+            step={selected}
+            advance={advance}
+            onReplay={(behavior) => {
+              if (isMobile) scrollBody.current?.scrollIntoView({ behavior, block: "start" })
+              else scrollBody.current?.scrollTo({ top: 0, behavior })
+            }}
+          />
         ) : resource.error ? (
           <ResourceError message={resource.error} retry={resource.reload} />
         ) : (
@@ -186,28 +200,34 @@ export default function TrackLessonPage() {
 }
 
 // Обрабатывает черновик, подсказку и зачёт конкретного шага.
-function LessonCard({ step, advance }: { step: LearningStep, advance: (nextRequiredId?: string | null) => void }) {
+function LessonCard({ step, advance, onReplay }: {
+  step: LearningStep
+  advance: (nextRequiredId?: string | null) => void
+  onReplay: (behavior: ScrollBehavior) => void
+}) {
   const { session } = useApp()
   const { showToast } = useToast()
-  const { updateStep, updateProgress } = useLearningCache()
+  const { updateStep, updateDraft, updateProgress } = useLearningCache()
   const reducedMotion = useReducedMotion()
   const written = step.type === "written" || step.type === "final"
   const material = step.type === "theory" || step.type === "video"
-  const editable = step.credit_source !== "earned"
+  const lastAttempt = step.last_attempt
   // Ввод, состояние проверки и подсказка относятся только к выбранному шагу.
   const [answer, setAnswer] = useState<LearningAnswer>(step.draft ?? step.last_attempt?.answer ?? "")
-  const [saving, setSaving] = useState(false)
+  const [retaking, setRetaking] = useState(step.credited && step.draft !== null)
   const [busy, setBusy] = useState(false)
   const [hint, setHint] = useState("")
   const [hintBusy, setHintBusy] = useState(false)
   const [hintError, setHintError] = useState("")
   const [checkError, setCheckError] = useState("")
   const [videoFailed, setVideoFailed] = useState(false)
-  const [videoEnded, setVideoEnded] = useState(false)
-  const [videoOpenedExternally, setVideoOpenedExternally] = useState(false)
+  const [videoReady, setVideoReady] = useState(false)
+  const [replayCount, setReplayCount] = useState(0)
   // Уход со страницы не должен переводить пользователя на соседний шаг после позднего ответа.
   const mounted = useRef(false)
   const completing = useRef(false)
+  const autosave = useDraftAutosave()
+  const editable = !step.credited || retaking
   useEffect(() => {
     mounted.current = true
     return () => {
@@ -216,31 +236,26 @@ function LessonCard({ step, advance }: { step: LearningStep, advance: (nextRequi
   }, [])
 
   const videoAvailable = !videoFailed && step.blocks.some((block) => block.type === "video" && block.url)
-  const saved = step.draft !== null && JSON.stringify(step.draft) === JSON.stringify(answer)
   const hasAnswer =
     typeof answer === "string"
       ? Boolean(answer.trim())
       : Boolean(step.options?.left?.length && step.options.left.every((item) => answer[item.id]))
 
   // Сохраняет выбранный ответ и оставляет введённый текст при сбое сети.
-  async function saveDraft(next: LearningAnswer | null) {
-    if (!editable || busy || saving) return
+  function saveDraft(next: LearningAnswer | null) {
+    if (!editable || busy) return
     setAnswer(next ?? "")
     setCheckError("")
-    setSaving(true)
-    try {
-      updateStep(await saveLearningDraft(step.id, next))
-    } catch (error) {
-      if (mounted.current)
-        showToast({ message: errorMessage(error, "Не удалось сохранить черновик"), type: "error" })
-    } finally {
-      setSaving(false)
-    }
+    const savedAt = Date.now()
+    autosave.schedule(async () => {
+      const saved = await saveLearningDraft(step.id, next, savedAt)
+      updateDraft(step.track_id, step.id, saved.draft, savedAt)
+    })
   }
 
   // Привязывает повтор запроса к ответу и текущей учётной записи.
   async function checkAnswer() {
-    if (!step.can_credit || !hasAnswer || saving || busy) return
+    if ((!step.can_credit && !retaking) || !hasAnswer || busy) return
     setBusy(true)
     setCheckError("")
     const storageKey = `learning-request:${session.profile?.id}:${step.id}`
@@ -253,15 +268,17 @@ function LessonCard({ step, advance }: { step: LearningStep, advance: (nextRequi
     sessionStorage.setItem(storageKey, requestId)
     sessionStorage.setItem(`${storageKey}:answer`, serialized)
     try {
-      const { attempt, progress } = await submitLearningAnswer(step.id, answer, requestId)
+      const { attempt, progress } = await submitLearningAnswer(step.id, answer, requestId, Date.now())
+      autosave.cancel()
       updateStep({
         ...step,
         last_attempt: attempt,
-        draft: attempt.accepted ? null : step.draft,
+        draft: null,
         credited: Boolean(attempt.accepted || step.credited),
         credit_source: attempt.accepted ? "earned" : step.credit_source,
       })
       updateProgress(progress)
+      if (step.credited || attempt.accepted) setRetaking(false)
       sessionStorage.removeItem(storageKey)
       sessionStorage.removeItem(`${storageKey}:answer`)
     } catch (error) {
@@ -330,30 +347,24 @@ function LessonCard({ step, advance }: { step: LearningStep, advance: (nextRequi
       )}
       {step.blocks.map((block, index) => (
         <LessonMaterial
-          key={index}
+          key={`${index}-${replayCount}`}
           block={block}
-          onVideoEnded={() => {
-            setVideoEnded(true)
-            void finishMaterial("video_end")
-          }}
+          onVideoEnded={() => setVideoReady(true)}
           onVideoError={() => setVideoFailed(true)}
-          onVideoOpenedExternally={() => setVideoOpenedExternally(true)}
+          onVideoOpenedExternally={() => setVideoReady(true)}
+          onVideoHalfway={() => setVideoReady(true)}
         />
       ))}
-      {step.prompt && (
+      {!material && (
         <div className={styles.practiceContent}>
-          <div className={styles.practicePrompt}>{step.prompt}</div>
+          {step.prompt && <div className={styles.practicePrompt}>{step.prompt}</div>}
           {written && (
             <textarea
               className={styles.textarea}
               aria-label="Ваш ответ"
               value={typeof answer === "string" ? answer : ""}
-              readOnly={!editable || busy || saving}
-              onChange={(event) => setAnswer(event.target.value)}
-              onBlur={(event) => {
-                if (!saved && hasAnswer && !event.relatedTarget?.closest("[data-practice-action]"))
-                  void saveDraft(answer)
-              }}
+              readOnly={!editable || busy}
+              onChange={(event) => saveDraft(event.target.value)}
             />
           )}
           {step.type === "choice" && (
@@ -363,9 +374,9 @@ function LessonCard({ step, advance }: { step: LearningStep, advance: (nextRequi
                   key={option.id}
                   type="button"
                   className={styles.optionBtn}
-                  disabled={!editable || busy || saving}
+                  disabled={!editable || busy}
                   aria-pressed={answer === option.id}
-                  onClick={() => void saveDraft(option.id)}
+                  onClick={() => saveDraft(option.id)}
                 >
                   <span className={styles.choiceMark} aria-hidden="true" />
                   {option.text}
@@ -384,54 +395,66 @@ function LessonCard({ step, advance }: { step: LearningStep, advance: (nextRequi
                   options={
                     step.options?.right?.map((option) => ({ id: option.id, label: option.text })) ?? []
                   }
-                  disabled={!editable || busy || saving}
+                  disabled={!editable || busy}
                   onChange={(value) => {
                     const next = { ...(typeof answer === "object" ? answer : {}) }
                     for (const key of Object.keys(next)) if (next[key] === value) delete next[key]
                     next[item.id] = value
-                    void saveDraft(next)
+                    saveDraft(next)
                   }}
                 />
               ))}
             </div>
           )}
           <div className={styles.practiceToolbar}>
-            <div className={styles.draftSaved} aria-live="polite">
-              {saved && (
-                <>
-                  <CheckIcon className={styles.draftCheckIcon} aria-hidden="true" />
-                  Черновик сохранён
-                </>
-              )}
-              {saving && "Сохраняем черновик…"}
-            </div>
-            <div className={styles.practiceButtons}>
-              {written && editable && (
+            {editable && (
+              <div className={styles.practiceButtons}>
                 <button
                   type="button"
                   data-practice-action
-                  className={`${styles.outlineBtn} ${styles.helpBtn}`}
-                  onClick={askHelp}
-                  disabled={hintBusy}
-                >
-                  <LightbulbIcon aria-hidden="true" />
-                  {hintBusy ? "Готовим подсказку…" : "Помочь"}
-                </button>
-              )}
-              {editable && (
-                <button
-                  type="button"
-                  data-practice-action
-                  className={styles.primaryBtn}
-                  disabled={!step.can_credit || !hasAnswer || busy || saving}
+                  className={styles.outlineBtn}
+                  disabled={(!step.can_credit && !retaking) || !hasAnswer || busy}
                   onClick={checkAnswer}
                 >
-                  {checkError || step.last_attempt?.accepted === false
-                    ? "Проверить снова"
-                    : "Отправить на проверку"}
+                  Проверить
                 </button>
-              )}
-            </div>
+                {written && (
+                  <button
+                    type="button"
+                    data-practice-action
+                    className={`${styles.outlineBtn} ${styles.helpBtn}`}
+                    onClick={askHelp}
+                    disabled={hintBusy}
+                  >
+                    <LightbulbIcon aria-hidden="true" />
+                    {hintBusy ? "Готовим подсказку…" : "Помочь"}
+                  </button>
+                )}
+              </div>
+            )}
+            {step.credited && !retaking && (
+              <button
+                type="button"
+                className={styles.outlineBtn}
+                disabled={busy}
+                onClick={() => {
+                  setRetaking(true)
+                  setAnswer(step.draft ?? "")
+                  setCheckError("")
+                }}
+              >
+                Перепройти
+              </button>
+            )}
+            <button
+              type="button"
+              className={`${styles.continueBtn} ${buttonStyles.withIcon}`}
+              disabled={!step.credited || busy}
+              onClick={() => advance()}
+            >
+              Продолжить
+              <ArrowRightIcon aria-hidden="true" />
+            </button>
           </div>
           {busy && (
             <AiActivity
@@ -441,32 +464,33 @@ function LessonCard({ step, advance }: { step: LearningStep, advance: (nextRequi
             />
           )}
           {checkError && <AiActivity status="check_unavailable" compact message={checkError} />}
-          {step.last_attempt?.accepted && (
-            <div className={styles.aiSuccessBox} role="status">
-              <CheckIcon className={styles.aiSuccessIcon} aria-hidden="true" />
-              Ответ принят
+          {lastAttempt && lastAttempt.accepted !== null && !retaking && (
+            <div className={`${styles.aiSuccessBox} ${lastAttempt.accepted ? "" : styles.answerIncorrect}`} role="status">
+              {lastAttempt.accepted ? <CheckIcon className={styles.aiSuccessIcon} aria-hidden="true" /> : <AlertCircleIcon className={styles.aiSuccessIcon} aria-hidden="true" />}
+              {lastAttempt.accepted ? "Ответ верный" : "Ответ неверный"}
+              {step.credited && " · Зачёт сохранён"}
             </div>
           )}
-          {step.last_attempt?.remarks.length ? (
-            <div className={styles.aiBox}>
+          {lastAttempt && !retaking && lastAttempt.remarks.length > 0 ? (
+            <div className={`${styles.aiBox} ${lastAttempt.accepted ? styles.answerCorrect : ""}`}>
               <div className={styles.aiTitle}>
-                {step.last_attempt.accepted
+                {lastAttempt.accepted
                   ? "Комментарий к ответу"
                   : written
                     ? "Проверка ИИ"
                     : "Результат проверки"}
               </div>
               <div className={styles.aiList}>
-                {step.last_attempt.remarks.map((remark) => (
+                {lastAttempt.remarks.map((remark) => (
                   <div key={remark} className={styles.aiRow}>
-                    <AlertCircleIcon className={styles.aiIcon} aria-hidden="true" />
+                    {lastAttempt.accepted ? <CheckIcon className={styles.aiIcon} aria-hidden="true" /> : <AlertCircleIcon className={styles.aiIcon} aria-hidden="true" />}
                     {remark}
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            step.last_attempt?.accepted === false && (
+            !retaking && !step.credited && lastAttempt?.accepted === false && (
               <div className={styles.aiBox}>
                 Ответ пока не зачтён. Проверьте условия задания и попробуйте снова.
               </div>
@@ -479,47 +503,48 @@ function LessonCard({ step, advance }: { step: LearningStep, advance: (nextRequi
               {hint}
             </div>
           )}
+          {!step.credited && lastAttempt?.accepted === false && (
+            <div className={styles.continueHint}>Исправьте ответ и повторите проверку.</div>
+          )}
         </div>
       )}
       {step.type === "video" && !videoAvailable && (
         <div className={styles.continueHint}>Видео пока недоступно.</div>
       )}
-      {material ? (
-        <div className={styles.actionsEnd}>
+      {material && (
+        <div className={`${styles.actionsEnd} ${step.credited ? styles.materialActionsReplay : ""}`}>
+          {step.credited && (
+            <button
+              type="button"
+              className={styles.outlineBtn}
+              onClick={() => {
+                if (step.type === "video") {
+                  setReplayCount((count) => count + 1)
+                  setVideoReady(false)
+                  setVideoFailed(false)
+                }
+                onReplay(reducedMotion ? "instant" : "smooth")
+              }}
+            >
+              Перепройти
+            </button>
+          )}
           <button
             type="button"
-            className={styles.primaryBtn}
+            className={`${styles.primaryBtn} ${buttonStyles.withIcon}`}
             disabled={
               busy ||
               (!step.credited &&
-                (!step.can_credit ||
-                  (step.type === "video" && !videoAvailable && !videoOpenedExternally && !videoEnded)))
+                (!step.can_credit || (step.type === "video" && !videoReady)))
             }
             onClick={() => {
               if (step.credited) advance()
-              else if (step.type === "theory") void finishMaterial("text_end")
-              else if (videoOpenedExternally || videoEnded) void finishMaterial("video_end")
-              else showToast({ message: "Посмотрите видео до конца, чтобы завершить шаг" })
+              else void finishMaterial(step.type === "theory" ? "text_end" : "video_end")
             }}
           >
-            {step.type === "video" && videoOpenedExternally && !step.credited && !videoEnded
-              ? "Я посмотрел видео"
-              : "Далее"}
-          </button>
-        </div>
-      ) : (
-        <div className={styles.continueRow}>
-          <button
-            type="button"
-            className={styles.continueBtn}
-            disabled={!step.credited || busy}
-            onClick={() => advance()}
-          >
             Продолжить
+            <ArrowRightIcon aria-hidden="true" />
           </button>
-          {!step.credited && step.last_attempt?.accepted === false && (
-            <div className={styles.continueHint}>Исправьте ответ и повторите проверку.</div>
-          )}
         </div>
       )}
     </motion.section>

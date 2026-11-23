@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey
+from sqlalchemy import BigInteger, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -22,3 +22,4 @@ class Project(Base):
     mentor_request: Mapped[str | None]
     questionnaire_version: Mapped[int] = mapped_column(default=1, server_default="1")
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    saved_at_ms: Mapped[int | None] = mapped_column(BigInteger)

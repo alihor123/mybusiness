@@ -129,7 +129,7 @@ export default function MentorsCatalogPage() {
               type="search"
               aria-label="Поиск по имени или специализации"
               className={styles.searchInput}
-              placeholder="Поиск по имени или специализации"
+              placeholder={isMobile ? "Поиск наставника" : "Поиск по имени или специализации"}
               value={query}
               maxLength={200}
               onChange={(event) => setQuery(event.target.value)}
@@ -190,7 +190,7 @@ export default function MentorsCatalogPage() {
                     </div>
                     <div className={styles.cardName}>{mentor.name}</div>
                     <div className={styles.cardRole}>{mentor.headline}</div>
-                    <div className={styles.cardExp}>{mentor.experience_label}</div>
+                    <div className={styles.cardExp}>Опыт: {mentor.experience_label}</div>
                     <div className={styles.cardFooter}>
                       <button
                         type="button"
@@ -266,6 +266,7 @@ export default function MentorsCatalogPage() {
           title={activeMentor?.name}
           subtitle={activeMentor?.headline}
           onClose={dismissPanel}
+          dragHandleOnly
         >
           {activeMentor && <MentorDetailsContent mentor={activeMentor} hint={panelHint} />}
         </SidePanel>

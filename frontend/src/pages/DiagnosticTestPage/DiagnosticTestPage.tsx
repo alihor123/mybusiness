@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import CustomSelect from "../../components/CustomSelect/CustomSelect"
 import AiActivity from "../../components/AsyncState/AiActivity"
 import { LoadingSkeleton, ResourceError } from "../../components/AsyncState/AsyncState"
-import useResource from "../../hooks/useResource"
+import { useCachedDiagnostic } from "../../contexts/LearningCacheContext"
 import { useToast } from "../../contexts/ToastContext"
+import useDraftAutosave from "../../hooks/useDraftAutosave"
+import ArrowRightIcon from "../../assets/icons/arrow-right.svg?react"
+import buttonStyles from "../../styles/ButtonContent.module.css"
 import {
-  fetchDiagnostic,
   saveDiagnosticDraft,
   skipDiagnostic,
   submitDiagnostic,
@@ -55,21 +57,26 @@ export default function DiagnosticTestPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   // Загружает вопросы и сохранённый черновик диагностики.
-  const resource = useResource("diagnostic", fetchDiagnostic)
+  const resource = useCachedDiagnostic()
   // Хранит ответы формы и номер вопроса между запросами.
   const [answers, setAnswers] = useState<Record<string, LearningAnswer>>({})
   const [currentIndex, setCurrentIndex] = useState(0)
   const [busy, setBusy] = useState(false)
+  // После первого заполнения источник ответов — открытая форма.
+  const hydrated = useRef(false)
+  const autosave = useDraftAutosave()
 
   useEffect(() => {
     if (!resource.data) return
+    if (resource.data.status === "completed" || resource.data.status === "checking")
+      navigate("/learning/results", { replace: true })
+    if (hydrated.current) return
+    hydrated.current = true
     setAnswers(resource.data.answers)
     const index = resource.data.questions.findIndex(
       (question) => question.id === resource.data?.current_question_id,
     )
     setCurrentIndex(Math.max(0, index))
-    if (resource.data.status === "completed" || resource.data.status === "checking")
-      navigate("/learning/results", { replace: true })
   }, [resource.data, navigate])
   if (!resource.data)
     return (
@@ -88,46 +95,27 @@ export default function DiagnosticTestPage() {
   const { questions } = resource.data
   const question = questions[currentIndex]
   if (!question) return <ResourceError message="Вопросы теста недоступны" retry={resource.reload} />
+  const lastQuestion = currentIndex === questions.length - 1
   const answer = answers[question.id]
   const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100)
 
+  // Запоминает номер текущего вопроса и ответы одним снимком.
+  function queueDraft(next: Record<string, LearningAnswer>, nextQuestion: string) {
+    const savedAt = Date.now()
+    autosave.schedule(async () => {
+      const saved = await saveDiagnosticDraft({ answers: next, current_question_id: nextQuestion, saved_at_ms: savedAt })
+      resource.applyDraft(saved, savedAt)
+    })
+  }
+
   // Обновляет черновик после ответа и сохраняет текущий вопрос.
-  async function choose(value: LearningAnswer) {
-    if (busy) return
+  function choose(value: LearningAnswer) {
     const next = { ...answers, [question.id]: value }
     setAnswers(next)
-    setBusy(true)
-    try {
-      const saved = await saveDiagnosticDraft({ answers: next, current_question_id: question.id })
-      resource.setData(saved)
-    } catch (error) {
-      showToast({
-        message: error instanceof Error ? error.message : "Не удалось сохранить ответ",
-        type: "error",
-      })
-    } finally {
-      setBusy(false)
-    }
+    queueDraft(next, question.id)
   }
 
-  // Сохраняет свободный ответ при выходе из поля, не отправляя каждый символ.
-  async function saveCurrentDraft() {
-    if (busy || answer === resource.data?.answers[question.id]) return
-    setBusy(true)
-    try {
-      const saved = await saveDiagnosticDraft({ answers, current_question_id: question.id })
-      resource.setData(saved)
-    } catch (error) {
-      showToast({
-        message: error instanceof Error ? error.message : "Не удалось сохранить ответ",
-        type: "error",
-      })
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  // Сохраняет следующий вопрос вместе с черновиком перед переходом.
+  // Открывает следующий вопрос сразу, сохраняя позицию в фоне.
   async function moveNext() {
     if (busy) return
     if (currentIndex >= questions.length - 1) {
@@ -135,41 +123,16 @@ export default function DiagnosticTestPage() {
       return
     }
     const nextIndex = currentIndex + 1
-    setBusy(true)
-    try {
-      const saved = await saveDiagnosticDraft({ answers, current_question_id: questions[nextIndex].id })
-      resource.setData(saved)
-      setCurrentIndex(nextIndex)
-    } catch (error) {
-      showToast({
-        message: error instanceof Error ? error.message : "Не удалось сохранить ответ",
-        type: "error",
-      })
-    } finally {
-      setBusy(false)
-    }
+    setCurrentIndex(nextIndex)
+    queueDraft(answers, questions[nextIndex].id)
   }
 
-  // Сохраняет текущий вопрос перед возвратом к предыдущему.
-  async function moveBack() {
+  // Возвращается к предыдущему вопросу без ожидания сервера.
+  function moveBack() {
     if (busy) return
     if (currentIndex <= 0) return
-    setBusy(true)
-    try {
-      const saved = await saveDiagnosticDraft({
-        answers,
-        current_question_id: questions[currentIndex - 1].id,
-      })
-      resource.setData(saved)
-      setCurrentIndex((index) => index - 1)
-    } catch (error) {
-      showToast({
-        message: error instanceof Error ? error.message : "Не удалось сохранить ответ",
-        type: "error",
-      })
-    } finally {
-      setBusy(false)
-    }
+    setCurrentIndex(currentIndex - 1)
+    queueDraft(answers, questions[currentIndex - 1].id)
   }
 
   // Возвращает, заполнен ли ответ целиком для выбранного типа вопроса.
@@ -194,7 +157,8 @@ export default function DiagnosticTestPage() {
     }
     setBusy(true)
     try {
-      const result = await submitDiagnostic(answers)
+      const result = await submitDiagnostic(answers, Date.now())
+      autosave.cancel()
       resource.setData(result)
       if (retry || result.status === "checking") navigate("/learning/results")
     } catch (error) {
@@ -203,7 +167,6 @@ export default function DiagnosticTestPage() {
         type: "error",
         persistent: true,
       })
-      resource.reload()
     } finally {
       setBusy(false)
     }
@@ -214,10 +177,9 @@ export default function DiagnosticTestPage() {
     if (busy) return
     setBusy(true)
     try {
-      if (question.type === "free" && answer !== resource.data?.answers[question.id]) {
-        await saveDiagnosticDraft({ answers, current_question_id: question.id })
-      }
-      await skipDiagnostic()
+      const result = await skipDiagnostic({ answers, current_question_id: question.id, saved_at_ms: Date.now() })
+      autosave.cancel()
+      resource.setData(result)
       navigate("/learning")
     } catch (error) {
       showToast({
@@ -260,7 +222,6 @@ export default function DiagnosticTestPage() {
                 role="radio"
                 aria-checked={answer === option.id}
                 className={`${styles.optionBtn} ${answer === option.id ? styles.optionBtnSelected : ""}`}
-                disabled={busy}
                 onClick={() => choose(option.id)}
               >
                 <span
@@ -275,14 +236,10 @@ export default function DiagnosticTestPage() {
         )}
         {question.type === "free" && (
           <textarea
-            className={styles.optionBtn}
+            className={`${styles.optionBtn} ${styles.openAnswer}`}
             value={typeof answer === "string" ? answer : ""}
-            onChange={(event) => setAnswers((current) => ({ ...current, [question.id]: event.target.value }))}
-            onBlur={(event) => {
-              if (!event.relatedTarget?.matches('[name="diagnostic-navigation"]')) void saveCurrentDraft()
-            }}
+            onChange={(event) => choose(event.target.value)}
             aria-label="Ваш ответ"
-            disabled={busy}
           />
         )}
         {question.type === "matching" && question.options?.left && question.options.right && (
@@ -294,7 +251,6 @@ export default function DiagnosticTestPage() {
                   ariaLabel={`Соответствие для: ${item.text}`}
                   placeholder="Выберите соответствие"
                   value={typeof answer === "object" && answer ? (answer[item.id] ?? "") : ""}
-                  disabled={busy}
                   options={(question.options?.right ?? []).map((option) => ({
                     id: option.id,
                     label: option.text,
@@ -316,7 +272,6 @@ export default function DiagnosticTestPage() {
               type="button"
               name="diagnostic-navigation"
               className={styles.backBtn}
-              disabled={busy}
               onClick={moveBack}
             >
               Назад
@@ -325,11 +280,12 @@ export default function DiagnosticTestPage() {
           <button
             type="button"
             name="diagnostic-navigation"
-            className={styles.nextBtn}
+            className={`${styles.nextBtn} ${buttonStyles.withIcon}`}
             disabled={busy || !hasAnswer()}
             onClick={moveNext}
           >
-            {busy ? "Сохраняем…" : currentIndex === questions.length - 1 ? "Завершить тест" : "Далее"}
+            {busy ? "Проверяем…" : lastQuestion ? "Завершить тест" : "Продолжить"}
+            {!busy && !lastQuestion && <ArrowRightIcon aria-hidden="true" />}
           </button>
         </div>
       </div>

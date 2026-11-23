@@ -51,6 +51,13 @@
   color: var(--color-muted);
 }
 
+.projectNamePlaceholder {
+  width: min(240px, 60%);
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--color-soft);
+}
+
 .projectBannerName {
   font-size: 18px;
   font-weight: 600;

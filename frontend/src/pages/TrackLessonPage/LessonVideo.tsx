@@ -7,6 +7,7 @@ type VideoProps = {
   onEnded: () => void
   onError: () => void
   onOpenedExternally: () => void
+  onHalfway: () => void
 }
 const rutubeOrigin = "https://rutube.ru"
 const rutubeEmbed = /^https:\/\/rutube\.ru\/play\/embed\/([a-f0-9]{32})\/?$/u
@@ -72,7 +73,7 @@ function RutubePlayer({
 }
 
 // Поддерживает встроенный RUTUBE и видеофайлы из учебных материалов.
-export default function LessonVideo({ url, poster, onEnded, onError, onOpenedExternally }: VideoProps) {
+export default function LessonVideo({ url, poster, onEnded, onError, onOpenedExternally, onHalfway }: VideoProps) {
   const rutubeId = rutubeEmbed.exec(url)?.[1]
 
   return rutubeId ? (
@@ -93,6 +94,11 @@ export default function LessonVideo({ url, poster, onEnded, onError, onOpenedExt
         src={url}
         poster={poster ?? undefined}
         className={styles.playerVideo}
+        onTimeUpdate={({ currentTarget: video }) => {
+          if (Number.isFinite(video.duration) && video.duration > 0 && video.currentTime >= video.duration / 2) {
+            onHalfway()
+          }
+        }}
         onEnded={onEnded}
         onError={onError}
       />

@@ -19,10 +19,12 @@ class QuestionOut(BaseModel):
 class Draft(BaseModel):
     answers: dict[str, Answer] = Field(max_length=9)
     current_question_id: str
+    saved_at_ms: int | None = Field(None, ge=0)
 
 
 class Submit(BaseModel):
     answers: dict[str, Answer] = Field(min_length=9, max_length=9)
+    saved_at_ms: int | None = Field(None, ge=0)
 
 
 class TrackScore(BaseModel):

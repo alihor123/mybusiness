@@ -11,6 +11,9 @@
   gap: 8px;
 }
 
+.headingRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.retakeBtn { flex: 0 0 auto; height: 44px; padding: 0 22px; border: 1.5px solid var(--color-accent); border-radius: var(--radius-pill); background: var(--color-white); color: var(--color-accent); font-size: 15px; font-weight: 600; }
+
 .title {
   margin: 0;
   font-size: 46px;
@@ -112,7 +115,12 @@
   background: var(--color-accent);
 }
 
-.hoursText {
+.skeletonCard { min-height: 330px; }
+.skeletonIcon { width: 82px; height: 82px; border-radius: 15px; background: var(--color-soft); }
+.skeletonLine { height: 18px; width: 82%; border-radius: var(--radius-sm); background: var(--color-soft); }
+.skeletonLine:last-child { width: 55%; }
+
+.scoreText {
   font-size: 14px;
   color: var(--color-muted);
 }
@@ -120,6 +128,8 @@
 .footerRow {
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
+  margin-top: auto;
 }
 
 .primaryBtn {
@@ -151,8 +161,21 @@
   }
 
   .title {
-    font-size: 20px;
+    font-size: clamp(16px, 5.1vw, 20px);
   }
+
+  .headingRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px 10px;
+  }
+
+  .headingCol { display: contents; }
+  .headingRow .title { grid-column: 1; grid-row: 1; }
+  .headingRow .retakeBtn { grid-column: 2; grid-row: 1; }
+  .headingRow .subtitle { grid-column: 1 / -1; grid-row: 2; }
+  .retakeBtn { height: 34px; padding: 0 12px; font-size: 12px; }
 
   .subtitle {
     font-size: 13px;
@@ -164,36 +187,64 @@
   }
 
   .card {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    align-items: start;
     padding: 12px;
-    gap: 10px;
+    gap: 8px 10px;
     border-radius: 10px;
+  }
+
+  .cardBody {
+    display: contents;
+  }
+
+  .divider {
+    display: none;
+  }
+
+  .cardDesc,
+  .volumeBlock {
+    grid-column: 1 / -1;
   }
 
   .iconBox {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
   }
 
   .cardIcon {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
   }
 
   .cardTitle {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
     font-size: 16px;
   }
 
   .cardDesc {
+    grid-row: 2;
     font-size: 12.5px;
   }
 
   .volumeBlock {
-    gap: 6px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px 8px;
+    padding-top: 2px;
   }
 
   .volumeLabel {
     font-size: 12.5px;
+  }
+
+  .levelRow {
+    grid-column: 1;
+    grid-row: 2;
   }
 
   .levelPill {
@@ -201,13 +252,30 @@
     height: 7px;
   }
 
-  .hoursText {
+  .skeletonCard { min-height: 142px; }
+  .skeletonIcon { width: 32px; height: 32px; border-radius: 8px; }
+  .skeletonLine { grid-column: 1 / -1; }
+  .skeletonIcon + .skeletonLine { grid-column: 2; align-self: center; width: 65%; }
+
+  .scoreText {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: center;
     font-size: 12px;
+    text-align: right;
+  }
+
+  .scoreDetail {
+    display: none;
   }
 
   .primaryBtn {
     width: 100%;
     height: 38px;
     font-size: 14px;
+  }
+
+  .footerRow {
+    flex-wrap: wrap;
   }
 }

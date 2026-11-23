@@ -97,14 +97,16 @@ export type TrackBundle = { track: TrackDetail, lessons: LearningStep[] }
 export async function fetchDiagnostic(signal: AbortSignal) {
   return request<Diagnostic>("/diagnostic", { signal })
 }
-export async function saveDiagnosticDraft(data: Pick<Diagnostic, "answers" | "current_question_id">) {
+type DiagnosticDraft = Pick<Diagnostic, "answers" | "current_question_id"> & { saved_at_ms: number }
+
+export async function saveDiagnosticDraft(data: DiagnosticDraft) {
   return request<Diagnostic>("/diagnostic/draft", { method: "PUT", body: data })
 }
-export async function skipDiagnostic() {
-  return request<Diagnostic>("/diagnostic/skip", { method: "POST" })
+export async function skipDiagnostic(body?: DiagnosticDraft) {
+  return request<Diagnostic>("/diagnostic/skip", { method: "POST", body })
 }
-export async function submitDiagnostic(answers: Record<string, LearningAnswer>) {
-  return request<Diagnostic>("/diagnostic/submit", { method: "POST", body: { answers } })
+export async function submitDiagnostic(answers: Record<string, LearningAnswer>, saved_at_ms = Date.now()) {
+  return request<Diagnostic>("/diagnostic/submit", { method: "POST", body: { answers, saved_at_ms } })
 }
 export async function restartDiagnostic() {
   return request<Diagnostic>("/diagnostic/restart", { method: "POST" })
@@ -121,10 +123,10 @@ export async function fetchTrackSteps(trackId: string, signal: AbortSignal) {
 export async function fetchLearningStep(stepId: string, signal: AbortSignal) {
   return request<LearningStep>(`/learning/steps/${encodeURIComponent(stepId)}`, { signal })
 }
-export async function saveLearningDraft(stepId: string, answer: LearningAnswer | null) {
+export async function saveLearningDraft(stepId: string, answer: LearningAnswer | null, saved_at_ms = Date.now()) {
   return request<LearningStep>(`/learning/steps/${encodeURIComponent(stepId)}/draft`, {
     method: "PUT",
-    body: { answer },
+    body: { answer, saved_at_ms },
   })
 }
 export async function completeLearningStep(stepId: string, event: "text_end" | "video_end") {
@@ -133,10 +135,10 @@ export async function completeLearningStep(stepId: string, event: "text_end" | "
     body: { event },
   })
 }
-export async function submitLearningAnswer(stepId: string, answer: LearningAnswer, request_key: string) {
+export async function submitLearningAnswer(stepId: string, answer: LearningAnswer, request_key: string, saved_at_ms = Date.now()) {
   return request<{ attempt: LearningAttempt, progress: LearningProgress }>(
     `/learning/steps/${encodeURIComponent(stepId)}/submissions`,
-    { method: "POST", body: { answer, request_key } },
+    { method: "POST", body: { answer, request_key, saved_at_ms } },
   )
 }
 export async function requestLearningHelp(stepId: string, question: string, current_input: string) {

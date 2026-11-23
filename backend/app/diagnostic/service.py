@@ -1,4 +1,5 @@
 import json
+from time import time_ns
 from uuid import UUID
 
 from sqlalchemy import select
@@ -13,6 +14,20 @@ from app.errors import api_error
 from app.learning.assessment import conflict, invalid_answer, validate_answer
 
 VERSION = 1
+FREE_EXAMPLES = {
+    "diag-idea-free": (
+        "На большой перемене у буфета корпуса Б спрошу трёх студентов, которые ушли из очереди. "
+        "Вопрос: «Что вы сделали в последний раз, когда у буфета была очередь?»"
+    ),
+    "diag-mvp-free": (
+        "До начала перемены студент выбирает напиток в форме и получает номер заказа. "
+        "На перемене забирает кофе по номеру у входа. Успех — минимум 6 из 10 заказавших забрали кофе за 10 минут."
+    ),
+    "diag-sales-free": (
+        "Студенты корпуса Б, заберите кофе у входа без очереди на большой перемене. "
+        "Капучино стоит 150 ₽. Чтобы заказать, напишите «кофе» в чат корпуса до 11:30."
+    ),
+}
 
 
 async def get_questions(db: AsyncSession, version: int) -> list[Question]:
@@ -68,26 +83,38 @@ async def save_draft(db: AsyncSession, user_id: UUID, data: Draft) -> Diagnostic
             return response(attempt, questions)
         if attempt.status == "checking":
             raise conflict("CHECK_IN_PROGRESS", "Ответы сохранены и проверяются")
-        by_id = {question.id: question for question in questions}
-        if data.current_question_id not in by_id or not data.answers.keys() <= by_id.keys():
-            raise invalid_answer()
-        for question_id, answer in data.answers.items():
-            question = by_id[question_id]
-            validate_answer(question.type, question.options, answer, partial=True)
-        attempt.answers = data.answers
-        attempt.current_question_id = data.current_question_id
-        attempt.status = "in_progress"
-        attempt.check_unavailable = False
+        apply_draft(attempt, questions, data)
         return response(attempt, questions)
 
 
-async def skip(db: AsyncSession, user_id: UUID) -> DiagnosticOut:
+def apply_draft(attempt: Diagnostic, questions: list[Question], data: Draft) -> None:
+    if data.saved_at_ms is not None and attempt.saved_at_ms is not None and data.saved_at_ms <= attempt.saved_at_ms:
+        return
+    by_id = {question.id: question for question in questions}
+    if data.current_question_id not in by_id or not data.answers.keys() <= by_id.keys():
+        raise invalid_answer()
+    for question_id, answer in data.answers.items():
+        question = by_id[question_id]
+        validate_answer(question.type, question.options, answer, partial=True)
+    attempt.answers = data.answers
+    attempt.current_question_id = data.current_question_id
+    attempt.status = "in_progress"
+    attempt.check_unavailable = False
+    if data.saved_at_ms is not None:
+        attempt.saved_at_ms = data.saved_at_ms
+
+
+async def skip(db: AsyncSession, user_id: UUID, data: Draft | None = None) -> DiagnosticOut:
     async with db.begin():
         attempt, questions = await editable(db, user_id)
         if attempt.status == "checking":
             raise conflict("CHECK_IN_PROGRESS", "Дождитесь завершения проверки")
         if attempt.status != "completed":
+            if data is not None:
+                apply_draft(attempt, questions, data)
             attempt.status = "skipped"
+            clock = data.saved_at_ms if data and data.saved_at_ms is not None else time_ns() // 1_000_000
+            attempt.saved_at_ms = max(attempt.saved_at_ms or 0, clock)
             attempt.check_id = None
             attempt.check_deadline = None
             attempt.check_unavailable = False
@@ -100,6 +127,7 @@ async def restart(db: AsyncSession, user_id: UUID) -> DiagnosticOut:
         if attempt.status not in {"completed", "skipped"}:
             raise conflict("DIAGNOSTIC_NOT_RESTARTABLE", "Завершите или пропустите текущую диагностику")
         attempt.status = "in_progress"
+        attempt.saved_at_ms = max(attempt.saved_at_ms or 0, time_ns() // 1_000_000)
         attempt.current_question_id = questions[0].id
         attempt.answers = {}
         attempt.check_id = None
@@ -129,6 +157,7 @@ async def submit(db: AsyncSession, user_id: UUID, data: Submit) -> DiagnosticOut
         attempt.check_id = None
         # Срок сразу наступил: фоновый обработчик подхватит задание после commit.
         attempt.check_deadline = utcnow()
+        attempt.saved_at_ms = max(attempt.saved_at_ms or 0, data.saved_at_ms or time_ns() // 1_000_000)
         return response(attempt, questions)
 
 
@@ -138,11 +167,18 @@ async def score_answers(ai, questions: list[Question], answers: dict) -> dict[st
     for question in questions:
         answer = answers[question.id]
         if question.type == "free":
-            free.append({"id": question.id, "prompt": question.prompt, "criteria": question.criteria, "answer": answer})
+            free.append({
+                "id": question.id,
+                "prompt": question.prompt,
+                "criteria": question.criteria,
+                "reference_answer": FREE_EXAMPLES.get(question.id),
+                "answer": answer,
+            })
         elif answer == question.answer_key:
             scores[question.track_id] += 1
     result = await ai.complete(
-        "Оцени каждый свободный ответ по его критериям. Верни scores с указанными ID и булевыми оценками.",
+        "Оцени каждый свободный ответ по условию и его критериям. Пример показывает допустимую конкретику. "
+        "Засчитывай равноценные самостоятельные ответы. Верни scores с указанными ID и булевыми оценками.",
         json.dumps(free, ensure_ascii=False),
         FreeScores,
     )

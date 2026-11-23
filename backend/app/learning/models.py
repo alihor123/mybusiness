@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -61,7 +61,8 @@ class Draft(Base):
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
     step_id: Mapped[str] = mapped_column(ForeignKey("learning_steps.id"), primary_key=True)
-    answer: Mapped[str | dict] = mapped_column(JSONB)
+    answer: Mapped[str | dict | None] = mapped_column(JSONB, nullable=False)
+    saved_at_ms: Mapped[int | None] = mapped_column(BigInteger)
 
 
 class Attempt(Base):

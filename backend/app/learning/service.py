@@ -1,7 +1,8 @@
 import json
+from time import time_ns
 from uuid import UUID
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +12,7 @@ from app.auth.tokens import utcnow
 from app.errors import api_error, check_unavailable
 from app.learning.assessment import (
     CHECK_LEASE,
+    Answer,
     CheckDecision,
     claim_check,
     conflict,
@@ -35,6 +37,18 @@ from app.projects.bootstrap import ProjectPrefill
 
 MEDIA_EVENTS = {"theory": "text_end", "video": "video_end"}
 TERMINAL = {"accepted", "rejected"}
+
+LEARNING_EXAMPLES = {
+    "idea-validation-06": "Студенты корпуса Б с десятиминутной переменой. «Как в последний раз пытались купить кофе между парами?» «Что сделали, когда увидели очередь?»",
+    "idea-validation-09": "Сейчас студенты берут кофе в автомате. Предзаказ позволит забрать готовый напиток у входа. Измерю, сколько минут проходит от начала перемены до выдачи в обоих случаях.",
+    "idea-validation-10": "Студенты корпуса Б, у которых 10 минут между парами, часто уходят из очереди. За три дня опрошу 10 студентов и понаблюдаю у буфета. Если 6 уже уходили из очереди за неделю, проверю выдачу предзаказов у входа. Иначе проверю другую проблему.",
+    "mvp-launch-06": "Студент видит объявление в чате, отправляет заказ через форму и забирает кофе по номеру. Бариста вручную сверяет номера, чтобы проверить выдачу до разработки приложения.",
+    "mvp-launch-09": "Проверю, успеют ли студенты забрать предзаказ. Приглашу 10 человек, посчитаю выдачи за одну десятиминутную перемену. Цель — хотя бы 6 выдач.",
+    "mvp-launch-10": "Неделю принимаю заказы через форму из чата корпуса. Бариста вручную собирает заказы и выдаёт по номеру у входа. Из 20 заказавших 12 должны забрать кофе за 10 минут. При успехе расширю тест на соседний корпус, иначе проверю, где возникают задержки.",
+    "first-sales-06": "Студенты корпуса Б, заберите капучино за 150 ₽ у входа без очереди на большой перемене. Напишите «кофе» в чат корпуса до 11:30.",
+    "first-sales-09": "За один день считаю просмотры объявления, заявки и оплаты в штуках. Конверсия заявки в покупку — число оплат, делённое на число заявок, умноженное на 100%.",
+    "first-sales-10": "Студентам корпуса Б предлагаю кофе у входа за 150 ₽ при расходах 85 ₽ на напиток и стакан. Принимаю заявки из чата, считаю 15 оплат за неделю. При достижении цели повторю в соседнем корпусе, иначе разберу причины отказа после заявки.",
+}
 
 
 async def get_step(db: AsyncSession, step_id: str) -> Step:
@@ -155,35 +169,34 @@ async def save_draft(db: AsyncSession, user_id: UUID, step_id: str, data: DraftI
     async with db.begin():
         await lock_user(db, user_id)
         step = await get_step(db, step_id)
-        if data.answer is not None:
+        if "answer" in data.model_fields_set:
             if step.type in MEDIA_EVENTS:
                 raise api_error(422, "NO_ANSWER_EXPECTED", "У материала нет поля ответа")
-            validate_answer(step.type, step.options, data.answer, partial=True)
-            await db.execute(
-                insert(Draft)
-                .values(
-                    user_id=user_id,
-                    step_id=step.id,
-                    answer=data.answer,
-                )
-                .on_conflict_do_update(
-                    index_elements=[Draft.user_id, Draft.step_id],
-                    set_={"answer": data.answer},
-                )
-            )
-        elif "answer" in data.model_fields_set:
-            await db.execute(
-                delete(Draft).where(Draft.user_id == user_id, Draft.step_id == step_id)
-            )
-        await update_position(db, user_id, step)
+            if data.answer is not None:
+                validate_answer(step.type, step.options, data.answer, partial=True)
+            await write_draft(db, user_id, step.id, data.answer, data.saved_at_ms)
+        if data.saved_at_ms is None:
+            await update_position(db, user_id, step)
         return await step_out(db, user_id, step)
+
+
+async def write_draft(
+    db: AsyncSession, user_id: UUID, step_id: str, answer: Answer | None, saved_at_ms: int | None
+) -> None:
+    # Пустой снимок тоже хранит время, чтобы задержанный запрос не вернул старый текст.
+    data = insert(Draft).values(user_id=user_id, step_id=step_id, answer=answer, saved_at_ms=saved_at_ms)
+    update = data.on_conflict_do_update(
+        index_elements=[Draft.user_id, Draft.step_id],
+        set_={"answer": data.excluded.answer, "saved_at_ms": func.coalesce(data.excluded.saved_at_ms, Draft.saved_at_ms)},
+        where=(Draft.saved_at_ms.is_(None) | (Draft.saved_at_ms < data.excluded.saved_at_ms))
+        if saved_at_ms is not None else None,
+    )
+    await db.execute(update)
 
 
 async def require_available(db: AsyncSession, user_id: UUID, step: Step) -> None:
     summary = (await get_route(db, user_id)).summarize(step)
-    if summary.credited:
-        raise conflict("STEP_ALREADY_CREDITED", "Шаг уже зачтён")
-    if not summary.can_credit:
+    if not summary.credited and not summary.can_credit:
         raise conflict("STEP_OUT_OF_ORDER", "Сначала завершите предыдущий обязательный шаг")
 
 
@@ -267,6 +280,10 @@ async def start_submission(
         remarks=[],
     )
     db.add(attempt)
+    current = await db.get(Draft, (user_id, step.id))
+    previous_clock = current.saved_at_ms if current and current.saved_at_ms is not None else -1
+    clock = max(previous_clock + 1, data.saved_at_ms or time_ns() // 1_000_000)
+    await write_draft(db, user_id, step.id, None, clock)
     await update_position(db, user_id, step)
     return attempt, step
 
@@ -276,19 +293,15 @@ async def save_decision(
     attempt: Attempt,
     step: Step,
     decision: CheckDecision,
-) -> None:
+) -> bool:
     attempt.status = "accepted" if decision.accepted else "rejected"
     attempt.remarks = decision.remarks
     attempt.check_id = None
     attempt.check_deadline = None
-    if decision.accepted:
-        await db.execute(
-            delete(Draft).where(
-                Draft.user_id == attempt.user_id,
-                Draft.step_id == step.id,
-            )
-        )
+    new_credit = decision.accepted and await db.get(Credit, (attempt.user_id, step.id)) is None
+    if new_credit:
         await record_credit(db, attempt.user_id, step, attempt.id)
+    return new_credit
 
 
 async def submit(
@@ -358,6 +371,18 @@ async def checked_attempt(
     return attempt
 
 
+async def learning_context(db: AsyncSession, step: Step) -> dict:
+    track = await db.get(Track, step.track_id)
+    return {
+        "track": track.title if track else step.track_id,
+        "track_goal": track.description if track else None,
+        "task": step.title,
+        "prompt": step.prompt,
+        "criteria": step.criteria or [],
+        "reference_answer": LEARNING_EXAMPLES.get(step.id),
+    }
+
+
 async def check_written(
     db: AsyncSession,
     ai: DeepSeekClient,
@@ -367,13 +392,18 @@ async def check_written(
     step: Step,
     data: SubmissionIn,
 ) -> SubmissionOut | None:
+    async with db.begin():
+        context = await learning_context(db, step)
     try:
         decision = await ai.complete(
-            "Проверь ответ по критериям. Дай конкретные замечания на русском языке.",
+            "Проверь ответ по условию и критериям именно этого задания. Для итогов "
+            "оцени план ученика для его проекта. Используй пример как ориентир полноты "
+            "и конкретности. Засчитывай равноценные ответы с другими решениями и числами. "
+            "При отказе назови недостающий пункт и предложи один следующий шаг. При принятии "
+            "дай короткое подтверждение. Пиши по-русски и не добавляй факты за ученика.",
             json.dumps(
                 {
-                    "prompt": step.prompt,
-                    "criteria": step.criteria,
+                    **context,
                     "answer": data.answer,
                 },
                 ensure_ascii=False,
@@ -392,8 +422,8 @@ async def check_written(
         attempt = await checked_attempt(db, user_id, attempt_id, check_id)
         if decision.accepted:
             await require_available(db, user_id, step)
-        await save_decision(db, attempt, step, decision)
-        if decision.accepted and step.type == "final":
+        new_credit = await save_decision(db, attempt, step, decision)
+        if new_credit and step.type == "final":
             attempt.prefill_status = "checking"
             attempt.check_id = check_id
             attempt.check_deadline = utcnow() + CHECK_LEASE
@@ -440,10 +470,13 @@ async def help_with_step(db: AsyncSession, ai: DeepSeekClient, step_id: str, dat
         step = await get_step(db, step_id)
         if step.type not in {"written", "final"}:
             raise api_error(422, "HELP_UNAVAILABLE", "Подсказка доступна для задания с открытым ответом")
-        context = {"title": step.title, "prompt": step.prompt, "blocks": step.blocks}
+        context = await learning_context(db, step)
+        context.pop("reference_answer", None)
     try:
         return await ai.complete(
-            "Дай наводящую учебную подсказку на русском. Не раскрывай готовый ответ.",
+            "Дай наводящую учебную подсказку на русском языке с учётом задания, критериев и "
+            "примера. Не составляй ответ за ученика и не представляй пример как эталон. "
+            "Помоги выбрать следующий конкретный шаг или проверить один пункт ответа.",
             json.dumps(
                 {
                     "task": context,

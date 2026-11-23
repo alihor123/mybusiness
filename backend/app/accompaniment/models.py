@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    BigInteger,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -72,6 +73,8 @@ class TaskDraft(Base):
     text: Mapped[str] = mapped_column(Text, default="")
     attachment_id: Mapped[UUID | None] = mapped_column(ForeignKey("accompaniment_attachments.id"))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    saved_at_ms: Mapped[int | None] = mapped_column(BigInteger)
+    file_saved_at_ms: Mapped[int | None] = mapped_column(BigInteger)
 
 
 class TaskSubmission(Base):

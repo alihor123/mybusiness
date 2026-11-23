@@ -135,6 +135,22 @@
     padding: 0 14px;
   }
 
+  .triggerPill {
+    height: 42px;
+    padding: 0 10px;
+    gap: 6px;
+    font-size: 13px;
+  }
+
+  .triggerPill .chevron {
+    width: 14px;
+    height: 14px;
+  }
+
+  .pillPopover {
+    min-width: min(210px, calc(100vw - 24px));
+  }
+
   .item {
     font-size: 15px;
     padding: 9px 10px;

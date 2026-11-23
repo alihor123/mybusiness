@@ -93,7 +93,7 @@ export const listProjects = (signal?: AbortSignal) => request<ProjectOut[]>("/pr
 export const getProject = (id: string, signal?: AbortSignal) =>
   request<ProjectOut>(`/projects/${id}`, { signal })
 export const createProject = () => request<ProjectOut>("/projects", { method: "POST" })
-export const updateProject = (id: string, body: Partial<ProjectQuestionnaire>) =>
+export const updateProject = (id: string, body: Partial<ProjectQuestionnaire> & { saved_at_ms?: number }) =>
   request<ProjectOut>(`/projects/${id}`, { method: "PATCH", body })
 export const deleteProject = (id: string) => request<void>(`/projects/${id}`, { method: "DELETE" })
 export const getMentors = (signal?: AbortSignal) => request<MentorOut[]>("/mentors", { signal })

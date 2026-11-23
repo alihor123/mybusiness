@@ -25,8 +25,8 @@ async def save_draft(data: Draft, actor: Student, db: Database) -> DiagnosticOut
 
 
 @router.post("/skip")
-async def skip(actor: Student, db: Database) -> DiagnosticOut:
-    return await service.skip(db, actor.user_id)
+async def skip(actor: Student, db: Database, data: Draft | None = None) -> DiagnosticOut:
+    return await service.skip(db, actor.user_id, data)
 
 
 @router.post("/restart")

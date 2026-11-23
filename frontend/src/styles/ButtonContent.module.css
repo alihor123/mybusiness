@@ -1,0 +1,18 @@
+.withIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+}
+
+.withIcon > svg {
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+  position: relative;
+  top: 1px;
+}
+
+.withIcon > svg path {
+  stroke-width: 2.4;
+}

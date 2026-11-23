@@ -149,11 +149,26 @@ async def test_project_mentoring_flow(client, tmp_path, monkeypatch):
         pending = await client.put(
             f"{task}/draft",
             headers=headers,
-            data={"text": "Версия 1", "file_action": "replace"},
+            data={"file_action": "replace", "file_only": "true", "saved_at_ms": "20"},
             files=pdf("v1.pdf"),
         )
         assert pending.status_code == 200, pending.text
         attachment = f"{API}/attachments/{pending.json()['draft_attachment']['id']}"
+        saved_text = await client.put(
+            f"{task}/draft", headers=headers,
+            data={"text": "Версия 1", "saved_at_ms": "30"},
+        )
+        assert saved_text.json()["draft_text"] == "Версия 1"
+        stale_text = await client.put(
+            f"{task}/draft", headers=headers,
+            data={"text": "Ранний снимок", "saved_at_ms": "25"},
+        )
+        assert stale_text.json()["draft_text"] == "Версия 1"
+        stale_file = await client.put(
+            f"{task}/draft", headers=headers,
+            data={"file_action": "remove", "file_only": "true", "saved_at_ms": "18"},
+        )
+        assert attachment.endswith(stale_file.json()["draft_attachment"]["id"])
         assert (await mentor.get(attachment)).status_code == 404
         assert (
             await client.post(f"{task}/preview-check", headers=headers, json={"text": "Версия 1"})
@@ -161,7 +176,7 @@ async def test_project_mentoring_flow(client, tmp_path, monkeypatch):
         first = await client.post(
             f"{task}/submissions",
             headers=headers,
-            data={"text": "Версия 1", "request_key": "try-1", "file_action": "keep"},
+            data={"text": "Версия 1", "request_key": "try-1", "file_action": "keep", "saved_at_ms": "40"},
         )
         assert first.status_code == 200, first.text
         first_id = first.json()["submissions"][0]["id"]
@@ -172,6 +187,11 @@ async def test_project_mentoring_flow(client, tmp_path, monkeypatch):
             json={"decision": "revision_requested", "comment": "Добавь критерий"},
         )
         assert returned.status_code == 200, returned.text
+        late = await client.put(
+            f"{task}/draft", headers=headers,
+            data={"text": "Ранний снимок", "saved_at_ms": "35"},
+        )
+        assert late.json()["draft_text"] == "Версия 1"
         second = await client.post(
             f"{task}/submissions",
             headers=headers,

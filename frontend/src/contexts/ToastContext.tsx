@@ -5,7 +5,7 @@ import CloseIcon from "../assets/icons/close.svg?react"
 import styles from "./ToastContext.module.css"
 
 type Toast = { message: string, type?: "neutral" | "success" | "error", persistent?: boolean }
-type ActiveToast = Toast & { id: number }
+type ActiveToast = Toast & { id: number, closing?: boolean }
 type ToastContextValue = { showToast: (toast: Toast) => () => void }
 
 const ToastContext = createContext<ToastContextValue | null>(null)
@@ -24,7 +24,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   function dismiss(id: number) {
     if (id !== currentId.current) return
     window.clearTimeout(timer.current)
-    setToast(null)
+    setToast((active) => active?.id === id ? { ...active, closing: true } : active)
+  }
+
+  // Убирает уведомление после анимации, если за это время его не заменили.
+  function finishDismiss(id: number) {
+    setToast((active) => active?.id === id && active.closing ? null : active)
   }
 
   // Возвращает закрытие этого уведомления для завершения фоновой операции.
@@ -46,7 +51,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               key={toast.id}
               className={`${styles.toast} ${styles[toast.type ?? "neutral"]}`}
               initial={{ opacity: 0, y: reducedMotion ? 0 : 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={{ opacity: toast.closing ? 0 : 1, y: toast.closing && !reducedMotion ? 10 : 0 }}
+              onAnimationComplete={() => {
+                if (toast.closing) finishDismiss(toast.id)
+              }}
               transition={{ duration: reducedMotion ? 0 : 0.18 }}
             >
               <span>{toast.message}</span>

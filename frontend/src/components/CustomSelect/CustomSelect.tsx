@@ -52,7 +52,7 @@ export default function CustomSelect({
         <ChevronDownIcon className={styles.chevron} aria-hidden="true" />
       </Button>
 
-      <Popover className={styles.popover} offset={6}>
+      <Popover className={variant === "pill" ? `${styles.popover} ${styles.pillPopover}` : styles.popover} offset={6}>
         <ListBox className={styles.listBox}>
           {options.map((option) => (
             <ListBoxItem key={option.id} id={option.id} textValue={option.label} className={styles.item}>

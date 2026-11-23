@@ -3,12 +3,16 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import { getProjectPlan } from "../../api/projects"
 import { saveTaskDraft, submitTask, previewTask } from "../../api/accompaniment"
 import useResource from "../../hooks/useResource"
+import useDraftAutosave from "../../hooks/useDraftAutosave"
 import { createRequestId, errorMessage } from "../../api/client"
 import { LoadingSkeleton, ResourceError } from "../../components/AsyncState/AsyncState"
 import AiActivity from "../../components/AsyncState/AiActivity"
 import { useToast } from "../../contexts/ToastContext"
 import styles from "./ProjectTaskPage.module.css"
 
+type FileEdit = { file: File | null, saved: boolean }
+
+// Задача сопровождения сохраняет изменения ответа по мере ввода.
 export default function ProjectTaskPage() {
   const { projectId = "", taskId = "" } = useParams()
   const navigate = useNavigate()
@@ -20,13 +24,14 @@ export default function ProjectTaskPage() {
     reload,
   } = useResource(`project-plan-${projectId}`, (signal) => getProjectPlan(projectId, signal))
   const task = plan?.tasks.find((item) => item.id === taskId)
+  // Уточнения ученика живут в форме, пока готовится явная отправка.
   const [text, setText] = useState<string | null>(null)
-  const [file, setFile] = useState<File | null>(null)
-  const [removeAttachment, setRemoveAttachment] = useState(false)
+  const [fileEdit, setFileEdit] = useState<FileEdit | null>(null)
   const [remarks, setRemarks] = useState<string[] | null>(null)
-  const [pending, setPending] = useState<"save" | "submit" | "preview" | null>(null)
+  const [pending, setPending] = useState<"submit" | "preview" | null>(null)
   const [checkError, setCheckError] = useState("")
   const requestKey = useRef<{ signature: string, key: string } | null>(null)
+  const autosave = useDraftAutosave()
   if (loading && !plan) return (
     <div className={styles.page}>
       <Link to={`/projects/${projectId}`} className={styles.backLink}>← К плану проекта</Link>
@@ -38,12 +43,27 @@ export default function ProjectTaskPage() {
   if (!task) return <div>Задача не найдена</div>
   const currentTask = task
   const answer = text ?? task.draft_text ?? ""
-  const action = file ? "replace" : removeAttachment ? "remove" : "keep"
-  const signature = `${answer}\u0000${action}\u0000${file ? `${file.name}:${file.size}:${file.lastModified}` : ""}`
+  const file = fileEdit?.file
+  const filename = fileEdit ? file?.name : task.draft_attachment?.filename
+  const signature = `${answer}\u0000${fileEdit ? (file ? `${file.name}:${file.size}:${file.lastModified}` : "remove") : "keep"}`
   const allowed = new Set(task.allowed_actions)
   const editable = allowed.has("save_draft") || allowed.has("submit")
   const busy = pending !== null
-  async function run(operation: "save" | "submit" | "preview") {
+
+  // Отправляет только вложение. Автосохранение текста не повторяет загрузку файла.
+  async function editFile(nextFile: File | null) {
+    const edit = { file: nextFile, saved: false }
+    setFileEdit(edit)
+    try {
+      await saveTaskDraft(currentTask.id, null, nextFile ? "replace" : "remove", Date.now(), nextFile ?? undefined)
+      setFileEdit((current) => current === edit ? { ...edit, saved: true } : current)
+    } catch {
+      // При явной отправке ещё можно передать выбранный файл вместе с ответом.
+    }
+  }
+
+  // Различает предварительную подсказку ИИ и сдачу работы наставнику.
+  async function run(operation: "submit" | "preview") {
     if (busy) return
     setPending(operation)
     try {
@@ -52,14 +72,13 @@ export default function ProjectTaskPage() {
         setRemarks(null)
         const result = await previewTask(currentTask.id, answer)
         setRemarks(result.remarks)
-      } else if (operation === "save") {
-        await saveTaskDraft(currentTask.id, answer, action, file ?? undefined)
-        showToast({ message: "Черновик сохранён", type: "success" })
       } else {
         if (!requestKey.current || requestKey.current.signature !== signature) {
           requestKey.current = { signature, key: createRequestId() }
         }
-        await submitTask(currentTask.id, answer, requestKey.current.key, action, file ?? undefined)
+        const action = !fileEdit || fileEdit.saved ? "keep" : file ? "replace" : "remove"
+        await submitTask(currentTask.id, answer, requestKey.current.key, action, action === "replace" ? file ?? undefined : undefined)
+        autosave.cancel()
         requestKey.current = null
         showToast({ message: "Работа отправлена наставнику", type: "success" })
         navigate(`/projects/${projectId}`)
@@ -68,10 +87,7 @@ export default function ProjectTaskPage() {
       if (operation === "preview") setCheckError(errorMessage(error, "Не удалось проверить черновик"))
       else
         showToast({
-          message: errorMessage(
-            error,
-            operation === "save" ? "Не удалось сохранить черновик" : "Не удалось отправить работу",
-          ),
+          message: errorMessage(error, "Не удалось отправить работу"),
           type: "error",
         })
     } finally {
@@ -116,7 +132,10 @@ export default function ProjectTaskPage() {
             className={styles.textarea}
             value={answer}
             onChange={(event) => {
-              setText(event.target.value)
+              const next = event.target.value
+              const savedAt = Date.now()
+              setText(next)
+              autosave.schedule(() => saveTaskDraft(currentTask.id, next, "keep", savedAt))
               setRemarks(null)
               setCheckError("")
             }}
@@ -124,11 +143,11 @@ export default function ProjectTaskPage() {
         </div>
         <div className={styles.filesSection}>
           <strong>Файл (PDF, JPG или PNG, до 10 МБ)</strong>
-          {task.draft_attachment && !removeAttachment && !file && (
+          {filename && (
             <div>
-              {task.draft_attachment.filename}{" "}
+              {filename}{" "}
               {editable && (
-                <button type="button" onClick={() => setRemoveAttachment(true)}>
+                <button type="button" disabled={busy} onClick={() => void editFile(null)}>
                   Удалить
                 </button>
               )}
@@ -138,16 +157,13 @@ export default function ProjectTaskPage() {
             <input
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
+              disabled={busy}
               onChange={(event) => {
-                setFile(event.target.files?.[0] ?? null)
-                setRemoveAttachment(false)
+                const next = event.currentTarget.files?.[0]
+                if (next) void editFile(next)
+                event.currentTarget.value = ""
               }}
             />
-          )}
-          {file && (
-            <button type="button" onClick={() => setFile(null)}>
-              Убрать выбранный файл
-            </button>
           )}
         </div>
         {remarks && remarks.length > 0 && (
@@ -167,11 +183,6 @@ export default function ProjectTaskPage() {
         {checkError && <AiActivity status="check_unavailable" compact message={checkError} />}
       </section>
       <div className={styles.actionsRow}>
-        {allowed.has("save_draft") && (
-          <button className={styles.outlineBtn} disabled={busy} onClick={() => void run("save")}>
-            Сохранить черновик
-          </button>
-        )}
         {allowed.has("preview_check") && (
           <button className={styles.outlineBtn} disabled={busy} onClick={() => void run("preview")}>
             {checkError ? "Повторить проверку" : "Проверить с ИИ"}

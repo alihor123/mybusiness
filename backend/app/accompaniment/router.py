@@ -59,6 +59,8 @@ async def save_draft(
     actor: ActorDep,
     db: Database,
     text: Annotated[str, Form(max_length=10_000)] = "",
+    saved_at_ms: Annotated[int | None, Form(ge=0)] = None,
+    file_only: Annotated[bool, Form()] = False,
     file_action: Annotated[str, Form()] = "keep",
     file: Annotated[UploadFile | None, File()] = None,
 ):
@@ -75,7 +77,10 @@ async def save_draft(
                 "TASK_NOT_EDITABLE",
                 "Отправленная или принятая работа недоступна для изменения",
             )
-        await service.replace_draft(db, item, text_value=text, file_action=file_action, upload=file)
+        await service.replace_draft(
+            db, item, text_value=None if file_only else text,
+            file_action=file_action, upload=file, saved_at_ms=saved_at_ms,
+        )
         plan = await service.plan_out(db, project.id, owner=True)
         return next(row for row in plan["tasks"] if row["id"] == task_id)
 
@@ -117,6 +122,7 @@ async def submit(
     db: Database,
     text: Annotated[str, Form(max_length=10_000)],
     request_key: Annotated[str, Form(min_length=1, max_length=128)],
+    saved_at_ms: Annotated[int | None, Form(ge=0)] = None,
     file_action: Annotated[str, Form()] = "keep",
     file: Annotated[UploadFile | None, File()] = None,
 ):
@@ -134,6 +140,7 @@ async def submit(
             request_key=request_key,
             file_action=file_action,
             upload=file,
+            saved_at_ms=saved_at_ms,
         )
         plan = await service.plan_out(db, project.id, owner=True)
         return next(row for row in plan["tasks"] if row["id"] == task_id)

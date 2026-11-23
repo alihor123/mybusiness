@@ -95,14 +95,13 @@
 
 .textarea {
   width: 100%;
-  min-height: 150px;
+  height: var(--answer-field-height);
   padding: 14px 18px;
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--color-border);
   font-size: 18px;
   line-height: 1.45;
   color: var(--color-ink);
-  resize: vertical;
 }
 
 .textarea:focus {
@@ -354,7 +353,7 @@
 
   .textarea {
     min-height: 100px;
-    font-size: 14px;
+    font-size: 16px;
     padding: 10px 12px;
   }
 

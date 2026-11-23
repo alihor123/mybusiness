@@ -77,25 +77,6 @@ async function responseError(response: Response) {
   return new ApiError(businessMessages.get(code ?? "") ?? fallback, response.status, code)
 }
 
-function waitForRequestDelay(signal?: AbortSignal) {
-  if (!import.meta.env.DEV) return Promise.resolve()
-  const delay = Number(import.meta.env.VITE_API_DELAY_MS ?? 0)
-  if (!Number.isFinite(delay) || delay <= 0) return Promise.resolve()
-  if (signal?.aborted) return Promise.reject(signal.reason)
-
-  return new Promise<void>((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      signal?.removeEventListener("abort", abort)
-      resolve()
-    }, delay)
-    function abort() {
-      window.clearTimeout(timer)
-      reject(signal?.reason ?? new DOMException("Запрос отменён", "AbortError"))
-    }
-    signal?.addEventListener("abort", abort, { once: true })
-  })
-}
-
 // Передаёт одинаковые параметры прокси и стенду и сохраняет boundary для FormData.
 async function send(path: string, options: RequestOptions) {
   const method = options.method ?? "GET"
@@ -107,7 +88,6 @@ async function send(path: string, options: RequestOptions) {
     if (csrf) headers.set("X-CSRF-TOKEN", csrf)
   }
   try {
-    await waitForRequestDelay(options.signal)
     const timeout = AbortSignal.timeout(method === "GET" ? 20_000 : 120_000)
     const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout
     return await fetch(`${prefix}${path}`, {

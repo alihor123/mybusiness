@@ -187,15 +187,13 @@
 }
 
 .commentTextarea {
-  flex: 1;
-  min-height: 220px;
+  height: var(--answer-field-height);
   padding: 16px 18px;
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--color-border);
   font-size: 18px;
   line-height: 1.45;
   color: var(--color-ink);
-  resize: vertical;
 }
 
 .commentTextarea:focus {
@@ -300,8 +298,7 @@
   }
 
   .criteriaText,
-  .answerBox,
-  .commentTextarea {
+  .answerBox {
     font-size: 13.5px;
   }
 
@@ -310,8 +307,8 @@
   }
 
   .commentTextarea {
-    min-height: 120px;
     padding: 10px 12px;
+    font-size: 16px;
   }
 
   .fileRow {

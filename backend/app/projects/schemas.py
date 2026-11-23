@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 Short = Annotated[str, StringConstraints(strip_whitespace=True, max_length=200)]
 Long = Annotated[str, StringConstraints(strip_whitespace=True, max_length=2000)]
@@ -18,6 +18,7 @@ class Questionnaire(BaseModel):
     problem: Long | None = None
     solution_benefit: Long | None = None
     mentor_request: Long | None = None
+    saved_at_ms: int | None = Field(None, ge=0, exclude=True)
 
 
 class ProjectOut(Questionnaire):

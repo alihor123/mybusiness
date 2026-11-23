@@ -36,20 +36,6 @@
 }
 
 .spinner {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-  border: 2px solid var(--color-tint);
-  border-top-color: var(--color-accent);
-  border-right-color: var(--color-accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spinner { animation: none; }
+  --spinner-size: 18px;
+  --spinner-stroke-width: 5;
 }

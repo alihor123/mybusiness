@@ -1,4 +1,6 @@
+import SpinnerIcon from "../../assets/icons/spinner.svg?react"
 import styles from "./AiActivity.module.css"
+import spinnerStyles from "./Spinner.module.css"
 
 type AiActivityProps = {
   status: "checking" | "check_unavailable" | "completed"
@@ -30,7 +32,9 @@ export default function AiActivity({
       role={status === "check_unavailable" ? "alert" : "status"}
       aria-live={status === "check_unavailable" ? "assertive" : "polite"}
     >
-      {status === "checking" && <span className={styles.spinner} aria-hidden="true" />}
+      {status === "checking" && (
+        <SpinnerIcon className={`${spinnerStyles.spinner} ${styles.spinner}`} aria-hidden="true" />
+      )}
       <span>{label}</span>
       {status === "check_unavailable" && onRetry && (
         <button type="button" onClick={onRetry} disabled={retrying}>

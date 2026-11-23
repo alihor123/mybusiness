@@ -232,7 +232,7 @@
   }
 
   .card {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
     padding: 18px 14px;
   }
@@ -254,16 +254,13 @@
     padding: 0 12px;
   }
 
-  .input {
-    font-size: 14px;
-  }
-
   .submitBtn {
     height: 42px;
     font-size: 15px;
   }
 
   .switchRow {
+    flex-wrap: wrap;
     font-size: 13px;
   }
 }

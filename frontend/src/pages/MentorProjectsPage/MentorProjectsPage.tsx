@@ -115,8 +115,6 @@ export default function MentorProjectsPage() {
   const { data, loading, error, reload } = useResource("mentor-projects", listProjects)
   const projects = (data ?? []).filter((project) => project.status === "accompaniment" || project.status === "archived")
 
-  if (loading && !data) return <LoadingSkeleton variant="cards" />
-  if (error && !data) return <ResourceError message={error} retry={reload} />
   return (
     <div className={styles.page}>
       <div className={styles.headingCol}>
@@ -124,9 +122,10 @@ export default function MentorProjectsPage() {
         <div className={styles.subtitle}>Проекты учеников и работы, ожидающие проверки.</div>
       </div>
       {error && <ResourceError message={error} retry={reload} />}
-      {projects.length === 0
+      {loading && !data && <LoadingSkeleton variant="cards" count={2} />}
+      {data && (projects.length === 0
         ? <EmptyState message="Пока нет проектов на сопровождении" />
-        : <div className={styles.grid}>{projects.map((project) => <MentorProjectCard key={project.id} project={project} />)}</div>}
+        : <div className={styles.grid}>{projects.map((project) => <MentorProjectCard key={project.id} project={project} />)}</div>)}
     </div>
   )
 }

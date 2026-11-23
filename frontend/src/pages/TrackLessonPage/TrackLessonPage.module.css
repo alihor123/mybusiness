@@ -127,6 +127,10 @@
   height: 11px;
 }
 
+.stepBtnLocked .doneBadge {
+  background: var(--color-muted);
+}
+
 .card {
   display: flex;
   flex-direction: column;
@@ -179,7 +183,7 @@
 }
 
 .lessonImageWrap {
-  width: 100%;
+  width: min(100%, 680px);
   align-self: center;
   margin: 0;
   border-radius: var(--radius-sm);
@@ -190,9 +194,8 @@
 .lessonImage {
   display: block;
   width: 100%;
-  height: clamp(160px, 20vw, 260px);
+  aspect-ratio: 16 / 9;
   object-fit: cover;
-  object-position: center 28%;
 }
 
 .imageCaption {
@@ -259,6 +262,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .flowTitleAccent {
@@ -583,13 +588,12 @@
 
 .textarea {
   width: 100%;
-  min-height: 112px;
+  height: var(--answer-field-height);
   padding: 14px 18px;
   border-radius: var(--radius-md);
   border: 1.5px solid var(--color-border);
   font-size: 17px;
   line-height: 1.45;
-  resize: vertical;
 }
 
 .textarea:focus {
@@ -599,10 +603,8 @@
 
 .practiceToolbar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: 14px;
-  flex-wrap: wrap;
 }
 
 .draftSaved {
@@ -624,7 +626,6 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  margin-inline-start: auto;
 }
 
 .helpBtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
@@ -721,15 +722,23 @@
   flex-shrink: 0;
 }
 
-.continueRow {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
+.answerIncorrect {
+  background: var(--color-tint);
+  color: var(--color-accent);
+}
+
+.answerCorrect {
+  background: var(--color-success-tint);
+}
+
+.answerCorrect .aiIcon {
+  color: var(--color-success);
 }
 
 .continueBtn {
-  height: 50px;
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  height: 48px;
   padding: 0 36px;
   border: none;
   border-radius: var(--radius-pill);
@@ -767,6 +776,12 @@
 .actionsEnd {
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.materialActionsReplay {
+  justify-content: space-between;
 }
 
 @media (max-width: 860px) {
@@ -872,8 +887,7 @@
   }
 
   .lessonImage {
-    height: auto;
-    aspect-ratio: 2 / 1;
+    aspect-ratio: 3 / 2;
   }
 
   .flowRow {
@@ -994,9 +1008,8 @@
   }
 
   .textarea {
-    min-height: 82px;
     padding: 8px 10px;
-    font-size: 13px;
+    font-size: 16px;
   }
 
   .draftSaved {
@@ -1023,9 +1036,20 @@
     gap: 6px;
   }
 
+  .aiSuccessBox {
+    gap: 7px;
+    padding: 9px 12px;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .aiSuccessIcon {
+    width: 16px;
+    height: 16px;
+  }
+
   .practiceButtons,
-  .continueRow {
-    width: 100%;
+  .practiceToolbar {
     gap: 8px;
   }
 
@@ -1041,5 +1065,28 @@
 
   .continueHint {
     font-size: 11.5px;
+  }
+
+  .actionsEnd .outlineBtn,
+  .actionsEnd .primaryBtn {
+    flex: 0 1 auto;
+    width: auto;
+    min-width: min(138px, 100%);
+  }
+
+  .materialActionsReplay {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .materialActionsReplay .outlineBtn,
+  .materialActionsReplay .primaryBtn {
+    min-width: 0;
+  }
+
+  .practiceToolbar .outlineBtn,
+  .practiceToolbar .continueBtn {
+    flex: 0 0 auto;
+    width: auto;
   }
 }

@@ -1,6 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
+from time import time_ns
 from uuid import UUID
 
 from conftest import access_csrf, open_client, register
@@ -217,6 +218,17 @@ async def test_short_route_skips_both_exercises_and_keeps_final_required(client)
     completed = (await client.get(f"{BASE}/learning/progress")).json()
     assert completed["can_create_project"]
     assert all(track["credited_required_count"] == 8 for track in completed["tracks"])
+    retaken_step = TRACKS[0]["steps"][2]
+    wrong = next(option["id"] for option in retaken_step["options"]["choices"] if option["id"] != retaken_step["answer_key"])
+    retaken = await send(
+        client, "POST", f"/learning/steps/{retaken_step['id']}/submissions",
+        json={"answer": wrong, "request_key": "retake-after-learning"},
+    )
+    assert retaken.status_code == 200 and retaken.json()["attempt"]["accepted"] is False
+    retake_progress = retaken.json()["progress"]
+    assert retake_progress["can_create_project"] and retake_progress["first_project_id"] == completed["first_project_id"]
+    assert all(track["status"] == "completed" for track in retake_progress["tracks"])
+    assert (await client.get(f"{BASE}/projects")).status_code == 200
     async with get_session_factory()() as db:
         assert (
             await db.scalar(
@@ -246,6 +258,11 @@ async def test_retake_keeps_prior_result_and_diagnostic_credits(client):
     restarted = await send(client, "POST", "/diagnostic/restart")
     assert restarted.json()["status"] == "in_progress"
     assert restarted.json()["results"] == first["results"]
+    late = await send(
+        client, "PUT", "/diagnostic/draft",
+        json={"answers": answers, "current_question_id": QUESTIONS[-1]["id"], "saved_at_ms": 1},
+    )
+    assert late.json()["answers"] == {}
     low_answers = {question["id"]: question.get("answer_key") or "Клиенты подтвердили потребность." for question in QUESTIONS}
     for question in QUESTIONS:
         if question["type"] in {"choice", "matching"}:
@@ -270,3 +287,39 @@ async def test_retake_keeps_prior_result_and_diagnostic_credits(client):
     track_after = (await client.get(f"{BASE}/tracks/idea-validation")).json()
     assert track_after["steps"][4]["credited"] and track_after["steps"][4]["credit_source"] == "diagnostic"
     assert track_after["required_count"] == first_track["required_count"]
+
+
+async def test_late_draft_and_incorrect_lesson_retake_preserve_credit(client):
+    await register(client)
+    steps = TRACKS[0]["steps"]
+    for step in steps[:2]:
+        assert (await do_step(client, step)).status_code == 200
+    step = steps[2]
+    path = f"/learning/steps/{step['id']}"
+    right = step["answer_key"]
+    wrong = next(option["id"] for option in step["options"]["choices"] if option["id"] != right)
+    now = time_ns() // 1_000_000
+
+    saved = await send(client, "PUT", path + "/draft", json={"answer": right, "saved_at_ms": now})
+    assert saved.json()["draft"] == right
+    late = await send(client, "PUT", path + "/draft", json={"answer": wrong, "saved_at_ms": now - 100})
+    assert late.json()["draft"] == right
+
+    accepted = await send(
+        client, "POST", path + "/submissions",
+        json={"answer": right, "request_key": "correct", "saved_at_ms": now + 100},
+    )
+    assert accepted.status_code == 200 and accepted.json()["attempt"]["accepted"]
+    late = await send(client, "PUT", path + "/draft", json={"answer": wrong, "saved_at_ms": now})
+    assert late.json()["draft"] is None
+
+    retried = await send(
+        client, "POST", path + "/submissions",
+        json={"answer": wrong, "request_key": "incorrect", "saved_at_ms": now + 200},
+    )
+    assert retried.status_code == 200 and retried.json()["attempt"]["accepted"] is False
+    assert retried.json()["progress"] == accepted.json()["progress"]
+    bundle = (await client.get(f"{BASE}/tracks/{TRACKS[0]['id']}/steps")).json()
+    assert bundle["lessons"][2]["credit_source"] == "earned"
+    assert bundle["lessons"][2]["last_attempt"]["accepted"] is False
+    assert bundle["lessons"][3]["can_credit"]

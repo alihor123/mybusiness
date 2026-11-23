@@ -2,9 +2,11 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { errorMessage } from "../api/client"
 import {
   fetchLearningProgress,
+  fetchDiagnostic,
   fetchTracks,
   fetchTrackSteps,
   type Diagnostic,
+  type LearningAnswer,
   type LearningProgress,
   type LearningStep,
   type Track,
@@ -14,6 +16,10 @@ import {
 
 type Resource<T> = { data: T | null, error: string | null }
 type LearningCache = {
+  diagnostic: Resource<Diagnostic>
+  setDiagnostic: (diagnostic: Diagnostic | null) => void
+  applyDiagnosticDraft: (diagnostic: Diagnostic, savedAt: number) => void
+  loadDiagnostic: () => void
   tracks: Resource<Track[]>
   progress: Resource<LearningProgress>
   trackBundles: Record<string, Resource<TrackBundle>>
@@ -21,8 +27,8 @@ type LearningCache = {
   loadProgress: () => void
   loadTrack: (trackId: string) => void
   updateStep: (step: LearningStep) => void
+  updateDraft: (trackId: string, stepId: string, draft: LearningAnswer | null, savedAt: number) => void
   updateProgress: (progress: LearningProgress) => void
-  observeDiagnostic: (diagnostic: Diagnostic) => void
 }
 
 const empty = { data: null, error: null }
@@ -32,11 +38,27 @@ const Context = createContext<LearningCache | null>(null)
 export function LearningCacheProvider({ children }: { children: ReactNode }) {
   // Список, права на проекты и полностью загруженные уроки.
   const [tracks, setTracks] = useState<Resource<Track[]>>(empty)
+  const [diagnostic, setDiagnosticState] = useState<Resource<Diagnostic>>(empty)
   const [progress, setProgress] = useState<Resource<LearningProgress>>(empty)
   const [trackBundles, setTrackBundles] = useState<Record<string, Resource<TrackBundle>>>({})
   // Один запрос на ресурс. Старые ответы игнорируются после отмены.
   const pending = useRef(new Map<string, AbortController>())
-  const diagnosticResult = useRef("")
+  const diagnosticClock = useRef(0)
+  const draftClocks = useRef(new Map<string, number>())
+
+  // Результат явного действия заменяет старый запрос диагностики.
+  function setDiagnostic(next: Diagnostic | null) {
+    cancel("diagnostic")
+    diagnosticClock.current = Date.now()
+    setDiagnosticState({ data: next, error: null })
+  }
+
+  // Ответ черновика учитывается при возврате к форме, если ещё актуален.
+  function applyDiagnosticDraft(next: Diagnostic, savedAt: number) {
+    if (savedAt < diagnosticClock.current) return
+    diagnosticClock.current = savedAt
+    setDiagnosticState({ data: next, error: null })
+  }
 
   useEffect(
     () => () => {
@@ -82,6 +104,31 @@ export function LearningCacheProvider({ children }: { children: ReactNode }) {
     void load("progress", fetchLearningProgress, setProgress, progress.data)
   }
 
+  function loadDiagnostic() {
+    void load("diagnostic", fetchDiagnostic, setDiagnosticState, diagnostic.data)
+  }
+
+  // Один фоновый опрос поддерживает статус диагностики актуальным на всех экранах.
+  useEffect(() => {
+    if (diagnostic.data?.status !== "checking") return
+    const controller = new AbortController()
+    async function poll() {
+      while (!controller.signal.aborted) {
+        await new Promise<void>((resolve) => window.setTimeout(resolve, 5000))
+        if (controller.signal.aborted) return
+        try {
+          const latest = await fetchDiagnostic(controller.signal)
+          if (!controller.signal.aborted) setDiagnosticState({ data: latest, error: null })
+          if (latest.status !== "checking") return
+        } catch {
+          // Временная ошибка не прерывает фоновую проверку.
+        }
+      }
+    }
+    void poll()
+    return () => controller.abort()
+  }, [diagnostic.data?.status])
+
   // Загружает все материалы выбранного трека одним запросом.
   function loadTrack(trackId: string) {
     void load(
@@ -96,6 +143,7 @@ export function LearningCacheProvider({ children }: { children: ReactNode }) {
 
   // Применяет сохранённый черновик или попытку к открытому шагу.
   function updateStep(step: LearningStep) {
+    draftClocks.current.set(step.id, Date.now())
     setTrackBundles((current) => {
       const bundle = current[step.track_id]?.data
       if (!bundle) return current
@@ -109,6 +157,26 @@ export function LearningCacheProvider({ children }: { children: ReactNode }) {
               steps: bundle.track.steps.map((item) => (item.id === step.id ? step : item)),
             },
             lessons: bundle.lessons.map((item) => (item.id === step.id ? step : item)),
+          },
+        },
+      }
+    })
+  }
+
+  // Меняет только черновик, сохраняя ответ проверки и доступность остальных шагов.
+  function updateDraft(trackId: string, stepId: string, draft: LearningAnswer | null, savedAt: number) {
+    if (savedAt <= (draftClocks.current.get(stepId) ?? 0)) return
+    draftClocks.current.set(stepId, savedAt)
+    setTrackBundles((current) => {
+      const resource = current[trackId]
+      if (!resource?.data) return current
+      return {
+        ...current,
+        [trackId]: {
+          ...resource,
+          data: {
+            ...resource.data,
+            lessons: resource.data.lessons.map((step) => step.id === stepId ? { ...step, draft } : step),
           },
         },
       }
@@ -156,24 +224,30 @@ export function LearningCacheProvider({ children }: { children: ReactNode }) {
     )
   }
 
-  // Состояние зачёта может измениться в любом треке после диагностики.
-  function observeDiagnostic(diagnostic: Diagnostic) {
-    if (diagnostic.status !== "completed" || !diagnostic.results) return
-    const signature = JSON.stringify(diagnostic.results)
-    if (diagnosticResult.current === signature) return
-    diagnosticResult.current = signature
-    if (!tracks.data && !progress.data && !Object.keys(trackBundles).length) return
-    cancel("tracks")
-    cancel("progress")
-    Object.keys(trackBundles).forEach((id) => cancel(`track:${id}`))
-    setTrackBundles({})
-    loadTracks()
-    loadProgress()
-  }
+  // Появление результата меняет зачёты даже если пользователь сейчас внутри урока.
+  useEffect(() => {
+    if (diagnostic.data?.status !== "completed") return
+    if (tracks.data || pending.current.has("tracks")) {
+      cancel("tracks")
+      loadTracks()
+    }
+    if (progress.data || pending.current.has("progress")) {
+      cancel("progress")
+      loadProgress()
+    }
+    for (const id of Object.keys(trackBundles)) {
+      cancel(`track:${id}`)
+      loadTrack(id)
+    }
+  }, [diagnostic.data?.status])
 
   return (
     <Context.Provider
       value={{
+        diagnostic,
+        setDiagnostic,
+        applyDiagnosticDraft,
+        loadDiagnostic,
         tracks,
         progress,
         trackBundles,
@@ -181,8 +255,8 @@ export function LearningCacheProvider({ children }: { children: ReactNode }) {
         loadProgress,
         loadTrack,
         updateStep,
+        updateDraft,
         updateProgress,
-        observeDiagnostic,
       }}
     >
       {children}
@@ -204,6 +278,20 @@ export function useCachedTracks() {
     if (!tracks.data && !tracks.error) loadTracks()
   }, [tracks.data, tracks.error, loadTracks])
   return { ...tracks, loading: !tracks.data && !tracks.error, reload: loadTracks }
+}
+
+export function useCachedDiagnostic() {
+  const { diagnostic, loadDiagnostic, setDiagnostic, applyDiagnosticDraft } = useLearningCache()
+  useEffect(() => {
+    if (!diagnostic.data && !diagnostic.error) loadDiagnostic()
+  }, [diagnostic.data, diagnostic.error, loadDiagnostic])
+  return {
+    ...diagnostic,
+    loading: !diagnostic.data && !diagnostic.error,
+    reload: loadDiagnostic,
+    setData: setDiagnostic,
+    applyDraft: applyDiagnosticDraft,
+  }
 }
 
 // Одни и те же данные о допуске используются меню и маршрутом проектов.

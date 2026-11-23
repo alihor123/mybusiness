@@ -21,11 +21,13 @@ export default function LessonMaterial({
   onVideoEnded,
   onVideoError,
   onVideoOpenedExternally,
+  onVideoHalfway,
 }: {
   block: LearningBlock
   onVideoEnded: () => void
   onVideoError: () => void
   onVideoOpenedExternally: () => void
+  onVideoHalfway: () => void
 }) {
   if (block.type === "text")
     return (
@@ -41,7 +43,7 @@ export default function LessonMaterial({
   if (block.type === "image")
     return (
       <figure className={styles.lessonImageWrap}>
-        <img src={block.url} alt={block.alt} className={styles.lessonImage} />
+        <img src={block.url} alt={block.alt} className={styles.lessonImage} loading="lazy" decoding="async" />
         {block.caption && <figcaption className={styles.imageCaption}>{block.caption}</figcaption>}
       </figure>
     )
@@ -54,6 +56,7 @@ export default function LessonMaterial({
           onEnded={onVideoEnded}
           onError={onVideoError}
           onOpenedExternally={onVideoOpenedExternally}
+          onHalfway={onVideoHalfway}
         />
       )
     )

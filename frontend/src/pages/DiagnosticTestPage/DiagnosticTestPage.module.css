@@ -151,6 +151,17 @@
   border-color: var(--color-muted);
 }
 
+.openAnswer {
+  display: block;
+  height: var(--answer-field-height);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.openAnswer:focus {
+  border-color: var(--color-accent);
+}
+
 .optionBtnSelected {
   background: var(--color-tint);
   border-color: var(--color-accent);
@@ -328,5 +339,11 @@
     height: 38px;
     font-size: 14px;
     padding: 0 14px;
+  }
+
+  .nextBtn:only-child {
+    flex: 0 1 auto;
+    min-width: min(138px, 100%);
+    margin-inline-start: auto;
   }
 }

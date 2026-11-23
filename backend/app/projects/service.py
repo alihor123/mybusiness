@@ -17,6 +17,10 @@ from app.projects.bootstrap import ensure_first_project as reserve_first_project
 from app.projects.models import Project
 from app.projects.schemas import ProjectOut, Questionnaire, Recommendations
 
+QUESTIONNAIRE_FIELDS = (
+    "title", "industry", "stage", "audience", "problem", "solution_benefit", "mentor_request"
+)
+
 
 def missing() -> HTTPException:
     return api_error(404, "PROJECT_NOT_FOUND", "Проект не найден")
@@ -63,7 +67,7 @@ async def as_output(db: AsyncSession, project: Project) -> ProjectOut:
         .limit(1)
     ):
         status = "waiting_mentor"
-    fields = {name: getattr(project, name) for name in Questionnaire.model_fields}
+    fields = {name: getattr(project, name) for name in QUESTIONNAIRE_FIELDS}
     return ProjectOut(
         **fields,
         id=project.id,
@@ -76,7 +80,7 @@ async def as_output(db: AsyncSession, project: Project) -> ProjectOut:
 
 
 def update(project: Project, questionnaire: Questionnaire) -> None:
-    fields = questionnaire.model_dump(exclude_unset=True)
+    fields = questionnaire.model_dump(exclude_unset=True, exclude={"saved_at_ms"})
     changes = {name: value for name, value in fields.items() if getattr(project, name) != value}
     for name, value in changes.items():
         setattr(project, name, value)
@@ -117,7 +121,7 @@ async def ensure_first_project(
 
 
 def require_complete(project: Project) -> None:
-    if not all(getattr(project, name) for name in Questionnaire.model_fields):
+    if not all(getattr(project, name) for name in QUESTIONNAIRE_FIELDS):
         raise api_error(422, "INCOMPLETE_QUESTIONNAIRE", "Заполните семь полей анкеты")
 
 
@@ -150,7 +154,11 @@ async def edit(id: UUID, data: Questionnaire, actor: Actor, db: AsyncSession):
     async with db.begin():
         project = await get_owned(db, id, actor.user_id, lock=True)
         require_mutable(project)
+        if data.saved_at_ms is not None and project.saved_at_ms is not None and data.saved_at_ms <= project.saved_at_ms:
+            return await as_output(db, project)
         update(project, data)
+        if data.saved_at_ms is not None:
+            project.saved_at_ms = data.saved_at_ms
         return await as_output(db, project)
 
 
@@ -186,7 +194,7 @@ async def recommend(
         require_mutable(project)
         update(project, data)
         require_complete(project)
-        questionnaire = {name: getattr(project, name) for name in Questionnaire.model_fields}
+        questionnaire = {name: getattr(project, name) for name in QUESTIONNAIRE_FIELDS}
         active = list(await db.scalars(select(Mentor).where(Mentor.active).order_by(Mentor.id)))
         profiles = [mentor_profile(mentor) for mentor in active]
 

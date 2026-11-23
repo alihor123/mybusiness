@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from pathlib import Path
+from time import time_ns
 from uuid import UUID, uuid4
 
 from sqlalchemy import func, select
@@ -261,9 +262,10 @@ async def replace_draft(
     db: AsyncSession,
     task: AccompanimentTask,
     *,
-    text_value: str,
+    text_value: str | None,
     file_action: str,
     upload,
+    saved_at_ms: int | None = None,
 ):
     if file_action not in {"keep", "replace", "remove"}:
         raise api_error(422, "INVALID_FILE_ACTION", "Недопустимое действие с файлом")
@@ -271,19 +273,26 @@ async def replace_draft(
     if draft is None:
         draft = TaskDraft(task_id=task.id, text="", updated_at=datetime.now(timezone.utc))
         db.add(draft)
-    if file_action == "replace":
-        if upload is None:
-            raise api_error(422, "FILE_REQUIRED", "Для replace требуется файл")
-        attachment = await write_upload(db, upload)
-        draft.attachment_id = attachment.id
-    elif file_action == "remove":
-        if upload is not None:
-            raise api_error(422, "UNEXPECTED_FILE", "При remove файл передавать нельзя")
-        draft.attachment_id = None
-    elif upload is not None:
+    if file_action != "replace" and upload is not None:
         raise api_error(422, "UNEXPECTED_FILE", "Для нового файла используйте replace")
-    draft.text = text_value
-    draft.updated_at = datetime.now(timezone.utc)
+    # У текста и вложения независимые изменения, даже если их запросы меняются местами.
+    file_is_current = saved_at_ms is None or draft.file_saved_at_ms is None or saved_at_ms > draft.file_saved_at_ms
+    if file_action != "keep" and file_is_current:
+        if file_action == "replace":
+            if upload is None:
+                raise api_error(422, "FILE_REQUIRED", "Для replace требуется файл")
+            draft.attachment_id = (await write_upload(db, upload)).id
+        else:
+            draft.attachment_id = None
+        if saved_at_ms is not None:
+            draft.file_saved_at_ms = saved_at_ms
+        draft.updated_at = datetime.now(timezone.utc)
+    text_is_current = saved_at_ms is None or draft.saved_at_ms is None or saved_at_ms > draft.saved_at_ms
+    if text_value is not None and text_is_current:
+        draft.text = text_value
+        if saved_at_ms is not None:
+            draft.saved_at_ms = saved_at_ms
+        draft.updated_at = datetime.now(timezone.utc)
     await db.flush()
     return draft
 
@@ -296,6 +305,7 @@ async def submit_task(
     request_key: str,
     file_action: str,
     upload,
+    saved_at_ms: int | None = None,
 ):
     prior = await db.scalar(
         select(TaskSubmission).where(
@@ -356,6 +366,9 @@ async def submit_task(
     draft.text = ""
     draft.attachment_id = None
     draft.updated_at = datetime.now(timezone.utc)
+    clock = saved_at_ms or time_ns() // 1_000_000
+    draft.saved_at_ms = max(draft.saved_at_ms or 0, clock)
+    draft.file_saved_at_ms = max(draft.file_saved_at_ms or 0, clock)
     await db.flush()
     return submission
 

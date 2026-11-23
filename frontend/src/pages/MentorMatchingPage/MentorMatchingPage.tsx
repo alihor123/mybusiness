@@ -126,22 +126,29 @@ export default function MentorMatchingPage() {
         <ChevronLeftIcon className={styles.backIcon} aria-hidden="true" />
         <span>К анкете проекта</span>
       </Link>
-      {project.loading && <LoadingSkeleton variant="form" />}
+      {project.loading && !project.data && (
+        <div className={styles.projectBanner}>
+          <div className={styles.projectBannerLabel}>Проект</div>
+          <div className={styles.projectNamePlaceholder} aria-hidden="true" />
+        </div>
+      )}
       {project.error && <ResourceError message={project.error} retry={project.reload} />}
       {project.data && (
-        <>
           <div className={styles.projectBanner}>
             <div className={styles.projectBannerText}>
               <div className={styles.projectBannerLabel}>Проект</div>
               <div className={styles.projectBannerName}>{project.data.title || "Новый проект"}</div>
             </div>
           </div>
-          <div className={styles.headingCol}>
-            <div className={styles.title} role="heading" aria-level={1}>
-              ВЫБЕРИТЕ НАСТАВНИКА
-            </div>
-            <div className={styles.subtitle}>Получите рекомендации или выберите специалиста вручную.</div>
-          </div>
+      )}
+      <div className={styles.headingCol}>
+        <div className={styles.title} role="heading" aria-level={1}>
+          ВЫБЕРИТЕ НАСТАВНИКА
+        </div>
+        <div className={styles.subtitle}>Получите рекомендации или выберите специалиста вручную.</div>
+      </div>
+      {project.data && (
+        <>
           {mentorAssigned ? (
             <div className={styles.detailActions}>
               <Link className={styles.applyBtn} to={`/projects/${projectId}`}>
@@ -214,7 +221,7 @@ export default function MentorMatchingPage() {
                     </div>
                     <div className={styles.cardName}>{mentor.name}</div>
                     <div className={styles.cardRole}>{mentor.headline}</div>
-                    <div className={styles.cardExp}>{mentor.experience_label}</div>
+                    <div className={styles.cardExp}>Опыт: {mentor.experience_label}</div>
                     {recommendationReasons[mentor.id] && (
                       <div className={styles.cardExp}>{recommendationReasons[mentor.id]}</div>
                     )}

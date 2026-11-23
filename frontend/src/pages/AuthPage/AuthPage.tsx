@@ -139,7 +139,15 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
         </div>
         <div className={styles.card}>
           <div className={styles.illustrationCol}>
-            <img src="/images/tracks/idea-check.svg" alt="" className={styles.illustration} />
+            <img
+              src="/images/auth/illustration-780.webp"
+              srcSet="/images/auth/illustration-384.webp 384w, /images/auth/illustration-780.webp 780w"
+              sizes="(max-width: 768px) 170px, 380px"
+              width={780}
+              height={520}
+              alt=""
+              className={styles.illustration}
+            />
           </div>
           <form className={styles.formCol} onSubmit={handleSubmit} noValidate aria-busy={pending}>
             {isRegister && (

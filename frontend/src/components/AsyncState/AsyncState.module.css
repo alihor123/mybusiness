@@ -1,20 +1,12 @@
 .skeleton {
   width: 100%;
-  padding: clamp(16px, 4vw, 42px);
 }
 
-.skeletonHeading,
 .image,
 .line,
 .shortLine {
   border-radius: var(--radius-sm);
   background: var(--color-soft);
-}
-
-.skeletonHeading {
-  width: min(48%, 280px);
-  height: clamp(24px, 4vw, 42px);
-  margin-bottom: clamp(14px, 3vw, 28px);
 }
 
 .skeletonGrid {
@@ -59,16 +51,6 @@
   place-items: center;
 }
 
-.loader span {
-  width: 54px;
-  aspect-ratio: 1;
-  border: 3px solid var(--color-tint);
-  border-top-color: var(--color-accent);
-  border-right-color: var(--color-accent);
-  border-radius: 50%;
-  animation: spin 760ms linear infinite;
-}
-
 .retry {
   padding: 9px 17px;
   border-radius: var(--radius-pill);
@@ -87,12 +69,4 @@
 .retry:focus-visible {
   outline: 3px solid var(--color-accent);
   outline-offset: 3px;
-}
-
-@keyframes spin {
-  to { transform: rotate(1turn); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .loader span { animation: none; }
 }
