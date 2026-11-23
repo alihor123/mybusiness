@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
+import CloseIcon from "../../assets/icons/close.svg?react"
 import MentorDirectory, { MentorDirectorySkeleton } from "../../components/MentorDirectory/MentorDirectory"
 import useResource from "../../hooks/useResource"
 import { LoadingSkeleton, ResourceError, EmptyState } from "../../components/AsyncState/AsyncState"
@@ -83,10 +84,11 @@ export default function MentorMatchingPage() {
   }
 
   async function apply(mentor: MentorOut) {
+    if (applying) return
     setApplying(true)
     try {
-      await applyToMentor(projectId, mentor.id)
-      applications.reload()
+      const application = await applyToMentor(projectId, mentor.id)
+      applications.setData((current) => [...(current ?? []).filter((item) => item.id !== application.id), application])
       showToast({ message: `Заявка наставнику ${mentor.name} отправлена`, type: "success" })
     } catch (error) {
       showToast({
@@ -99,31 +101,63 @@ export default function MentorMatchingPage() {
   }
 
   async function withdraw(applicationId: string) {
+    if (applying) return
+    setApplying(true)
     try {
       await withdrawApplication(applicationId)
-      applications.reload()
-      showToast({ message: "Заявка отозвана", type: "success" })
+      applications.setData((current) => current?.filter((item) => item.id !== applicationId) ?? [])
     } catch (error) {
       showToast({
         message: error instanceof Error ? error.message : "Не удалось отозвать заявку",
         type: "error",
       })
+    } finally {
+      setApplying(false)
     }
   }
 
   function mentorById(id: string) {
     return mentors.data?.find((mentor) => mentor.id === id)
   }
+  const visibleApplications = applications.data?.filter((item) => item.status !== "withdrawn") ?? []
   const selectedApplication =
-    selected && applications.data?.find((item) => item.mentor_id === selected.id && item.status === "pending")
+    selected && visibleApplications.find((item) => item.mentor_id === selected.id && item.status === "pending")
   const mentorAssigned = project.data?.status === "accompaniment" || project.data?.status === "archived"
   function applicationStatus(status: string) {
     if (status === "pending") return "Ожидает ответа"
     if (status === "accepted") return "Наставник принял заявку"
     if (status === "rejected") return "Отказ"
-    if (status === "withdrawn") return "Отозвана"
     return "Закрыта: выбран другой наставник"
   }
+
+  const heading = (
+    <div className={styles.headingRow}>
+      <div className={styles.headingCol}>
+        <div className={styles.title} role="heading" aria-level={1}>
+          ВЫБЕРИТЕ НАСТАВНИКА
+        </div>
+        <div className={styles.subtitle}>Получите рекомендации или выберите специалиста вручную.</div>
+      </div>
+      {project.data && (
+        mentorAssigned ? (
+          <Link className={styles.headingAction} to={`/projects/${projectId}`}>
+            Перейти к плану проекта
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className={styles.headingAction}
+            disabled={!recommendations && (!complete || matching)}
+            onClick={recommendations ? toggleRecommendations : () => void match()}
+          >
+            {recommendations
+              ? (recommendations.visible ? "Показать весь каталог" : "Показать рекомендации")
+              : (matching ? "Подбираем…" : "Подобрать наставников")}
+          </button>
+        )
+      )}
+    </div>
+  )
 
   return (
     <div className={styles.page}>
@@ -139,141 +173,121 @@ export default function MentorMatchingPage() {
       )}
       {project.error && <ResourceError message={project.error} retry={project.reload} />}
       {project.data && (
-          <div className={styles.projectBanner}>
-            <div className={styles.projectBannerText}>
-              <div className={styles.projectBannerLabel}>Проект</div>
-              <div className={styles.projectBannerName}>{project.data.title || "Новый проект"}</div>
-            </div>
+        <div className={styles.projectBanner}>
+          <div className={styles.projectBannerText}>
+            <div className={styles.projectBannerLabel}>Проект</div>
+            <div className={styles.projectBannerName}>{project.data.title || "Новый проект"}</div>
           </div>
-      )}
-      <div className={styles.headingRow}>
-        <div className={styles.headingCol}>
-          <div className={styles.title} role="heading" aria-level={1}>
-            ВЫБЕРИТЕ НАСТАВНИКА
-          </div>
-          <div className={styles.subtitle}>Получите рекомендации или выберите специалиста вручную.</div>
         </div>
-        {project.data && (
-          mentorAssigned ? (
-            <Link className={styles.headingAction} to={`/projects/${projectId}`}>
-              Перейти к плану проекта
-            </Link>
-          ) : (
-            <button
-              type="button"
-              className={styles.headingAction}
-              disabled={!recommendations && (!complete || matching)}
-              onClick={recommendations ? toggleRecommendations : () => void match()}
-            >
-              {recommendations
-                ? (recommendations.visible ? "Показать весь каталог" : "Показать рекомендации")
-                : (matching ? "Подбираем…" : "Подобрать наставников")}
-            </button>
-          )
-        )}
-      </div>
-      {project.data && (
-        <>
-          {!complete && (
-            <div className={styles.lockBanner}>
-              Заполните все семь полей анкеты для подбора и подачи заявки.
-            </div>
-          )}
-          {matching && (
-            <AiActivity status="checking" compact message="Подбираем наставников по анкете проекта" />
-          )}
-          {matchingError && (
-            <AiActivity
-              status="check_unavailable"
-              compact
-              message="Подбор временно недоступен. Выберите наставника из каталога."
-              onRetry={() => void match()}
-            />
-          )}
-          <div className={styles.sectionLabel}>
-            {visibleReasons ? "Рекомендованные наставники" : "Каталог наставников"}
-          </div>
-          <MentorDirectory
-            mentors={candidates}
-            selected={selected}
-            onSelect={setSelected}
-            panelHint={
-              mentorAssigned
-                ? "Наставник уже назначен этому проекту."
-                : selectedApplication
-                  ? "Вы уже отправили этому наставнику заявку."
+      )}
+      {project.data ? (
+        <MentorDirectory
+          mentors={candidates}
+          selected={selected}
+          onSelect={setSelected}
+          recommendationReason={selected ? recommendations?.reasons[selected.id] : undefined}
+          panelHint={
+            mentorAssigned
+              ? "Наставник уже назначен этому проекту."
+              : selectedApplication
+                ? "Вы уже отправили этому наставнику заявку."
                   : undefined
-            }
-            renderCardExtra={(mentor) => visibleReasons?.[mentor.id] && (
-              <div className={styles.cardExp}>{visibleReasons[mentor.id]}</div>
-            )}
-            listBefore={
-              <>
-                {mentors.loading && <MentorDirectorySkeleton />}
-                {mentors.error && <ResourceError message={mentors.error} retry={mentors.reload} />}
-                {!mentors.loading && !mentors.error && candidates.length === 0 && (
-                  <EmptyState message="Наставников по этим критериям нет." />
-                )}
-              </>
-            }
-            listAfter={
-              <section className={styles.applications} aria-label="Ваши заявки">
-                <div className={styles.sectionLabel}>Ваши заявки</div>
-                {applications.loading && <LoadingSkeleton variant="list" />}
-                {applications.error && <ResourceError message={applications.error} retry={applications.reload} />}
-                {!applications.loading && !applications.error && !applications.data?.length && (
-                  <EmptyState message="Заявок пока нет." />
-                )}
-                {applications.data?.map((application) => (
-                  <div key={application.id} className={styles.appliedBox}>
-                    <div className={styles.applicationInfo}>
-                      <div className={styles.applicationName}>{mentorById(application.mentor_id)?.name ?? "Наставник"}</div>
-                      <div className={styles.applicationStatus}>{applicationStatus(application.status)}</div>
-                    </div>
-                    {application.status === "pending" && (
-                      <button
-                        type="button"
-                        className={styles.cancelBtn}
-                        onClick={() => void withdraw(application.id)}
-                      >
-                        Отозвать заявку
-                      </button>
-                    )}
+          }
+          listBefore={
+            <>
+              <div className={styles.directoryHeading}>
+                {heading}
+                {!complete && (
+                  <div className={styles.lockBanner}>
+                    Заполните все семь полей анкеты для подбора и подачи заявки.
                   </div>
-                ))}
-              </section>
-            }
-            panelFooter={
-              mentorAssigned ? (
-                <Link className={styles.applyBtn} to={`/projects/${projectId}`}>
-                  Перейти к плану проекта
-                </Link>
-              ) : selectedApplication ? (
+                )}
+                {matching && (
+                  <AiActivity status="checking" compact message="Подбираем наставников по анкете проекта" />
+                )}
+                {matchingError && (
+                  <AiActivity
+                    status="check_unavailable"
+                    compact
+                    message="Подбор временно недоступен. Выберите наставника из каталога."
+                    onRetry={() => void match()}
+                  />
+                )}
+                <div className={styles.sectionLabel}>
+                  {visibleReasons ? "Рекомендованные наставники" : "Каталог наставников"}
+                </div>
+              </div>
+              {mentors.loading && <MentorDirectorySkeleton />}
+              {mentors.error && <ResourceError message={mentors.error} retry={mentors.reload} />}
+              {!mentors.loading && !mentors.error && candidates.length === 0 && (
+                <EmptyState message="Наставников по этим критериям нет." />
+              )}
+            </>
+          }
+          listAfter={
+            <section className={styles.applications} aria-label="Ваши заявки">
+              <div className={styles.sectionLabel}>Ваши заявки</div>
+              {applications.loading && <LoadingSkeleton variant="list" />}
+              {applications.error && <ResourceError message={applications.error} retry={applications.reload} />}
+              {!applications.loading && !applications.error && !visibleApplications.length && (
+                <EmptyState message="Заявок пока нет." />
+              )}
+              {visibleApplications.length > 0 && (
+                <div className={styles.applicationCards}>
+                  {visibleApplications.map((application) => (
+                    <div key={application.id} className={styles.appliedBox}>
+                      <div className={styles.applicationInfo}>
+                        <div className={styles.applicationName}>{mentorById(application.mentor_id)?.name ?? "Наставник"}</div>
+                        <div className={styles.applicationStatus}>{applicationStatus(application.status)}</div>
+                      </div>
+                      {application.status === "pending" && (
+                        <button
+                          type="button"
+                          className={styles.withdrawIconBtn}
+                          aria-label="Отозвать заявку"
+                          title="Отозвать заявку"
+                          disabled={applying}
+                          onClick={() => void withdraw(application.id)}
+                        >
+                          <CloseIcon aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          }
+          panelFooter={
+            mentorAssigned ? (
+              <Link className={styles.applyBtn} to={`/projects/${projectId}`}>
+                Перейти к плану проекта
+              </Link>
+            ) : selectedApplication ? (
+              <button
+                type="button"
+                className={styles.cancelBtn}
+                disabled={applying}
+                onClick={() => void withdraw(selectedApplication.id)}
+              >
+                Отозвать отправленную заявку
+              </button>
+            ) : (
+              selected &&
+              complete && (
                 <button
                   type="button"
-                  className={styles.cancelBtn}
+                  className={styles.applyBtn}
                   disabled={applying}
-                  onClick={() => void withdraw(selectedApplication.id)}
+                  onClick={() => void apply(selected)}
                 >
-                  Отозвать отправленную заявку
+                  {applying ? "Отправляем…" : "Отправить заявку"}
                 </button>
-              ) : (
-                selected &&
-                complete && (
-                  <button
-                    type="button"
-                    className={styles.applyBtn}
-                    disabled={applying}
-                    onClick={() => void apply(selected)}
-                  >
-                    {applying ? "Отправляем…" : "Отправить заявку"}
-                  </button>
-                )
               )
-            }
-          />
-        </>
-      )}
+            )
+          }
+        />
+      ) : heading}
     </div>
   )
 }

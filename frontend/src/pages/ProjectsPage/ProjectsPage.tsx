@@ -4,7 +4,6 @@ import { Button, Dialog, Modal, ModalOverlay } from "react-aria-components"
 import PlusIcon from "../../assets/icons/plus.svg?react"
 import CloseIcon from "../../assets/icons/close.svg?react"
 import { useToast } from "../../contexts/ToastContext"
-import { useIsMobile } from "../../hooks/useIsMobile"
 import useResource from "../../hooks/useResource"
 import { LoadingSkeleton, ResourceError, EmptyState } from "../../components/AsyncState/AsyncState"
 import { createProject, deleteProject, listProjects } from "../../api/projects"
@@ -15,7 +14,6 @@ import styles from "./ProjectsPage.module.css"
 // Показывает проекты ученика и использует серверный прогресс для допуска к созданию.
 export default function ProjectsPage() {
   const navigate = useNavigate()
-  const isMobile = useIsMobile(768)
   const { showToast } = useToast()
   const projects = useResource("projects", listProjects)
   const progress = useResource("learning-progress", fetchLearningProgress)
@@ -46,7 +44,7 @@ export default function ProjectsPage() {
       await deleteProject(projectToDelete.id)
       projects.setData((items) => items?.filter((item) => item.id !== projectToDelete.id) ?? [])
       setProjectToDelete(null)
-      showToast({ message: "Черновик удалён", type: "neutral", oneLine: true })
+      showToast({ message: "Черновик удалён", type: "neutral" })
     } catch (error) {
       showToast({
         message: error instanceof Error ? error.message : "Не удалось удалить проект",
@@ -82,9 +80,9 @@ export default function ProjectsPage() {
             МОИ ПРОЕКТЫ
           </div>
           {canCreate && (
-            <button type="button" className={styles.newBtn} onClick={startProject}>
+            <button type="button" className={styles.newBtn} aria-label="Новый проект" onClick={startProject}>
               <PlusIcon className={styles.plusIcon} aria-hidden="true" />
-              <span>Новый проект</span>
+              <span className={styles.newBtnLabel}>Новый проект</span>
             </button>
           )}
         </div>
@@ -96,13 +94,7 @@ export default function ProjectsPage() {
         {projects.loading && <LoadingSkeleton variant="cards" />}
         {projects.error && <ResourceError message={projects.error} retry={projects.reload} />}
         {!projects.loading && !projects.error && projects.data?.length === 0 && (
-          <EmptyState message="У вас пока нет проектов.">
-            {canCreate && (
-              <button type="button" className={styles.newBtn} onClick={startProject}>
-                {isMobile ? "+ Создать проект" : "Новый проект"}
-              </button>
-            )}
-          </EmptyState>
+          <EmptyState message="У вас пока нет проектов." />
         )}
         {!projects.loading && !projects.error && (projects.data?.length ?? 0) > 0 && (
           <div className={styles.grid}>

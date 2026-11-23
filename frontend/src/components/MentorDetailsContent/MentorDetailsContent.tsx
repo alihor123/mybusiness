@@ -4,10 +4,10 @@ import type { MentorOut } from "../../api/projects"
 import { formatLabels, industryLabels } from "./mentorLabels"
 import styles from "./MentorDetailsContent.module.css"
 
-type MentorDetailsContentProps = { mentor: MentorOut, hint?: string }
+type MentorDetailsContentProps = { mentor: MentorOut, hint?: string, recommendationReason?: string }
 
 // Показывает подробности наставника из серверного каталога.
-export default function MentorDetailsContent({ mentor, hint }: MentorDetailsContentProps) {
+export default function MentorDetailsContent({ mentor, hint, recommendationReason }: MentorDetailsContentProps) {
   return (
     <div className={styles.content}>
       <div className={styles.photoWrap}>
@@ -25,6 +25,12 @@ export default function MentorDetailsContent({ mentor, hint }: MentorDetailsCont
         </div>
       </div>
       <div className={styles.divider} />
+      {recommendationReason && (
+        <div className={styles.aboutBlock}>
+          <div className={styles.aboutTitle}>Почему рекомендован</div>
+          <div className={styles.aboutText}>{recommendationReason}</div>
+        </div>
+      )}
       {mentor.industry_codes.length > 0 && (
         <div className={styles.aboutBlock}>
           <div className={styles.aboutTitle}>Отрасли</div>

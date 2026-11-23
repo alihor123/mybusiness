@@ -1,8 +1,10 @@
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
+import PencilIcon from "../../assets/icons/pencil.svg?react"
 import SidePanel from "../../components/SidePanel/SidePanel"
 import MentorDetailsContent from "../../components/MentorDetailsContent/MentorDetailsContent"
+import { industryLabels } from "../../components/MentorDetailsContent/mentorLabels"
 import { LoadingSkeleton, ResourceError, EmptyState } from "../../components/AsyncState/AsyncState"
 import useResource from "../../hooks/useResource"
 import {
@@ -53,6 +55,8 @@ export default function ProjectPlanPage() {
   if (!project.data) return <EmptyState message="Проект не найден." />
 
   const projectData = project.data
+  const industry = projectData.industry
+  const stage = projectData.stage
   const dateText = meeting.data?.starts_at
     ? new Date(meeting.data.starts_at).toLocaleString("ru-RU")
     : "Не назначена"
@@ -160,13 +164,14 @@ export default function ProjectPlanPage() {
                   className={styles.editBriefBtn}
                   onClick={() => navigate(`/projects/${projectData.id}/brief`)}
                 >
+                  <PencilIcon aria-hidden="true" />
                   Редактировать
                 </button>
               </div>
               <div className={styles.briefGrid}>
                 {[
-                  ["Отрасль", projectData.industry],
-                  ["Стадия", projectData.stage],
+                  ["Отрасль", industry && Object.hasOwn(industryLabels, industry) ? industryLabels[industry] : industry],
+                  ["Стадия", stage === "mvp" ? "MVP" : stage === "idea" ? "Идея" : stage],
                   ["Целевая аудитория", projectData.audience],
                   ["Проблема", projectData.problem],
                   ["Польза решения", projectData.solution_benefit],
@@ -188,20 +193,22 @@ export default function ProjectPlanPage() {
               {mentor.loading && !mentor.data && <LoadingSkeleton variant="list" />}
               {mentor.error && <ResourceError message={mentor.error} retry={mentor.reload} />}
               {mentor.data && (
-                <>
+                <div className={styles.mentorProfile}>
                   <div className={styles.mentorPhotoWrap}>
                     <img src={mentor.data.portrait_url} alt="" className={styles.mentorPhoto} />
                   </div>
-                  <div className={styles.mentorName}>{mentor.data.name}</div>
-                  <div className={styles.mentorRole}>{mentor.data.headline}</div>
-                  <button
-                    type="button"
-                    className={styles.mentorOutlineBtn}
-                    onClick={() => setMentorPanelOpen(true)}
-                  >
-                    Открыть профиль
-                  </button>
-                </>
+                  <div className={styles.mentorDetails}>
+                    <div className={styles.mentorName}>{mentor.data.name}</div>
+                    <div className={styles.mentorRole}>{mentor.data.headline}</div>
+                    <button
+                      type="button"
+                      className={styles.mentorOutlineBtn}
+                      onClick={() => setMentorPanelOpen(true)}
+                    >
+                      Открыть профиль
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}

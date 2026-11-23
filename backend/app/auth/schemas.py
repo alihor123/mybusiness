@@ -79,6 +79,10 @@ class LoginCredentials(Credentials):
         return password
 
 
+class DemoLogin(BaseModel):
+    device_id: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_.:-]+$")
+
+
 class Profile(BaseModel):
     id: UUID
     role: Literal["student", "teacher"]
@@ -86,6 +90,8 @@ class Profile(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     occupation: str | None = None
+    is_demo: bool = False
+    show_diagnostic_on_login: bool = False
 
 
 class ProfileUpdate(BaseModel):

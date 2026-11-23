@@ -2,9 +2,11 @@ import asyncio
 from uuid import uuid4
 
 from conftest import ORIGIN, PASSWORD, access_csrf, open_client, register
+from scripts.seed_proda import USER_ID, create_user
 from sqlalchemy import func, select
 
 from app.auth.models import Session
+from app.auth.service import hash_password
 from app.auth.tokens import REFRESH_COOKIE
 from app.config import get_settings
 from app.database import get_session_factory
@@ -77,7 +79,10 @@ async def test_rotation_logout_and_devices(client):
     )
     assert response.status_code == 403
     user = await register(client)
-    assert (await client.get("/api/v1/me")).json() == user
+    profile = (await client.get("/api/v1/me")).json()
+    assert profile == {**user, "show_diagnostic_on_login": False}
+    assert user["is_demo"] is False
+    assert user["show_diagnostic_on_login"] is True
     assert (await client.post("/api/v1/auth/logout")).status_code == 403
     old_refresh = client.cookies[REFRESH_COOKIE]
     async with open_client() as second, open_client() as rival:
@@ -105,7 +110,7 @@ async def test_rotation_logout_and_devices(client):
             await winner.post("/api/v1/auth/logout", headers=access_csrf(winner))
         ).status_code == 204
         assert (await winner.get("/api/v1/me")).status_code == 401
-        assert (await second.get("/api/v1/me")).json() == user
+        assert (await second.get("/api/v1/me")).json() == profile
 
 
 async def test_concurrent_login_reuses_device(client):
@@ -139,3 +144,27 @@ async def test_concurrent_login_reuses_device(client):
             )
             == 1
         )
+
+
+async def test_demo_login_requires_enabled_mode_and_uses_seeded_identity(monkeypatch, client):
+    endpoint = "/api/v1/auth/demo"
+    device = {"device_id": "demo-test"}
+    monkeypatch.setenv("DEMO_LOGIN_ENABLED", "false")
+    get_settings.cache_clear()
+    assert (await client.post(endpoint, headers={"Origin": ORIGIN}, json=device)).status_code == 404
+
+    monkeypatch.setenv("DEMO_LOGIN_ENABLED", "true")
+    get_settings.cache_clear()
+    assert (await client.post(endpoint, json=device)).status_code == 403
+    password_hash = await hash_password(str(uuid4()))
+    async with get_session_factory()() as db, db.begin():
+        await create_user(db, password_hash)
+
+    response = await client.post(endpoint, headers={"Origin": ORIGIN}, json=device)
+    assert response.status_code == 200, response.text
+    profile = response.json()
+    assert profile["id"] == str(USER_ID)
+    assert profile["is_demo"] is True
+    assert profile["show_diagnostic_on_login"] is False
+    assert (await client.get("/api/v1/me")).json() == profile
+    assert (await client.post("/api/v1/auth/logout", headers=access_csrf(client))).status_code == 204

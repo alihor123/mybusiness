@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import {
   authenticate,
+  authenticateDemo,
+  demoLoginEnabled,
   getProfile,
   logout,
   saveProfile,
@@ -20,6 +22,7 @@ type AppContextValue = {
   restoreSession: () => void
   signIn: (mode: "login", email: string, password: string) => Promise<void>
   signUp: (fields: SignupFields) => Promise<void>
+  signInDemo: () => Promise<void>
   signOut: () => Promise<void>
   updateProfile: (fields: EditableProfileFields) => Promise<Profile>
 }
@@ -43,6 +46,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         if (controller.signal.aborted) return
         if (error instanceof ApiError && error.status === 401) {
+          if (demoLoginEnabled && window.location.pathname === "/") {
+            try {
+              const profile = await authenticateDemo(controller.signal)
+              if (!controller.signal.aborted) setSession({ status: "ready", profile })
+              return
+            } catch {
+              if (controller.signal.aborted) return
+            }
+          }
           setSession({ status: "guest", profile: null })
           return
         }
@@ -77,6 +89,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setSession({ status: "ready", profile })
   }
 
+  // Открывает демоаккаунт с обычной сессией кабинета.
+  async function signInDemo() {
+    const profile = await authenticateDemo()
+    setSession({ status: "ready", profile })
+  }
+
   // Закрывает локальный кабинет после выхода или подтверждённого истечения сессии.
   async function signOut() {
     try {
@@ -95,7 +113,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppContext.Provider value={{ session, restoreSession, signIn, signUp, signOut, updateProfile }}>
+    <AppContext.Provider value={{ session, restoreSession, signIn, signUp, signInDemo, signOut, updateProfile }}>
       {children}
     </AppContext.Provider>
   )

@@ -25,6 +25,7 @@
   display: grid;
   flex: 0 0 30px;
   height: 30px;
+  padding: 0;
   place-items: center;
   border: 0;
   border-radius: 50%;
@@ -33,12 +34,15 @@
   pointer-events: auto;
 }
 
-.oneLine { white-space: nowrap; }
+.toast span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 
 .toast button:hover { background: rgb(127 127 127 / 15%); }
 .toast svg { width: 15px; height: 15px; }
-.neutral { background: var(--color-ink); color: var(--color-white); }
-.success { background: var(--color-success-tint); color: #226c46; }
+.neutral,
+.success { background: var(--color-ink); color: var(--color-white); }
 .error { background: var(--color-tint); color: #9e3020; }
 
 @media (max-width: 768px) {
@@ -51,6 +55,10 @@
   }
 
   .toast {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 30px;
+    width: fit-content;
+    min-width: min(180px, 100%);
     min-height: 42px;
     max-width: min(360px, 100%);
     padding: 5px 8px 5px 14px;

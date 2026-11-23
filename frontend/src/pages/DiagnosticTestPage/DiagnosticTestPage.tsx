@@ -32,7 +32,7 @@ function DiagnosticHeading({
         <div className={styles.title} role="heading" aria-level={1}>
           ВХОДНОЕ ТЕСТИРОВАНИЕ
         </div>
-        <div className={styles.subtitle}>Узнайте свой уровень подготовки</div>
+        <div className={styles.subtitle}>От результата теста зависит, сколько заданий в обучении нужно будет пройти.</div>
       </div>
       <div className={styles.skipCol}>
         <button

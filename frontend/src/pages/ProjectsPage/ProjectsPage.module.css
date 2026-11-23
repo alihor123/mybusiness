@@ -310,33 +310,6 @@
   max-width: 420px;
 }
 
-.fabBtn {
-  position: fixed;
-  right: 16px;
-  bottom: 18px;
-  width: 50px;
-  height: 50px;
-  border: none;
-  border-radius: 50%;
-  background: var(--color-accent);
-  color: var(--color-white);
-  box-shadow: 0 4px 12px rgba(41, 39, 37, 0.22);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 35;
-  transition: transform var(--transition-fast), background var(--transition-fast);
-}
-
-.fabBtn:active {
-  transform: scale(0.94);
-}
-
-.fabIcon {
-  width: 22px;
-  height: 22px;
-}
-
 @media (max-width: 1024px) {
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -345,6 +318,7 @@
 
 @media (max-width: 768px) {
   .page {
+    position: relative;
     gap: 10px;
   }
 
@@ -363,18 +337,24 @@
   }
 
   .newBtn {
-    height: 40px;
-    padding: 0 12px;
-    gap: 6px;
-    font-size: 13px;
-    white-space: nowrap;
-    flex-shrink: 0;
+    position: absolute;
+    right: 4px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    z-index: 1;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(41, 39, 37, 0.18);
+  }
+
+  .newBtnLabel {
+    display: none;
   }
 
   .plusIcon {
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
   }
 
   .hintBanner {
@@ -391,7 +371,7 @@
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    padding-bottom: 72px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   }
 
   .card {

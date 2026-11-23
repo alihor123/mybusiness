@@ -8,6 +8,11 @@ import { createRequestId, errorMessage } from "../../api/client"
 import { LoadingSkeleton, ResourceError } from "../../components/AsyncState/AsyncState"
 import AiActivity from "../../components/AsyncState/AiActivity"
 import { useToast } from "../../contexts/ToastContext"
+import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
+import FileIcon from "../../assets/icons/file-text.svg?react"
+import CloseIcon from "../../assets/icons/close.svg?react"
+import AlertCircleIcon from "../../assets/icons/alert-circle.svg?react"
+import CheckIcon from "../../assets/icons/check.svg?react"
 import styles from "./ProjectTaskPage.module.css"
 
 type FileEdit = { file: File | null, saved: boolean }
@@ -31,10 +36,14 @@ export default function ProjectTaskPage() {
   const [pending, setPending] = useState<"submit" | "preview" | null>(null)
   const [checkError, setCheckError] = useState("")
   const requestKey = useRef<{ signature: string, key: string } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const autosave = useDraftAutosave()
   if (loading && !plan) return (
     <div className={styles.page}>
-      <Link to={`/projects/${projectId}`} className={styles.backLink}>← К плану проекта</Link>
+      <Link to={`/projects/${projectId}`} className={styles.backLink}>
+        <ChevronLeftIcon className={styles.backIcon} aria-hidden="true" />
+        К плану
+      </Link>
       <div className={styles.title} role="heading" aria-level={1}>ЗАДАЧА ПРОЕКТА</div>
       <LoadingSkeleton variant="form" />
     </div>
@@ -97,7 +106,8 @@ export default function ProjectTaskPage() {
   return (
     <div className={styles.page}>
       <Link to={`/projects/${projectId}`} className={styles.backLink}>
-        ← К плану
+        <ChevronLeftIcon className={styles.backIcon} aria-hidden="true" />
+        К плану
       </Link>
       <div className={styles.headingCol}>
         <div className={styles.title} role="heading" aria-level={1}>
@@ -119,7 +129,19 @@ export default function ProjectTaskPage() {
               Отправка {submission.number} · {new Date(submission.created_at).toLocaleString("ru-RU")}
             </strong>
             <p>{submission.text}</p>
-            {submission.decision_comment && <p>{submission.decision_comment}</p>}
+            {submission.decision_comment && (
+              <div className={`${styles.feedbackBox} ${submission.status === "accepted" ? styles.feedbackAccepted : ""}`}>
+                <div className={styles.feedbackTitle}>Комментарий наставника</div>
+                <div className={styles.feedbackRow}>
+                  {submission.status === "accepted" ? (
+                    <CheckIcon className={styles.feedbackIcon} aria-hidden="true" />
+                  ) : (
+                    <AlertCircleIcon className={styles.feedbackIcon} aria-hidden="true" />
+                  )}
+                  {submission.decision_comment}
+                </div>
+              </div>
+            )}
           </article>
         ))}
         <div className={styles.field}>
@@ -142,19 +164,48 @@ export default function ProjectTaskPage() {
           />
         </div>
         <div className={styles.filesSection}>
-          <strong>Файл (PDF, JPG или PNG, до 10 МБ)</strong>
-          {filename && (
-            <div>
-              {filename}{" "}
-              {editable && (
-                <button type="button" disabled={busy} onClick={() => void editFile(null)}>
-                  Удалить
-                </button>
-              )}
+          <div className={styles.filesHeader}>
+            <strong className={styles.filesTitle}>Файл (PDF, JPG или PNG, до 10 МБ)</strong>
+            {editable && (
+              <button
+                type="button"
+                className={styles.attachBtn}
+                disabled={busy}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FileIcon aria-hidden="true" />
+                {filename ? "Заменить файл" : "Прикрепить файл"}
+              </button>
+            )}
+          </div>
+          {filename ? (
+            <div className={styles.filesList}>
+              <div className={styles.fileItem}>
+                <FileIcon className={styles.fileIcon} aria-hidden="true" />
+                <div className={styles.fileMeta}>
+                  <span className={styles.fileName}>{filename}</span>
+                  {file && <span className={styles.fileSize}>{(file.size / 1024 / 1024).toFixed(1)} МБ</span>}
+                </div>
+                {editable && (
+                  <button
+                    type="button"
+                    className={styles.removeFileBtn}
+                    aria-label="Удалить файл"
+                    disabled={busy}
+                    onClick={() => void editFile(null)}
+                  >
+                    <CloseIcon className={styles.removeIcon} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
             </div>
+          ) : (
+            <div className={styles.noFiles}>Файл не прикреплён</div>
           )}
           {editable && (
             <input
+              ref={fileInputRef}
+              className={styles.hiddenInput}
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
               disabled={busy}
@@ -167,13 +218,16 @@ export default function ProjectTaskPage() {
           )}
         </div>
         {remarks && remarks.length > 0 && (
-          <div className={styles.aiBox}>
-            <strong>Замечания к черновику</strong>
-            <ul>
+          <div className={styles.feedbackBox}>
+            <div className={styles.feedbackTitle}>Замечания к черновику</div>
+            <div className={styles.feedbackList}>
               {remarks.map((remark) => (
-                <li key={remark}>{remark}</li>
+                <div key={remark} className={styles.feedbackRow}>
+                  <AlertCircleIcon className={styles.feedbackIcon} aria-hidden="true" />
+                  {remark}
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         )}
         {remarks?.length === 0 && (

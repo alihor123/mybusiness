@@ -9,7 +9,6 @@ type Toast = {
   type?: "neutral" | "success" | "error"
   persistent?: boolean
   durationMs?: number
-  oneLine?: boolean
 }
 type ActiveToast = Toast & { id: number, closing?: boolean }
 type ToastContextValue = { showToast: (toast: Toast) => () => void }
@@ -63,7 +62,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               }}
               transition={{ duration: reducedMotion ? 0 : 0.18 }}
             >
-              <span className={toast.oneLine ? styles.oneLine : undefined}>{toast.message}</span>
+              <span>{toast.message}</span>
               <button type="button" onClick={() => dismiss(toast.id)} aria-label="Закрыть уведомление">
                 <CloseIcon aria-hidden="true" />
               </button>

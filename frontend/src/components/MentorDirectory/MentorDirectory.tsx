@@ -16,8 +16,8 @@ type MentorDirectoryProps = {
   listBefore?: ReactNode
   listAfter?: ReactNode
   panelHint?: string
+  recommendationReason?: string
   panelFooter?: ReactNode
-  renderCardExtra?: (mentor: MentorOut) => ReactNode
 }
 
 export function MentorDirectorySkeleton() {
@@ -43,8 +43,8 @@ export default function MentorDirectory({
   listBefore,
   listAfter,
   panelHint,
+  recommendationReason,
   panelFooter,
-  renderCardExtra,
 }: MentorDirectoryProps) {
   const isMobile = useIsMobile(768)
   const compactPanel = useIsMobile(1150)
@@ -82,7 +82,6 @@ export default function MentorDirectory({
                 <div className={styles.cardName}>{mentor.name}</div>
                 <div className={styles.cardRole}>{mentor.headline}</div>
                 <div className={styles.cardExp}>Опыт: {mentor.experience_label}</div>
-                {renderCardExtra?.(mentor)}
                 <div className={styles.cardFooter}>
                   <button
                     type="button"
@@ -125,7 +124,7 @@ export default function MentorDirectory({
                 </button>
               </div>
               <div className={styles.pushBody}>
-                <MentorDetailsContent mentor={selected} hint={panelHint} />
+                <MentorDetailsContent mentor={selected} hint={panelHint} recommendationReason={recommendationReason} />
               </div>
               {panelFooter && <div className={styles.pushFooter}>{panelFooter}</div>}
             </div>
@@ -134,7 +133,9 @@ export default function MentorDirectory({
       </AnimatePresence>
       {isMobile && (
         <SidePanel open={Boolean(selected)} title={selected?.name} subtitle={selected?.headline} onClose={dismissPanel} dragHandleOnly footer={panelFooter}>
-          {selected && <MentorDetailsContent mentor={selected} hint={panelHint} />}
+          {selected && (
+            <MentorDetailsContent mentor={selected} hint={panelHint} recommendationReason={recommendationReason} />
+          )}
         </SidePanel>
       )}
     </div>

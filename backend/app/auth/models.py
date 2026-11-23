@@ -37,6 +37,7 @@ class User(Base):
     __table_args__ = (
         UniqueConstraint("email", name="uq_users_email"),
         CheckConstraint("email = lower(email)", name="ck_users_email_lowercase"),
+        Index("uq_users_demo", "is_demo", unique=True, postgresql_where=text("is_demo")),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
@@ -46,6 +47,7 @@ class User(Base):
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
     occupation: Mapped[str | None] = mapped_column(String(200))
+    is_demo: Mapped[bool] = mapped_column(default=False, server_default=text("false"), nullable=False)
 
 
 class Session(Base):

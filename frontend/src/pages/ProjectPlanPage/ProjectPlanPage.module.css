@@ -248,6 +248,14 @@
   color: var(--color-ink);
 }
 
+.mentorProfile,
+.mentorDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
 .mentorPhotoWrap {
   width: 100%;
   height: 296px;
@@ -310,22 +318,26 @@
   color: var(--color-muted);
 }
 
-.mentorBtns {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 6px;
-}
-
 .mentorOutlineBtn {
   height: 44px;
+  padding: 0 12px;
   border-radius: var(--radius-pill);
   border: 1.5px solid var(--color-accent);
   background: var(--color-white);
   color: var(--color-accent);
   font-size: 17px;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   transition: background var(--transition-fast);
+}
+
+.editBriefBtn svg {
+  flex: 0 0 auto;
+  width: 1em;
+  height: 1em;
 }
 
 .mentorOutlineBtn:hover {
@@ -456,14 +468,22 @@
 }
 
 .editBriefBtn {
-  height: 40px;
-  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
   border-radius: var(--radius-pill);
   border: 1.5px solid var(--color-accent);
   background: var(--color-white);
   color: var(--color-accent);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.editBriefBtn:hover {
+  background: var(--color-tint);
 }
 
 .briefGrid {
@@ -694,47 +714,52 @@
   }
 
   .mentorCard {
-    display: grid;
-    grid-template-columns: 84px minmax(0, 1fr);
-    column-gap: 12px;
-    row-gap: 4px;
+    gap: 10px;
     padding: 12px;
     border-radius: 10px;
   }
 
   .mentorCardHeading {
-    grid-column: 1 / -1;
     font-size: 15px;
-    margin-bottom: 4px;
+  }
+
+  .mentorProfile {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mentorDetails {
+    gap: 4px;
   }
 
   .mentorPhotoWrap {
-    grid-column: 1;
-    grid-row: 2 / span 2;
-    width: 84px;
-    height: 100px;
+    flex: 0 0 72px;
+    height: 86px;
   }
 
   .mentorName {
-    grid-column: 2;
     font-size: 16px;
+    line-height: 1.25;
   }
 
   .mentorRole {
-    grid-column: 2;
     font-size: 12px;
     line-height: 1.32;
   }
 
-  .mentorBtns {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 8px;
+  .mentorOutlineBtn {
+    align-self: flex-start;
+    height: auto;
+    min-height: 36px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 13px;
+    line-height: 1.2;
+    text-align: left;
   }
 
-  .mentorOutlineBtn,
   .mentorPrimaryBtn {
     height: 36px;
     font-size: 13px;
@@ -758,6 +783,20 @@
 
   .nextMeetingDate {
     font-size: 16px;
+  }
+
+  .aboutHeaderRow {
+    gap: 8px;
+  }
+
+  .subSectionTitle {
+    font-size: 17px;
+  }
+
+  .editBriefBtn {
+    min-height: 34px;
+    padding: 0 9px;
+    font-size: 12px;
   }
 
   .briefGrid {

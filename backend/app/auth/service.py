@@ -55,6 +55,7 @@ async def get_actor(db: AsyncSession, user_id: UUID) -> Actor:
             last_name=user.last_name,
             email=user.email,
             occupation=user.occupation,
+            is_demo=user.is_demo,
         ),
     )
 
@@ -113,7 +114,9 @@ async def register(db: AsyncSession, data: Registration) -> tuple[Actor, Pair]:
         if user_id is None:
             raise api_error(409, "EMAIL_EXISTS", "Электронная почта уже зарегистрирована")
         pair = await start_session(db, user_id, data.device_id)
-        return await get_actor(db, user_id), pair
+        actor = await get_actor(db, user_id)
+        actor.profile = actor.profile.model_copy(update={"show_diagnostic_on_login": True})
+        return actor, pair
 
 
 async def login(db: AsyncSession, data: LoginCredentials) -> tuple[Actor, Pair]:
@@ -130,6 +133,16 @@ async def login(db: AsyncSession, data: LoginCredentials) -> tuple[Actor, Pair]:
         raise unauthorized()
     async with db.begin():
         pair = await start_session(db, user.id, data.device_id)
+        return await get_actor(db, user.id), pair
+
+
+async def demo_login(db: AsyncSession, device_id: str) -> tuple[Actor, Pair]:
+    demo_user_id = UUID("00000000-0000-4000-8000-000000000004")
+    async with db.begin():
+        user = await db.scalar(select(User).where(User.id == demo_user_id).with_for_update())
+        if user is None or not user.is_demo:
+            raise unauthorized()
+        pair = await start_session(db, user.id, device_id)
         return await get_actor(db, user.id), pair
 
 

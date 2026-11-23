@@ -50,17 +50,20 @@ function ProtectedLayout() {
   )
 }
 
-// Сохраняет внутреннюю ссылку после входа и отсекает переходы в чужой кабинет.
+// При первом входе открывает диагностику, остальные переходы проверяет по роли.
 function GuestLayout() {
   const { session } = useApp()
   const location = useLocation()
   if (session.status === "loading") return <Loader label="Проверяем сессию" />
   if (session.status === "ready") {
+    if (session.profile.role === "student") {
+      if (session.profile.is_demo) return <Navigate to="/" replace />
+      if (session.profile.show_diagnostic_on_login) return <Navigate to="/learning/test" replace />
+    }
     const from: unknown = location.state?.from
     const allowed =
       typeof from === "string" &&
-      (from === "/profile" ||
-        (session.profile.role === "student" && /^\/(learning|projects|mentors)(?:\/|\?|$)/.test(from)) ||
+      ((session.profile.role === "student" && /^\/(learning|projects|mentors)(?:\/|\?|$)/.test(from)) ||
         (session.profile.role === "teacher" && /^\/mentor\//.test(from)))
     return <Navigate to={allowed ? from : roleHome(session.profile.role)} replace />
   }
@@ -74,12 +77,14 @@ function RoleLayout({ role }: { role: Role }) {
   return session.profile.role === role ? <Outlet /> : <Navigate to={roleHome(session.profile.role)} replace />
 }
 
-// На входе в кабинет направляет ученика в тест или к списку треков по статусу диагностики.
+// Открывает список треков и проверяет входной тест при старте деморежима.
 function HomeRoute() {
   const { session } = useApp()
-  const diagnostic = useCachedDiagnostic(session.status === "ready" && session.profile.role === "student")
+  const isDemo = session.status === "ready" && session.profile.role === "student" && session.profile.is_demo
+  const diagnostic = useCachedDiagnostic(isDemo)
   if (session.status !== "ready") return null
   if (session.profile.role === "teacher") return <Navigate to={roleHome(session.profile.role)} replace />
+  if (!isDemo) return <Navigate to="/learning" replace />
   if (diagnostic.loading) return <Loader label="Проверяем статус входного теста" />
   if (!diagnostic.data)
     return (
@@ -88,7 +93,8 @@ function HomeRoute() {
         retry={diagnostic.reload}
       />
     )
-  return <Navigate to={diagnostic.data.status === "completed" ? "/learning" : "/learning/test"} replace />
+  const completed = diagnostic.data.status === "completed" || diagnostic.data.status === "checking"
+  return <Navigate to={completed ? "/learning" : "/learning/test"} replace />
 }
 
 // Определяет маршруты приложения и перенаправления по умолчанию.

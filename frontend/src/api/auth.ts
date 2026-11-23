@@ -10,8 +10,15 @@ export type ProfileFields = {
 }
 
 export type EditableProfileFields = Pick<ProfileFields, "first_name" | "last_name" | "occupation">
-export type Profile = ProfileFields & { id: string, role: Role }
+export type Profile = ProfileFields & {
+  id: string
+  role: Role
+  is_demo: boolean
+  show_diagnostic_on_login: boolean
+}
 export type SignupFields = { first_name: string, last_name: string, email: string, password: string }
+
+export const demoLoginEnabled = import.meta.env.VITE_DEMO_LOGIN === "true"
 
 const deviceStorageKey = "mb_device_id"
 let sessionDeviceId: string | undefined
@@ -45,6 +52,16 @@ export function authenticate(mode: "login" | "register", value: string | SignupF
       ? { email: value as string, password, device_id: deviceId() }
       : { ...(value as SignupFields), device_id: deviceId() }
   return request<Profile>(`/auth/${mode}`, { method: "POST", auth: false, body })
+}
+
+// Открывает серверную демосессию без учётных данных на клиенте.
+export function authenticateDemo(signal?: AbortSignal) {
+  return request<Profile>("/auth/demo", {
+    method: "POST",
+    auth: false,
+    signal,
+    body: { device_id: deviceId() },
+  })
 }
 
 export function saveProfile(fields: EditableProfileFields) {

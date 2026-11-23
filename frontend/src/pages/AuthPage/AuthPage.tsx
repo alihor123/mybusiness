@@ -10,6 +10,7 @@ import EyeOffIcon from "../../assets/icons/eye-off.svg?react"
 import { useApp } from "../../contexts/AppContext"
 import { useToast } from "../../contexts/ToastContext"
 import { ApiError, errorMessage } from "../../api/client"
+import { demoLoginEnabled } from "../../api/auth"
 import styles from "./AuthPage.module.css"
 
 type AuthMode = "register" | "login"
@@ -23,7 +24,7 @@ const simplifiedRegistration = import.meta.env.VITE_SIMPLIFIED_REGISTRATION
 
 // Собирает формы входа и регистрации с режимом проверки из сборки.
 export default function AuthPage({ mode }: { mode: AuthMode }) {
-  const { signIn, signUp } = useApp()
+  const { signIn, signUp, signInDemo } = useApp()
   const { showToast } = useToast()
   const location = useLocation()
   // Поля, показ пароля и сообщения проверки. Данные формы остаются на экране при ошибке API.
@@ -33,7 +34,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [fieldsError, setFieldsError] = useState<FieldErrors>({})
-  const [pending, setPending] = useState(false)
+  const [pending, setPending] = useState<"form" | "demo" | null>(null)
   const dismissError = useRef<(() => void) | null>(null)
   const isRegister = mode === "register"
   const canSubmit = !pending
@@ -87,7 +88,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
     setFieldsError(errors)
     if (Object.keys(errors).length) return
 
-    setPending(true)
+    setPending("form")
     try {
       if (isRegister)
         await signUp({
@@ -108,7 +109,22 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
           : errorMessage(error, isRegister ? "Не удалось создать аккаунт" : "Не удалось войти")
       dismissError.current = showToast({ message, type: "error" })
     } finally {
-      setPending(false)
+      setPending(null)
+    }
+  }
+
+  // Заходит в деморежим отдельно от проверки полей входа.
+  async function handleDemo() {
+    if (!canSubmit) return
+    dismissError.current?.()
+    setFieldsError({})
+    setPending("demo")
+    try {
+      await signInDemo()
+    } catch (error) {
+      dismissError.current = showToast({ message: errorMessage(error, "Не удалось открыть демо"), type: "error" })
+    } finally {
+      setPending(null)
     }
   }
 
@@ -149,7 +165,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
               className={styles.illustration}
             />
           </div>
-          <form className={styles.formCol} onSubmit={handleSubmit} noValidate aria-busy={pending}>
+          <form className={styles.formCol} onSubmit={handleSubmit} noValidate aria-busy={Boolean(pending)}>
             {isRegister && (
               <>
                 <label className={styles.fieldGroup} htmlFor="auth-first-name">
@@ -242,8 +258,13 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
               {inputError("password")}
             </label>
             <button type="submit" className={styles.submitBtn} disabled={!canSubmit}>
-              {pending ? "Подождите…" : isRegister ? "Зарегистрироваться" : "Войти"}
+              {pending === "form" ? "Подождите…" : isRegister ? "Зарегистрироваться" : "Войти"}
             </button>
+            {demoLoginEnabled && !isRegister && (
+              <button type="button" className={styles.demoBtn} disabled={!canSubmit} onClick={handleDemo}>
+                {pending === "demo" ? "Открываем демо…" : "Войти как тестовый пользователь"}
+              </button>
+            )}
             <div className={styles.switchRow}>
               <span className={styles.switchMuted}>{isRegister ? "Уже есть аккаунт?" : "Нет аккаунта?"}</span>
               <Link
