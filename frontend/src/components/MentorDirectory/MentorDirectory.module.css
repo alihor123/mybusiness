@@ -1,0 +1,250 @@
+.workspace {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.scrollArea {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  padding-bottom: 16px;
+}
+
+.placeholder { background: var(--color-soft); border-radius: var(--radius-sm); }
+.namePlaceholder { height: 18px; width: 70%; }
+.rolePlaceholder { height: 34px; width: 87%; }
+.buttonPlaceholder { height: 40px; border-radius: var(--radius-pill); }
+
+@container (min-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 920px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 620px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 13px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.cardSelected {
+  border-color: var(--color-accent);
+  background: var(--color-tint);
+}
+
+.photoWrap {
+  width: 100%;
+  height: 164px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-soft);
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 38%;
+}
+
+.cardName {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+
+.cardRole {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.32;
+  color: var(--color-muted);
+  flex: 1;
+}
+
+.cardExp {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.cardFooter {
+  margin-top: 2px;
+}
+
+.moreBtn {
+  width: 100%;
+  height: 40px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-white);
+  font-size: 15px;
+  font-weight: 700;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.moreBtn:hover {
+  background: var(--color-accent-hover);
+}
+
+.moreBtn:active {
+  transform: scale(0.98);
+}
+
+.pushPanelWrap {
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  padding-bottom: 16px;
+}
+
+.pushPanel {
+  width: 390px;
+  min-width: 390px;
+  height: 100%;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-white);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (max-width: 1150px) {
+  .pushPanel { width: 304px; min-width: 304px; }
+}
+
+@container (max-width: 340px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.pushHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.pushHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pushTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.pushSubtitle {
+  font-size: 14px;
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.pushCloseBtn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pushCloseBtn:hover {
+  color: var(--color-ink);
+  background: var(--color-soft);
+}
+
+.pushCloseIcon {
+  width: 18px;
+  height: 18px;
+}
+
+.pushBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 20px;
+}
+
+.pushFooter {
+  flex-shrink: 0;
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 768px) {
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .card {
+    padding: 8px;
+    gap: 5px;
+  }
+
+  .photoWrap {
+    height: 112px;
+  }
+
+  .cardName {
+    font-size: 14px;
+  }
+
+  .cardRole {
+    font-size: 12px;
+    line-height: 1.28;
+  }
+
+  .cardExp {
+    font-size: 11px;
+  }
+
+  .moreBtn {
+    height: 32px;
+    font-size: 12px;
+  }
+}

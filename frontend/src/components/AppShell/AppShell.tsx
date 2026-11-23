@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { NavLink, useLocation, useOutlet } from "react-router-dom"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import logoUrl from "../../assets/brand/logo.svg"
@@ -44,11 +44,27 @@ export default function AppShell() {
   const isMobile = useIsMobile(768)
   const reducedMotion = useReducedMotion()
   const learningProgress = useCachedProgress(role === "student")
-  const canCreateProject = learningProgress.data?.can_create_project ?? false
+  const projectAccess = learningProgress.data?.can_create_project
+  const canCreateProject = projectAccess ?? false
+  // Запоминает подтверждённый доступ, чтобы отличать завершение обучения от загрузки профиля.
+  const previousProjectAccess = useRef<boolean | undefined>(undefined)
 
   // Управляет сворачиванием десктопного меню и открытием мобильной шторки.
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readInitialCollapsed)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  useEffect(() => {
+    if (projectAccess === undefined) return
+    const unlocked = projectAccess && previousProjectAccess.current === false
+    previousProjectAccess.current = projectAccess
+    if (unlocked) {
+      showToast({
+        message: "Вы завершили обучение. Теперь вам доступен раздел «Мои проекты».",
+        type: "success",
+        durationMs: 10_000,
+      })
+    }
+  }, [projectAccess, showToast])
 
   const navItems: NavItem[] =
     role === "student"

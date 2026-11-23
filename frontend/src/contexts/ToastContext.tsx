@@ -4,7 +4,13 @@ import { motion, useReducedMotion } from "motion/react"
 import CloseIcon from "../assets/icons/close.svg?react"
 import styles from "./ToastContext.module.css"
 
-type Toast = { message: string, type?: "neutral" | "success" | "error", persistent?: boolean }
+type Toast = {
+  message: string
+  type?: "neutral" | "success" | "error"
+  persistent?: boolean
+  durationMs?: number
+  oneLine?: boolean
+}
 type ActiveToast = Toast & { id: number, closing?: boolean }
 type ToastContextValue = { showToast: (toast: Toast) => () => void }
 
@@ -37,7 +43,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     window.clearTimeout(timer.current)
     const id = ++currentId.current
     setToast({ ...next, id })
-    if (!next.persistent) timer.current = window.setTimeout(() => dismiss(id), 4200)
+    if (!next.persistent) timer.current = window.setTimeout(() => dismiss(id), next.durationMs ?? 4200)
     return () => dismiss(id)
   }
 
@@ -57,7 +63,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               }}
               transition={{ duration: reducedMotion ? 0 : 0.18 }}
             >
-              <span>{toast.message}</span>
+              <span className={toast.oneLine ? styles.oneLine : undefined}>{toast.message}</span>
               <button type="button" onClick={() => dismiss(toast.id)} aria-label="Закрыть уведомление">
                 <CloseIcon aria-hidden="true" />
               </button>

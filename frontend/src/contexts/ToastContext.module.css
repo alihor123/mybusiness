@@ -33,6 +33,8 @@
   pointer-events: auto;
 }
 
+.oneLine { white-space: nowrap; }
+
 .toast button:hover { background: rgb(127 127 127 / 15%); }
 .toast svg { width: 15px; height: 15px; }
 .neutral { background: var(--color-ink); color: var(--color-white); }

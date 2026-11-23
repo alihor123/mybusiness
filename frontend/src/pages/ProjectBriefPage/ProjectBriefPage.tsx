@@ -59,6 +59,7 @@ export default function ProjectBriefPage() {
 
   // Перед подбором отправляет всю анкету, включая последние изменения.
   async function save(next: "create" | "mentors") {
+    if (next === "mentors" && !canMatch) return
     setBusy(true)
     try {
       const id = await ensureProject()
@@ -118,6 +119,7 @@ export default function ProjectBriefPage() {
   ]
 
   const canCreate = Boolean(projectId || progress.data?.can_create_project)
+  const canMatch = canCreate && fields.every(({ key }) => Boolean(form[key]?.trim()))
 
   return (
     <div className={styles.page}>
@@ -190,7 +192,7 @@ export default function ProjectBriefPage() {
             <button
               type="button"
               className={styles.primaryBtn}
-              disabled={busy || !canCreate}
+              disabled={busy || !canMatch}
               onClick={() => void save("mentors")}
             >
               Подобрать наставника

@@ -44,6 +44,81 @@
   transition: background var(--transition-fast), transform var(--transition-fast);
 }
 
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(25, 25, 25, 0.48);
+}
+
+.modal {
+  width: min(100%, 440px);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  outline: none;
+}
+
+.dialog {
+  padding: 26px;
+  outline: none;
+}
+
+.modalTitle {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.modalText {
+  margin: 12px 0 24px;
+  color: var(--color-muted);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cancelBtn,
+.confirmBtn {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.cancelBtn {
+  background: var(--color-soft);
+  color: var(--color-ink);
+}
+
+.confirmBtn {
+  background: var(--color-accent);
+  color: var(--color-white);
+}
+
+.cancelBtn:focus-visible,
+.confirmBtn:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.cancelBtn:disabled,
+.confirmBtn:disabled {
+  opacity: 0.6;
+}
+
 .newBtn:hover {
   background: var(--color-accent-hover);
 }
@@ -279,6 +354,27 @@
 
   .title {
     font-size: 21px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .headerRow {
+    gap: 8px;
+  }
+
+  .newBtn {
+    height: 40px;
+    padding: 0 12px;
+    gap: 6px;
+    font-size: 13px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .plusIcon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
   }
 
   .hintBanner {
@@ -344,5 +440,28 @@
   .cardBtn {
     height: 32px;
     font-size: 12px;
+  }
+
+  .modalOverlay {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .modal {
+    width: 100%;
+    border-radius: 20px;
+  }
+
+  .dialog {
+    padding: 22px 18px max(22px, env(safe-area-inset-bottom));
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+  }
+
+  .cancelBtn,
+  .confirmBtn {
+    width: 100%;
   }
 }

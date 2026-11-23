@@ -1,4 +1,6 @@
+import { useId, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { Button, Dialog, Modal, ModalOverlay } from "react-aria-components"
 import PlusIcon from "../../assets/icons/plus.svg?react"
 import CloseIcon from "../../assets/icons/close.svg?react"
 import { useToast } from "../../contexts/ToastContext"
@@ -18,6 +20,11 @@ export default function ProjectsPage() {
   const projects = useResource("projects", listProjects)
   const progress = useResource("learning-progress", fetchLearningProgress)
   const canCreate = progress.data?.can_create_project ?? false
+  // Хранит выбранный черновик до подтверждения и блокирует повторное удаление.
+  const [projectToDelete, setProjectToDelete] = useState<ProjectOut | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const dialogTitleId = useId()
+  const dialogDescriptionId = useId()
 
   async function startProject() {
     try {
@@ -32,17 +39,21 @@ export default function ProjectsPage() {
     }
   }
 
-  async function removeProject(project: ProjectOut) {
-    if (project.status !== "draft") return
+  async function confirmRemoveProject() {
+    if (!projectToDelete || deleting || projectToDelete.status !== "draft") return
+    setDeleting(true)
     try {
-      await deleteProject(project.id)
-      projects.setData((items) => items?.filter((item) => item.id !== project.id) ?? [])
-      showToast({ message: "Черновик удалён", type: "success" })
+      await deleteProject(projectToDelete.id)
+      projects.setData((items) => items?.filter((item) => item.id !== projectToDelete.id) ?? [])
+      setProjectToDelete(null)
+      showToast({ message: "Черновик удалён", type: "neutral", oneLine: true })
     } catch (error) {
       showToast({
         message: error instanceof Error ? error.message : "Не удалось удалить проект",
         type: "error",
       })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -77,7 +88,9 @@ export default function ProjectsPage() {
             </button>
           )}
         </div>
-        <div className={styles.hintBanner}>Завершите обязательные шаги обучения, чтобы создать проект.</div>
+        {progress.data && !canCreate && (
+          <div className={styles.hintBanner}>Завершите обязательные шаги обучения, чтобы создать проект.</div>
+        )}
       </div>
       <div className={styles.scrollArea}>
         {projects.loading && <LoadingSkeleton variant="cards" />}
@@ -102,7 +115,7 @@ export default function ProjectsPage() {
                       type="button"
                       className={styles.deleteBtn}
                       aria-label="Удалить черновик"
-                      onClick={() => void removeProject(project)}
+                      onClick={() => setProjectToDelete(project)}
                     >
                       <CloseIcon className={styles.deleteIcon} aria-hidden="true" />
                     </button>
@@ -137,6 +150,48 @@ export default function ProjectsPage() {
           </div>
         )}
       </div>
+      <ModalOverlay
+        className={styles.modalOverlay}
+        isOpen={projectToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setProjectToDelete(null)
+        }}
+        isDismissable={!deleting}
+      >
+        <Modal className={styles.modal}>
+          <Dialog
+            className={styles.dialog}
+            role="alertdialog"
+            aria-labelledby={dialogTitleId}
+            aria-describedby={dialogDescriptionId}
+          >
+            <div id={dialogTitleId} className={styles.modalTitle} role="heading" aria-level={2}>
+              Удалить черновик?
+            </div>
+            <p id={dialogDescriptionId} className={styles.modalText}>
+              Черновик «{projectToDelete?.title || "Новый проект"}» будет удалён.
+              Это действие нельзя отменить.
+            </p>
+            <div className={styles.modalActions}>
+              <Button
+                className={styles.cancelBtn}
+                autoFocus
+                isDisabled={deleting}
+                onPress={() => setProjectToDelete(null)}
+              >
+                Отмена
+              </Button>
+              <Button
+                className={styles.confirmBtn}
+                isDisabled={deleting}
+                onPress={() => void confirmRemoveProject()}
+              >
+                {deleting ? "Удаление…" : "Удалить"}
+              </Button>
+            </div>
+          </Dialog>
+        </Modal>
+      </ModalOverlay>
     </div>
   )
 }
