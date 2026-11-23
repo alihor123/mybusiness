@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
 import PencilIcon from "../../assets/icons/pencil.svg?react"
 import SidePanel from "../../components/SidePanel/SidePanel"
@@ -16,19 +16,22 @@ import {
 } from "../../api/projects"
 import styles from "./ProjectPlanPage.module.css"
 
-type PlanTab = "plan" | "meetings" | "about"
+const planTabs = ["plan", "meetings", "about"] as const
+type PlanTab = typeof planTabs[number]
 
 // Показывает серверный план задач, данные проекта и назначенную встречу.
 export default function ProjectPlanPage() {
   const { projectId = "" } = useParams()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const project = useResource(projectId, (signal) => getProject(projectId, signal))
   const plan = useResource(projectId, (signal) => getProjectPlan(projectId, signal))
   const meeting = useResource(projectId, (signal) => getProjectMeeting(projectId, signal))
   const mentor = useResource(project.data?.mentor_id ?? null, (signal) =>
     getMentor(project.data!.mentor_id!, signal),
   )
-  const [activeTab, setActiveTab] = useState<PlanTab>("plan")
+  const selectedTab = searchParams.get("tab")
+  const activeTab: PlanTab = selectedTab === "about" || selectedTab === "meetings" ? selectedTab : "plan"
   const [mentorPanelOpen, setMentorPanelOpen] = useState(false)
   const tasks = plan.data?.tasks ?? []
   const completed = tasks.filter((task) => task.status === "accepted").length
@@ -41,14 +44,90 @@ export default function ProjectPlanPage() {
     return "К выполнению"
   }
 
+  function selectTab(tab: PlanTab) {
+    const next = new URLSearchParams(searchParams)
+    if (tab === "plan") next.delete("tab")
+    else next.set("tab", tab)
+    setSearchParams(next, { replace: true })
+  }
+
   if (project.loading && !project.data) return (
     <div className={styles.page}>
       <Link to="/projects" className={styles.backLink}>
         <ChevronLeftIcon className={styles.backIcon} aria-hidden="true" />
         <span>К списку проектов</span>
       </Link>
-      <div className={styles.title} role="heading" aria-level={1}>Проект</div>
-      <LoadingSkeleton variant="lesson" />
+      <div className={styles.titleSkeleton} role="status" aria-label="Загружаем проект" />
+      <div className={styles.tabsRow} aria-hidden="true">
+        {planTabs.map((tab) => (
+          <span key={tab} className={`${styles.skeletonTab} ${tab === activeTab ? styles.skeletonTabActive : ""}`} />
+        ))}
+      </div>
+      <div className={styles.layout} aria-hidden="true">
+        <div className={styles.planCard}>
+          {activeTab === "plan" && (
+            <>
+              <div className={`${styles.skeletonBlock} ${styles.skeletonProgressTitle}`} />
+              <div className={styles.skeletonProgressRow}>
+                <div className={`${styles.skeletonBlock} ${styles.skeletonProgressTrack}`} />
+                <div className={`${styles.skeletonBlock} ${styles.skeletonPercent}`} />
+              </div>
+              <div className={styles.tasksList}>
+                {[0, 1, 2].map((item) => (
+                  <div key={item} className={styles.taskRow}>
+                    <div className={`${styles.skeletonBlock} ${styles.skeletonTaskNumber}`} />
+                    <div className={`${styles.skeletonBlock} ${styles.skeletonTaskCard}`}>
+                      <div className={`${styles.skeletonBlock} ${styles.skeletonTaskTitle}`} />
+                      <div className={`${styles.skeletonBlock} ${styles.skeletonTaskDesc}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          {activeTab === "meetings" && (
+            <>
+              <div className={`${styles.skeletonBlock} ${styles.skeletonProgressTitle}`} />
+              <div className={styles.meetingItem}>
+                <div className={`${styles.skeletonBlock} ${styles.skeletonProgressTitle}`} />
+              </div>
+            </>
+          )}
+          {activeTab === "about" && (
+            <>
+              <div className={styles.aboutHeaderRow}>
+                <div className={`${styles.skeletonBlock} ${styles.skeletonProgressTitle}`} />
+                <div className={`${styles.skeletonBlock} ${styles.skeletonEdit}`} />
+              </div>
+              <div className={styles.briefGrid}>
+                {[0, 1, 2, 3].map((item) => (
+                  <div key={item} className={styles.briefItemFull}>
+                    <div className={`${styles.skeletonBlock} ${styles.skeletonProgressTitle}`} />
+                    <div className={`${styles.skeletonBlock} ${styles.skeletonSideLineShort}`} />
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+        <div className={styles.sideCol}>
+          <div className={styles.mentorCard}>
+            <div className={`${styles.skeletonBlock} ${styles.skeletonSideTitle}`} />
+            <div className={styles.skeletonMentorRow}>
+              <div className={`${styles.skeletonBlock} ${styles.skeletonMentorPhoto}`} />
+              <div className={styles.skeletonMentorText}>
+                <div className={`${styles.skeletonBlock} ${styles.skeletonSideLine}`} />
+                <div className={`${styles.skeletonBlock} ${styles.skeletonSideLineShort}`} />
+              </div>
+            </div>
+          </div>
+          <div className={styles.nextMeetingCard}>
+            <div className={`${styles.skeletonBlock} ${styles.skeletonSideLineShort}`} />
+            <div className={`${styles.skeletonBlock} ${styles.skeletonSideLine}`} />
+            <div className={`${styles.skeletonBlock} ${styles.skeletonSideLine}`} />
+          </div>
+        </div>
+      </div>
     </div>
   )
   if (project.error && !project.data) return <ResourceError message={project.error} retry={project.reload} />
@@ -70,14 +149,14 @@ export default function ProjectPlanPage() {
         {project.data.title || "Проект"}
       </div>
       <div className={styles.tabsRow} role="tablist" aria-label="Разделы проекта">
-        {(["plan", "meetings", "about"] as PlanTab[]).map((tab) => (
+        {planTabs.map((tab) => (
           <button
             key={tab}
             type="button"
             role="tab"
             aria-selected={activeTab === tab}
             className={`${styles.tabBtn} ${activeTab === tab ? styles.tabBtnActive : ""}`}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => selectTab(tab)}
           >
             {tab === "plan" ? "План" : tab === "meetings" ? "Встречи" : "О проекте"}
           </button>
@@ -162,7 +241,9 @@ export default function ProjectPlanPage() {
                 <button
                   type="button"
                   className={styles.editBriefBtn}
-                  onClick={() => navigate(`/projects/${projectData.id}/brief`)}
+                  onClick={() => navigate(`/projects/${projectData.id}/brief`, {
+                    state: { fromAbout: projectData.status === "accompaniment" },
+                  })}
                 >
                   <PencilIcon aria-hidden="true" />
                   Редактировать

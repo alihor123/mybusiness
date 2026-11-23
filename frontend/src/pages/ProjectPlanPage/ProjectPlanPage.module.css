@@ -30,6 +30,15 @@
   color: var(--color-ink);
 }
 
+.titleSkeleton {
+  width: min(460px, 72%);
+  height: 54px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--color-soft) 25%, var(--color-border) 50%, var(--color-soft) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
 .tabsRow {
   display: flex;
   align-items: center;
@@ -62,6 +71,129 @@
 .tabBtnActive:hover {
   background: var(--color-tint);
   color: var(--color-accent);
+}
+
+.skeletonTab {
+  width: 104px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--color-soft);
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonTab:nth-child(2) {
+  width: 126px;
+}
+
+.skeletonTab:nth-child(3) {
+  width: 138px;
+}
+
+.skeletonTabActive {
+  background: var(--color-tint);
+}
+
+.skeletonBlock {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--color-soft) 25%, var(--color-border) 50%, var(--color-soft) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonEdit {
+  width: 132px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+}
+
+.skeletonProgressTitle {
+  width: 44%;
+  height: 22px;
+}
+
+.skeletonProgressRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeletonProgressTrack {
+  flex: 1;
+  height: 9px;
+  border-radius: var(--radius-pill);
+}
+
+.skeletonPercent {
+  width: 38px;
+  height: 18px;
+}
+
+.skeletonTaskNumber {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.skeletonTaskCard {
+  min-width: 0;
+  min-height: 96px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+}
+
+.skeletonTaskTitle {
+  width: 48%;
+  height: 18px;
+}
+
+.skeletonTaskDesc {
+  width: 78%;
+  height: 15px;
+}
+
+.skeletonSideTitle {
+  width: 70%;
+  height: 24px;
+}
+
+.skeletonMentorRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeletonMentorPhoto {
+  width: 72px;
+  height: 86px;
+  flex-shrink: 0;
+}
+
+.skeletonMentorText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeletonSideLine,
+.skeletonSideLineShort {
+  width: 100%;
+  height: 16px;
+}
+
+.skeletonSideLineShort {
+  width: 62%;
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
 }
 
 .layout {
@@ -635,6 +767,15 @@
     font-size: 20px;
   }
 
+  .titleSkeleton {
+    height: 25px;
+  }
+
+  .skeletonEdit {
+    width: 110px;
+    height: 34px;
+  }
+
   .tabsRow {
     gap: 6px;
   }
@@ -643,6 +784,60 @@
     height: 32px;
     padding: 0 14px;
     font-size: 13px;
+  }
+
+  .skeletonTab {
+    width: 66px;
+    height: 32px;
+  }
+
+  .skeletonTab:nth-child(2) {
+    width: 76px;
+  }
+
+  .skeletonTab:nth-child(3) {
+    width: 92px;
+  }
+
+  .skeletonProgressTitle {
+    height: 17px;
+  }
+
+  .skeletonProgressTrack {
+    height: 7px;
+  }
+
+  .skeletonTaskNumber {
+    width: 26px;
+    height: 26px;
+  }
+
+  .skeletonTaskCard {
+    min-height: 70px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .skeletonTaskTitle {
+    height: 14px;
+  }
+
+  .skeletonTaskDesc {
+    height: 12px;
+  }
+
+  .skeletonSideTitle {
+    height: 18px;
+  }
+
+  .skeletonMentorPhoto {
+    width: 48px;
+    height: 58px;
+  }
+
+  .skeletonSideLine,
+  .skeletonSideLineShort {
+    height: 13px;
   }
 
   .layout {

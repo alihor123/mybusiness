@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 import ChevronLeftIcon from "../../assets/icons/chevron-left.svg?react"
 import AlertCircleIcon from "../../assets/icons/alert-circle.svg?react"
 import { useToast } from "../../contexts/ToastContext"
@@ -23,6 +23,7 @@ const blankBrief: ProjectQuestionnaire = {
 // Сохраняет анкету проекта только в полях, которые принимает сервер.
 export default function ProjectBriefPage() {
   const { projectId } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const { showToast } = useToast()
   const project = useResource(projectId ?? null, (signal) => getProject(projectId!, signal))
@@ -33,6 +34,8 @@ export default function ProjectBriefPage() {
   // Сохраняет ID, если создание прошло, а обновление анкеты завершилось ошибкой.
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null)
   const autosave = useDraftAutosave()
+  const isAccompaniment = project.data ? project.data.status === "accompaniment" : location.state?.fromAbout === true
+  const returnToAbout = `/projects/${projectId}?tab=about`
 
   useEffect(() => {
     if (!project.data) return
@@ -57,15 +60,16 @@ export default function ProjectBriefPage() {
     return created.id
   }
 
-  // Перед подбором отправляет всю анкету, включая последние изменения.
+  // Явное сохранение отправляет всю анкету, включая последние изменения.
   async function save(next: "create" | "mentors") {
-    if (next === "mentors" && !canMatch) return
+    if (next === "mentors" && (!canMatch || isAccompaniment)) return
     setBusy(true)
     try {
       const id = await ensureProject()
       await updateProject(id, { ...form, saved_at_ms: Date.now() })
       autosave.cancel()
-      if (next === "mentors") navigate(`/projects/${id}/mentors`)
+      if (isAccompaniment) navigate(returnToAbout, { replace: true })
+      else if (next === "mentors") navigate(`/projects/${id}/mentors`)
       else navigate(`/projects/${id}/brief`, { replace: true })
     } catch (error) {
       showToast({
@@ -123,15 +127,26 @@ export default function ProjectBriefPage() {
 
   return (
     <div className={styles.page}>
-      <Link to="/projects" className={styles.backLink}>
+      <Link
+        to={isAccompaniment ? returnToAbout : "/projects"}
+        className={styles.backLink}
+        onClick={isAccompaniment ? async (event) => {
+          if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+          event.preventDefault()
+          await autosave.flush()
+          navigate(returnToAbout, { replace: true })
+        } : undefined}
+      >
         <ChevronLeftIcon className={styles.backIcon} aria-hidden="true" />
-        <span>К списку проектов</span>
+        <span>{isAccompaniment ? "К проекту" : "К списку проектов"}</span>
       </Link>
       <div className={styles.headingCol}>
         <div className={styles.title} role="heading" aria-level={1}>
           ОПИСАНИЕ ПРОЕКТА
         </div>
-        <div className={styles.subtitle}>Заполните информацию, чтобы подобрать подходящего наставника.</div>
+        <div className={styles.subtitle}>
+          {isAccompaniment ? "Обновите информацию о проекте." : "Заполните информацию, чтобы подобрать подходящего наставника."}
+        </div>
       </div>
 
       {project.loading && !project.data && <LoadingSkeleton variant="form" />}
@@ -141,12 +156,12 @@ export default function ProjectBriefPage() {
 
       {(project.data || (!projectId && progress.data)) && (
         <div className={styles.card}>
-          <div className={styles.infoBanner}>
-            <AlertCircleIcon className={styles.infoIcon} aria-hidden="true" />
-            <span>
-              Для подбора наставника нужны все семь полей.
-            </span>
-          </div>
+          {!isAccompaniment && (
+            <div className={styles.infoBanner}>
+              <AlertCircleIcon className={styles.infoIcon} aria-hidden="true" />
+              <span>Для подбора наставника нужны все семь полей.</span>
+            </div>
+          )}
           <div className={styles.formGrid}>
             {fields.map(({ key, label, multiline, placeholder }) => (
               <label key={key} className={styles.field}>
@@ -189,14 +204,26 @@ export default function ProjectBriefPage() {
                 Создать проект
               </button>
             )}
-            <button
-              type="button"
-              className={styles.primaryBtn}
-              disabled={busy || !canMatch}
-              onClick={() => void save("mentors")}
-            >
-              Подобрать наставника
-            </button>
+            {projectId && isAccompaniment && (
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                disabled={busy}
+                onClick={() => void save("create")}
+              >
+                Сохранить изменения
+              </button>
+            )}
+            {!isAccompaniment && (
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                disabled={busy || !canMatch}
+                onClick={() => void save("mentors")}
+              >
+                Подобрать наставника
+              </button>
+            )}
           </div>
         </div>
       )}

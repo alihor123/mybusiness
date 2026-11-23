@@ -4,7 +4,7 @@ import { getProjectPlan } from "../../api/projects"
 import { saveTaskDraft, submitTask, previewTask } from "../../api/accompaniment"
 import useResource from "../../hooks/useResource"
 import useDraftAutosave from "../../hooks/useDraftAutosave"
-import { createRequestId, errorMessage } from "../../api/client"
+import { ApiError, createRequestId, errorMessage } from "../../api/client"
 import { LoadingSkeleton, ResourceError } from "../../components/AsyncState/AsyncState"
 import AiActivity from "../../components/AsyncState/AiActivity"
 import { useToast } from "../../contexts/ToastContext"
@@ -61,13 +61,19 @@ export default function ProjectTaskPage() {
 
   // Отправляет только вложение. Автосохранение текста не повторяет загрузку файла.
   async function editFile(nextFile: File | null) {
+    const previousEdit = fileEdit
     const edit = { file: nextFile, saved: false }
     setFileEdit(edit)
     try {
       await saveTaskDraft(currentTask.id, null, nextFile ? "replace" : "remove", Date.now(), nextFile ?? undefined)
       setFileEdit((current) => current === edit ? { ...edit, saved: true } : current)
-    } catch {
-      // При явной отправке ещё можно передать выбранный файл вместе с ответом.
+      if (!nextFile) showToast({ message: "Файл удалён", type: "neutral" })
+    } catch (error) {
+      // Выбранный файл ещё можно передать при отправке всей работы.
+      if (nextFile) return
+      setFileEdit((current) => current === edit ? previousEdit : current)
+      if (error instanceof ApiError && [0, 502, 504].includes(error.status)) reload()
+      showToast({ message: errorMessage(error, "Не удалось удалить файл"), type: "error" })
     }
   }
 

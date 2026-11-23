@@ -7,6 +7,7 @@ import useResource from "../../hooks/useResource"
 import { LoadingSkeleton, ResourceError, EmptyState } from "../../components/AsyncState/AsyncState"
 import AiActivity from "../../components/AsyncState/AiActivity"
 import { useToast } from "../../contexts/ToastContext"
+import { ApiError } from "../../api/client"
 import {
   applyToMentor,
   getMentors,
@@ -31,6 +32,9 @@ export default function MentorMatchingPage() {
   const [matching, setMatching] = useState(false)
   const [matchingError, setMatchingError] = useState(false)
   const [applying, setApplying] = useState(false)
+  // Заявка скрывается сразу и возвращается на своё место при отказе сервера.
+  const [withdrawingId, setWithdrawingId] = useState<string | null>(null)
+  const updatingApplications = applications.loading || applying || withdrawingId !== null
   const complete = Boolean(
     project.data?.title &&
       project.data.industry &&
@@ -84,7 +88,7 @@ export default function MentorMatchingPage() {
   }
 
   async function apply(mentor: MentorOut) {
-    if (applying) return
+    if (updatingApplications) return
     setApplying(true)
     try {
       const application = await applyToMentor(projectId, mentor.id)
@@ -101,25 +105,26 @@ export default function MentorMatchingPage() {
   }
 
   async function withdraw(applicationId: string) {
-    if (applying) return
-    setApplying(true)
+    if (updatingApplications) return
+    setWithdrawingId(applicationId)
     try {
       await withdrawApplication(applicationId)
       applications.setData((current) => current?.filter((item) => item.id !== applicationId) ?? [])
     } catch (error) {
+      if (error instanceof ApiError && [0, 502, 504].includes(error.status)) applications.reload()
       showToast({
         message: error instanceof Error ? error.message : "Не удалось отозвать заявку",
         type: "error",
       })
     } finally {
-      setApplying(false)
+      setWithdrawingId(null)
     }
   }
 
   function mentorById(id: string) {
     return mentors.data?.find((mentor) => mentor.id === id)
   }
-  const visibleApplications = applications.data?.filter((item) => item.status !== "withdrawn") ?? []
+  const visibleApplications = applications.data?.filter((item) => item.status !== "withdrawn" && item.id !== withdrawingId) ?? []
   const selectedApplication =
     selected && visibleApplications.find((item) => item.mentor_id === selected.id && item.status === "pending")
   const mentorAssigned = project.data?.status === "accompaniment" || project.data?.status === "archived"
@@ -227,7 +232,7 @@ export default function MentorMatchingPage() {
           listAfter={
             <section className={styles.applications} aria-label="Ваши заявки">
               <div className={styles.sectionLabel}>Ваши заявки</div>
-              {applications.loading && <LoadingSkeleton variant="list" />}
+              {applications.loading && !applications.data && <LoadingSkeleton variant="list" />}
               {applications.error && <ResourceError message={applications.error} retry={applications.reload} />}
               {!applications.loading && !applications.error && !visibleApplications.length && (
                 <EmptyState message="Заявок пока нет." />
@@ -246,7 +251,7 @@ export default function MentorMatchingPage() {
                           className={styles.withdrawIconBtn}
                           aria-label="Отозвать заявку"
                           title="Отозвать заявку"
-                          disabled={applying}
+                          disabled={updatingApplications}
                           onClick={() => void withdraw(application.id)}
                         >
                           <CloseIcon aria-hidden="true" />
@@ -267,7 +272,7 @@ export default function MentorMatchingPage() {
               <button
                 type="button"
                 className={styles.cancelBtn}
-                disabled={applying}
+                disabled={updatingApplications}
                 onClick={() => void withdraw(selectedApplication.id)}
               >
                 Отозвать отправленную заявку
@@ -278,7 +283,7 @@ export default function MentorMatchingPage() {
                 <button
                   type="button"
                   className={styles.applyBtn}
-                  disabled={applying}
+                  disabled={updatingApplications}
                   onClick={() => void apply(selected)}
                 >
                   {applying ? "Отправляем…" : "Отправить заявку"}

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
-import { motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react"
 import { ResourceError } from "../../components/AsyncState/AsyncState"
 import AiActivity from "../../components/AsyncState/AiActivity"
 import CustomSelect from "../../components/CustomSelect/CustomSelect"
@@ -180,15 +180,19 @@ export default function TrackLessonPage() {
             <div className={`${styles.placeholder} ${styles.linePlaceholder}`} />
           </div>
         ) : selected ? (
-          <LessonCard
-            key={selected.id}
-            step={selected}
-            advance={advance}
-            onReplay={(behavior) => {
-              if (isMobile) scrollBody.current?.scrollIntoView({ behavior, block: "start" })
-              else scrollBody.current?.scrollTo({ top: 0, behavior })
-            }}
-          />
+          <div className={styles.lessonStack}>
+            <AnimatePresence mode="sync" initial={false}>
+              <LessonCard
+                key={selected.id}
+                step={selected}
+                advance={advance}
+                onReplay={(behavior) => {
+                  if (isMobile) scrollBody.current?.scrollIntoView({ behavior, block: "start" })
+                  else scrollBody.current?.scrollTo({ top: 0, behavior })
+                }}
+              />
+            </AnimatePresence>
+          </div>
         ) : resource.error ? (
           <ResourceError message={resource.error} retry={resource.reload} />
         ) : (
@@ -209,6 +213,7 @@ function LessonCard({ step, advance, onReplay }: {
   const { showToast } = useToast()
   const { updateStep, updateDraft, updateProgress } = useLearningCache()
   const reducedMotion = useReducedMotion()
+  const isPresent = useIsPresent()
   const written = step.type === "written" || step.type === "final"
   const material = step.type === "theory" || step.type === "video"
   const lastAttempt = step.last_attempt
@@ -223,16 +228,16 @@ function LessonCard({ step, advance, onReplay }: {
   const [videoFailed, setVideoFailed] = useState(false)
   const [replayCount, setReplayCount] = useState(0)
   // Уход со страницы не должен переводить пользователя на соседний шаг после позднего ответа.
-  const mounted = useRef(false)
+  const active = useRef(false)
   const completing = useRef(false)
   const autosave = useDraftAutosave()
   const editable = !step.credited || retaking
-  useEffect(() => {
-    mounted.current = true
+  useLayoutEffect(() => {
+    active.current = isPresent
     return () => {
-      mounted.current = false
+      active.current = false
     }
-  }, [])
+  }, [isPresent])
 
   const videoAvailable = !videoFailed && step.blocks.some((block) => block.type === "video" && block.url)
   const hasAnswer =
@@ -296,9 +301,9 @@ function LessonCard({ step, advance, onReplay }: {
       const progress = await completeLearningStep(step.id, event)
       updateStep({ ...step, credited: true, can_credit: false, credit_source: "earned" })
       updateProgress(progress)
-      if (mounted.current) advance(progress.tracks.find((track) => track.track_id === step.track_id)?.next_required_step_id)
+      if (active.current) advance(progress.tracks.find((track) => track.track_id === step.track_id)?.next_required_step_id)
     } catch (error) {
-      if (mounted.current)
+      if (active.current)
         showToast({ message: errorMessage(error, "Не удалось отметить шаг"), type: "error" })
     } finally {
       completing.current = false
@@ -327,10 +332,13 @@ function LessonCard({ step, advance, onReplay }: {
 
   return (
     <motion.section
-      className={styles.card}
-      initial={reducedMotion ? false : { opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: reducedMotion ? 0 : 0.18 }}
+      className={`${styles.card} ${styles.lessonLayer}`}
+      inert={!isPresent}
+      aria-hidden={!isPresent || undefined}
+      initial={reducedMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: reducedMotion ? 0 : 0.12, ease: "linear" }}
     >
       <div className={styles.badgePill}>
         {step.type === "theory" ? "Теория" : step.type === "video" ? "Видеолекция" : "Практика"}

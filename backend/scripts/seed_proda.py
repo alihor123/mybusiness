@@ -16,7 +16,7 @@ from app.auth.models import Role, User
 from app.auth.service import hash_password, lock_user
 from app.auth.tokens import utcnow
 from app.database import get_session_factory
-from app.learning.models import Completion, Credit, Step
+from app.learning.models import Attempt, Completion, Credit, Draft, Step
 from app.mentors.models import Mentor
 from app.projects.models import Project
 
@@ -25,6 +25,7 @@ USER_EMAIL = "demo-student-ivan@example.com"
 ACCOMPANIMENT_PROJECT_ID = UUID("00000000-0000-4000-8000-000000000022")
 DRAFT_PROJECT_ID = UUID("00000000-0000-4000-8000-000000000023")
 PROJECTS_FILE = Path(__file__).resolve().parents[1] / "seed_data" / "demo" / "proda_projects.json"
+LEARNING_ANSWERS_FILE = Path(__file__).resolve().parents[1] / "seed_data" / "demo" / "proda_learning_answers.json"
 
 
 async def create_user(db: AsyncSession, password_hash: str) -> None:
@@ -118,6 +119,37 @@ async def seed_learning(db: AsyncSession) -> None:
     )
 
 
+async def seed_completed_attempts(db: AsyncSession) -> None:
+    """Backfill only empty practice steps so existing demo edits remain untouched."""
+    await lock_user(db, USER_ID)
+    answers = json.loads(LEARNING_ANSWERS_FILE.read_text(encoding="utf-8"))
+    completion = await db.get(Completion, USER_ID)
+    for step_id, answer in answers.items():
+        step = await db.get(Step, step_id)
+        if step is None:
+            raise RuntimeError(f"Learning step is missing: {step_id}")
+        existing_attempt = await db.scalar(
+            select(Attempt.id)
+            .where(Attempt.user_id == USER_ID, Attempt.step_id == step_id)
+            .limit(1)
+        )
+        if existing_attempt is not None or await db.get(Draft, (USER_ID, step_id)) is not None:
+            continue
+        attempt = Attempt(
+            user_id=USER_ID,
+            step_id=step_id,
+            number=1,
+            request_key=f"proda-seed-{step_id}",
+            answer=answer,
+            status="accepted",
+            remarks=[],
+        )
+        if step.type == "final":
+            attempt.prefill_status = "succeeded"
+            attempt.project_prefill = completion.project_prefill if completion else {}
+        db.add(attempt)
+
+
 async def main() -> None:
     hashed = await hash_password(secrets.token_urlsafe(48))
     async with get_session_factory()() as db, db.begin():
@@ -127,6 +159,7 @@ async def main() -> None:
         if await db.get(Completion, USER_ID) is None:
             await seed_projects(db)
             await seed_learning(db)
+        await seed_completed_attempts(db)
     print(f"PRODA demo account ready: {USER_EMAIL}")
 
 

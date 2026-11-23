@@ -114,11 +114,6 @@
   outline-offset: 2px;
 }
 
-.cancelBtn:disabled,
-.confirmBtn:disabled {
-  opacity: 0.6;
-}
-
 .newBtn:hover {
   background: var(--color-accent-hover);
 }

@@ -7,6 +7,7 @@ import { useToast } from "../../contexts/ToastContext"
 import useResource from "../../hooks/useResource"
 import { LoadingSkeleton, ResourceError, EmptyState } from "../../components/AsyncState/AsyncState"
 import { createProject, deleteProject, listProjects } from "../../api/projects"
+import { ApiError } from "../../api/client"
 import { fetchLearningProgress } from "../../api/learning"
 import type { ProjectOut } from "../../api/projects"
 import styles from "./ProjectsPage.module.css"
@@ -18,11 +19,12 @@ export default function ProjectsPage() {
   const projects = useResource("projects", listProjects)
   const progress = useResource("learning-progress", fetchLearningProgress)
   const canCreate = progress.data?.can_create_project ?? false
-  // Хранит выбранный черновик до подтверждения и блокирует повторное удаление.
+  // Хранит скрытые карточки, в том числе на случай позднего ответа со старым списком.
   const [projectToDelete, setProjectToDelete] = useState<ProjectOut | null>(null)
-  const [deleting, setDeleting] = useState(false)
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set())
   const dialogTitleId = useId()
   const dialogDescriptionId = useId()
+  const visibleProjects = projects.data?.filter((project) => !hiddenIds.has(project.id))
 
   async function startProject() {
     try {
@@ -38,20 +40,25 @@ export default function ProjectsPage() {
   }
 
   async function confirmRemoveProject() {
-    if (!projectToDelete || deleting || projectToDelete.status !== "draft") return
-    setDeleting(true)
+    if (!projectToDelete || projectToDelete.status !== "draft" || hiddenIds.has(projectToDelete.id)) return
+    const id = projectToDelete.id
+    setHiddenIds((current) => new Set(current).add(id))
+    setProjectToDelete(null)
     try {
-      await deleteProject(projectToDelete.id)
-      projects.setData((items) => items?.filter((item) => item.id !== projectToDelete.id) ?? [])
-      setProjectToDelete(null)
+      await deleteProject(id)
+      projects.setData((items) => items?.filter((item) => item.id !== id) ?? [])
       showToast({ message: "Черновик удалён", type: "neutral" })
     } catch (error) {
+      setHiddenIds((current) => {
+        const next = new Set(current)
+        next.delete(id)
+        return next
+      })
+      if (error instanceof ApiError && [0, 502, 504].includes(error.status)) projects.reload()
       showToast({
         message: error instanceof Error ? error.message : "Не удалось удалить проект",
         type: "error",
       })
-    } finally {
-      setDeleting(false)
     }
   }
 
@@ -91,14 +98,14 @@ export default function ProjectsPage() {
         )}
       </div>
       <div className={styles.scrollArea}>
-        {projects.loading && <LoadingSkeleton variant="cards" />}
+        {projects.loading && !projects.data && <LoadingSkeleton variant="cards" />}
         {projects.error && <ResourceError message={projects.error} retry={projects.reload} />}
-        {!projects.loading && !projects.error && projects.data?.length === 0 && (
+        {visibleProjects?.length === 0 && (
           <EmptyState message="У вас пока нет проектов." />
         )}
-        {!projects.loading && !projects.error && (projects.data?.length ?? 0) > 0 && (
+        {visibleProjects && visibleProjects.length > 0 && (
           <div className={styles.grid}>
-            {projects.data?.map((project) => (
+            {visibleProjects.map((project) => (
               <div key={project.id} className={styles.card}>
                 <div className={styles.cardTopRow}>
                   <div className={styles.cardTitle}>{project.title || "Новый проект"}</div>
@@ -146,9 +153,9 @@ export default function ProjectsPage() {
         className={styles.modalOverlay}
         isOpen={projectToDelete !== null}
         onOpenChange={(open) => {
-          if (!open && !deleting) setProjectToDelete(null)
+          if (!open) setProjectToDelete(null)
         }}
-        isDismissable={!deleting}
+        isDismissable
       >
         <Modal className={styles.modal}>
           <Dialog
@@ -168,17 +175,15 @@ export default function ProjectsPage() {
               <Button
                 className={styles.cancelBtn}
                 autoFocus
-                isDisabled={deleting}
                 onPress={() => setProjectToDelete(null)}
               >
                 Отмена
               </Button>
               <Button
                 className={styles.confirmBtn}
-                isDisabled={deleting}
                 onPress={() => void confirmRemoveProject()}
               >
-                {deleting ? "Удаление…" : "Удалить"}
+                Удалить
               </Button>
             </div>
           </Dialog>

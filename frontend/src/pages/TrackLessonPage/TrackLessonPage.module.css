@@ -141,6 +141,17 @@
   background: var(--color-white);
 }
 
+.lessonStack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lessonLayer {
+  grid-area: 1 / 1;
+  align-self: start;
+  min-width: 0;
+}
+
 .badgePill {
   width: fit-content;
   height: 38px;
