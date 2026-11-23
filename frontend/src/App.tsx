@@ -34,7 +34,7 @@ function ProjectAccessLayout() {
   return progress.data.can_create_project ? <Outlet /> : <Navigate to="/learning" replace />
 }
 
-// Защищает маршруты кабинета и оставляет AppShell смонтированным при переходах между экранами.
+// Защищает маршруты кабинета и сохраняет кэш при переходах между экранами.
 function ProtectedLayout() {
   const { session, restoreSession } = useApp()
   const location = useLocation()
@@ -45,7 +45,7 @@ function ProtectedLayout() {
   }
   return (
     <LearningCacheProvider key={session.profile?.id}>
-      <AppShell />
+      <Outlet />
     </LearningCacheProvider>
   )
 }
@@ -101,29 +101,31 @@ function AppRoutes() {
       </Route>
 
       <Route element={<ProtectedLayout />}>
-        <Route element={<RoleLayout role="student" />}>
-          <Route path="/learning/test" element={<DiagnosticTestPage />} />
-          <Route path="/learning/results" element={<TestResultsPage />} />
-          <Route path="/learning" element={<TracksPage />} />
-          <Route path="/learning/track/:trackId" element={<TrackLessonPage />} />
+        <Route element={<AppShell />}>
+          <Route element={<RoleLayout role="student" />}>
+            <Route path="/learning/test" element={<DiagnosticTestPage />} />
+            <Route path="/learning/results" element={<TestResultsPage />} />
+            <Route path="/learning" element={<TracksPage />} />
+            <Route path="/learning/track/:trackId" element={<TrackLessonPage />} />
 
-          <Route element={<ProjectAccessLayout />}>
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/projects/new" element={<ProjectBriefPage />} />
-            <Route path="/projects/:projectId/brief" element={<ProjectBriefPage />} />
-            <Route path="/projects/:projectId/mentors" element={<MentorMatchingPage />} />
-            <Route path="/projects/:projectId" element={<ProjectPlanPage />} />
-            <Route path="/projects/:projectId/tasks/:taskId" element={<ProjectTaskPage />} />
+            <Route element={<ProjectAccessLayout />}>
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/projects/new" element={<ProjectBriefPage />} />
+              <Route path="/projects/:projectId/brief" element={<ProjectBriefPage />} />
+              <Route path="/projects/:projectId/mentors" element={<MentorMatchingPage />} />
+              <Route path="/projects/:projectId" element={<ProjectPlanPage />} />
+              <Route path="/projects/:projectId/tasks/:taskId" element={<ProjectTaskPage />} />
+            </Route>
+
+            <Route path="/mentors" element={<MentorsCatalogPage />} />
           </Route>
+          <Route path="/profile" element={<ProfilePage />} />
 
-          <Route path="/mentors" element={<MentorsCatalogPage />} />
-        </Route>
-        <Route path="/profile" element={<ProfilePage />} />
-
-        <Route element={<RoleLayout role="teacher" />}>
-          <Route path="/mentor/requests" element={<MentorRequestsPage />} />
-          <Route path="/mentor/projects" element={<MentorProjectsPage />} />
-          <Route path="/mentor/projects/:projectId/tasks/:taskId" element={<MentorReviewPage />} />
+          <Route element={<RoleLayout role="teacher" />}>
+            <Route path="/mentor/requests" element={<MentorRequestsPage />} />
+            <Route path="/mentor/projects" element={<MentorProjectsPage />} />
+            <Route path="/mentor/projects/:projectId/tasks/:taskId" element={<MentorReviewPage />} />
+          </Route>
         </Route>
         <Route path="*" element={<HomeRoute />} />
       </Route>
