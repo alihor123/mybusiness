@@ -5,17 +5,22 @@ from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.audience import AUDIENCE_TYPE, AUDIENCE_VALUES, Audience
 from app.database import Base
 
 
 class Track(Base):
     __tablename__ = "tracks"
+    __table_args__ = (CheckConstraint(f"audience IN {AUDIENCE_VALUES}", name="ck_tracks_audience"),)
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     position: Mapped[int] = mapped_column(unique=True)
     title: Mapped[str]
     description: Mapped[str]
     cover_url: Mapped[str]
+    audience: Mapped[Audience] = mapped_column(
+        AUDIENCE_TYPE, default=Audience.STUDENT, server_default=Audience.STUDENT.value
+    )
 
 
 class Step(Base):
@@ -118,11 +123,20 @@ class DiagnosticCredit(Base):
 
 class Completion(Base):
     __tablename__ = "learning_completions"
+    __table_args__ = (
+        CheckConstraint(f"audience IN {AUDIENCE_VALUES}", name="ck_learning_completions_audience"),
+    )
 
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
     id: Mapped[UUID] = mapped_column(unique=True, default=uuid4)
+    audience: Mapped[Audience] = mapped_column(
+        AUDIENCE_TYPE,
+        primary_key=True,
+        default=Audience.STUDENT,
+        server_default=Audience.STUDENT.value,
+    )
     first_project_id: Mapped[UUID]
     project_prefill: Mapped[dict] = mapped_column(JSONB)
     completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

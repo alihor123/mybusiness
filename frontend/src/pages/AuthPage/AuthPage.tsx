@@ -11,6 +11,7 @@ import { useApp } from "../../contexts/AppContext"
 import { useToast } from "../../contexts/ToastContext"
 import { ApiError, errorMessage } from "../../api/client"
 import styles from "./AuthPage.module.css"
+import AudienceSelect, { type Audience } from "../../components/AudienceSelect/AudienceSelect"
 
 type AuthMode = "register" | "login"
 type AuthField = "first_name" | "last_name" | "email" | "password"
@@ -31,6 +32,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [audience, setAudience] = useState<Audience>("student")
   const [showPassword, setShowPassword] = useState(false)
   const [fieldsError, setFieldsError] = useState<FieldErrors>({})
   const [pending, setPending] = useState(false)
@@ -95,6 +97,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
           last_name: lastName.trim(),
           email: email.trim().toLowerCase(),
           password,
+          audience,
         })
       else await signIn("login", email.trim().toLowerCase(), password)
     } catch (error) {
@@ -152,6 +155,7 @@ export default function AuthPage({ mode }: { mode: AuthMode }) {
           <form className={styles.formCol} onSubmit={handleSubmit} noValidate aria-busy={pending}>
             {isRegister && (
               <>
+                <AudienceSelect value={audience} onChange={setAudience} id="register-audience" />
                 <label className={styles.fieldGroup} htmlFor="auth-first-name">
                   <span className={styles.field}>
                     <UserIcon className={styles.fieldIcon} aria-hidden="true" />

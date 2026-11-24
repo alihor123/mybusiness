@@ -44,12 +44,19 @@ async def client():
         yield instance
 
 
-async def register(client, *, device_id="device-1"):
+async def register(client, *, device_id="device-1", audience="student"):
     email = f"pytest-{uuid4()}@example.com"
     response = await client.post(
         "/api/v1/auth/register",
         headers={"Origin": ORIGIN},
-        json={"first_name": "Test", "last_name": "Student", "email": email, "password": PASSWORD, "device_id": device_id},
+        json={
+            "first_name": "Test",
+            "last_name": "Student",
+            "email": email,
+            "password": PASSWORD,
+            "device_id": device_id,
+            "audience": audience,
+        },
     )
     assert response.status_code == 201, response.text
     return response.json()

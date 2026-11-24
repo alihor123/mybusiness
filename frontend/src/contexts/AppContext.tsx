@@ -24,7 +24,7 @@ type AppContextValue = {
   signIn: (mode: "login", email: string, password: string) => Promise<void>
   signUp: (fields: SignupFields) => Promise<void>
   signOut: () => Promise<void>
-  updateProfile: (fields: EditableProfileFields) => Promise<Profile>
+  updateProfile: (fields: Partial<EditableProfileFields>) => Promise<Profile>
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -109,7 +109,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   // Синхронизирует профиль с ответом сервера.
-  async function updateProfile(fields: EditableProfileFields) {
+  async function updateProfile(fields: Partial<EditableProfileFields>) {
     const profile = await saveProfile(fields)
     setSession({ status: "ready", profile })
     return profile

@@ -1,4 +1,5 @@
 import { createRequestId, request } from "./client"
+import type { Audience } from "../components/AudienceSelect/AudienceSelect"
 
 export type Role = "student" | "teacher"
 
@@ -9,14 +10,15 @@ export type ProfileFields = {
   occupation: string | null
 }
 
-export type EditableProfileFields = Pick<ProfileFields, "first_name" | "last_name" | "occupation">
+export type EditableProfileFields = Pick<ProfileFields, "first_name" | "last_name" | "occupation"> & { audience: Audience }
 export type Profile = ProfileFields & {
   id: string
   role: Role
   is_demo: boolean
   show_diagnostic_on_login: boolean
+  audience: Audience
 }
-export type SignupFields = { first_name: string, last_name: string, email: string, password: string }
+export type SignupFields = { first_name: string, last_name: string, email: string, password: string, audience: Audience }
 
 export const testModeEnabled = import.meta.env.VITE_TEST_MODE === "true"
 
@@ -64,7 +66,7 @@ export function authenticateTest(signal?: AbortSignal) {
   })
 }
 
-export function saveProfile(fields: EditableProfileFields) {
+export function saveProfile(fields: Partial<EditableProfileFields>) {
   return request<Profile>("/me", { method: "PATCH", body: fields })
 }
 

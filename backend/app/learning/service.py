@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.client import CheckUnavailable, DeepSeekClient
+from app.audience import Audience
 from app.auth.service import lock_user
 from app.auth.tokens import utcnow
 from app.errors import api_error, check_unavailable
@@ -58,8 +59,13 @@ async def get_step(db: AsyncSession, step_id: str) -> Step:
     return step
 
 
+async def step_audience(db: AsyncSession, step: Step) -> Audience:
+    track = await db.get(Track, step.track_id)
+    return Audience(track.audience)
+
+
 async def step_out(db: AsyncSession, user_id: UUID, step: Step) -> StepOut:
-    route = await get_route(db, user_id)
+    route = await get_route(db, user_id, await step_audience(db, step))
     draft = await db.get(Draft, (user_id, step.id))
     last_attempt = await db.scalar(
         select(Attempt)
@@ -94,8 +100,8 @@ def attempt_out(attempt: Attempt) -> AttemptOut:
     )
 
 
-async def tracks(db: AsyncSession, user_id: UUID) -> list[TrackOut]:
-    route = await get_route(db, user_id)
+async def tracks(db: AsyncSession, user_id: UUID, audience: Audience) -> list[TrackOut]:
+    route = await get_route(db, user_id, audience)
     return [route.track_out(track) for track in route.tracks]
 
 
@@ -103,7 +109,7 @@ async def track_detail(db: AsyncSession, user_id: UUID, track_id: str) -> TrackD
     track = await db.get(Track, track_id)
     if track is None:
         raise api_error(404, "TRACK_NOT_FOUND", "Трек не найден")
-    route = await get_route(db, user_id)
+    route = await get_route(db, user_id, Audience(track.audience))
     return TrackDetail(
         **route.track_out(track).model_dump(),
         steps=[route.summarize(step) for step in route.steps[track_id]],
@@ -114,7 +120,7 @@ async def track_steps(db: AsyncSession, user_id: UUID, track_id: str) -> TrackSt
     track = await db.get(Track, track_id)
     if track is None:
         raise api_error(404, "TRACK_NOT_FOUND", "Трек не найден")
-    route = await get_route(db, user_id)
+    route = await get_route(db, user_id, Audience(track.audience))
     track_detail_out = TrackDetail(
         **route.track_out(track).model_dump(),
         steps=[route.summarize(step) for step in route.steps[track_id]],
@@ -195,7 +201,8 @@ async def write_draft(
 
 
 async def require_available(db: AsyncSession, user_id: UUID, step: Step) -> None:
-    summary = (await get_route(db, user_id)).summarize(step)
+    route = await get_route(db, user_id, await step_audience(db, step))
+    summary = route.summarize(step)
     if not summary.credited and not summary.can_credit:
         raise conflict("STEP_OUT_OF_ORDER", "Сначала завершите предыдущий обязательный шаг")
 
@@ -220,12 +227,19 @@ async def complete(db: AsyncSession, user_id: UUID, step_id: str, data: Completi
         if await db.get(Credit, (user_id, step_id)) is None:
             await require_available(db, user_id, step)
             await record_credit(db, user_id, step)
-        await finish_if_ready(db, user_id)
-        return await get_progress(db, user_id)
+        audience = await step_audience(db, step)
+        await finish_if_ready(db, user_id, audience)
+        return await get_progress(db, user_id, audience)
 
 
-async def submission_out(db: AsyncSession, user_id: UUID, attempt: Attempt) -> SubmissionOut:
-    return SubmissionOut(attempt=attempt_out(attempt), progress=await get_progress(db, user_id))
+async def submission_out(
+    db: AsyncSession, user_id: UUID, attempt: Attempt, step: Step
+) -> SubmissionOut:
+    audience = await step_audience(db, step)
+    await finish_if_ready(db, user_id, audience)
+    return SubmissionOut(
+        attempt=attempt_out(attempt), progress=await get_progress(db, user_id, audience)
+    )
 
 
 async def start_submission(
@@ -315,8 +329,7 @@ async def submit(
         attempt, step = await start_submission(db, user_id, step_id, data)
         extracting = attempt.prefill_status == "checking"
         if attempt.status in TERMINAL and not extracting:
-            await finish_if_ready(db, user_id)
-            return await submission_out(db, user_id, attempt)
+            return await submission_out(db, user_id, attempt, step)
         if step.type in {"choice", "matching"}:
             accepted = attempt.answer == step.answer_key
             remarks = [] if accepted else ["Сверьте свой выбор с условием и попробуйте ещё раз."]
@@ -324,8 +337,7 @@ async def submit(
             await save_decision(
                 db, attempt, step, CheckDecision(accepted=accepted, remarks=remarks)
             )
-            await finish_if_ready(db, user_id)
-            return await submission_out(db, user_id, attempt)
+            return await submission_out(db, user_id, attempt, step)
         if not extracting:
             await require_available(db, user_id, step)
             other_check = (
@@ -355,7 +367,7 @@ async def submit(
         decision = await check_written(db, ai, attempt_id, check_id, user_id, step, data)
         if decision is not None:
             return decision
-    return await extract_prefill(db, ai, attempt_id, check_id, user_id, data)
+    return await extract_prefill(db, ai, attempt_id, check_id, user_id, step, data)
 
 
 async def checked_attempt(
@@ -428,8 +440,7 @@ async def check_written(
             attempt.check_id = check_id
             attempt.check_deadline = utcnow() + CHECK_LEASE
             return None
-        await finish_if_ready(db, user_id)
-        return await submission_out(db, user_id, attempt)
+        return await submission_out(db, user_id, attempt, step)
 
 
 async def extract_prefill(
@@ -438,6 +449,7 @@ async def extract_prefill(
     attempt_id: UUID,
     check_id: UUID,
     user_id: UUID,
+    step: Step,
     data: SubmissionIn,
 ) -> SubmissionOut:
     fields = None
@@ -461,8 +473,7 @@ async def extract_prefill(
         attempt.project_prefill = fields
         attempt.check_id = None
         attempt.check_deadline = None
-        await finish_if_ready(db, user_id)
-        return await submission_out(db, user_id, attempt)
+        return await submission_out(db, user_id, attempt, step)
 
 
 async def help_with_step(db: AsyncSession, ai: DeepSeekClient, step_id: str, data: HelpIn) -> Hint:

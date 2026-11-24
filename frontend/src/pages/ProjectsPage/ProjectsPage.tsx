@@ -11,13 +11,16 @@ import { ApiError } from "../../api/client"
 import { fetchLearningProgress } from "../../api/learning"
 import type { ProjectOut } from "../../api/projects"
 import styles from "./ProjectsPage.module.css"
+import { useApp } from "../../contexts/AppContext"
 
 // Показывает проекты ученика и использует серверный прогресс для допуска к созданию.
 export default function ProjectsPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const { session } = useApp()
   const projects = useResource("projects", listProjects)
-  const progress = useResource("learning-progress", fetchLearningProgress)
+  const audience = session.status === "ready" ? session.profile.audience : "student"
+  const progress = useResource(`learning-progress-${audience}`, (signal) => fetchLearningProgress(signal, audience))
   const canCreate = progress.data?.can_create_project ?? false
   // Хранит скрытые карточки, в том числе на случай позднего ответа со старым списком.
   const [projectToDelete, setProjectToDelete] = useState<ProjectOut | null>(null)

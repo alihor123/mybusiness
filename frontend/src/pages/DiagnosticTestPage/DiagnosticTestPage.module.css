@@ -75,6 +75,24 @@
   background: var(--color-white);
 }
 
+.audiencePanel {
+  display: grid;
+  grid-template-columns: minmax(220px, 360px) minmax(0, 1fr);
+  align-items: end;
+  gap: 18px;
+  padding: 18px 22px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+}
+
+.audienceHint {
+  margin: 0 0 12px;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
 .progressRow {
   display: flex;
   align-items: center;
@@ -242,6 +260,15 @@
 }
 
 @media (max-width: 768px) {
+  .audiencePanel {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .audienceHint {
+    margin: 0;
+  }
   .page {
     gap: 10px;
     padding-bottom: 16px;

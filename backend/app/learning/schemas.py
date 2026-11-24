@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.audience import Audience
 from app.learning.assessment import Answer, Options
 
 StepType = Literal["theory", "video", "choice", "matching", "written", "final"]
@@ -84,8 +85,10 @@ class TrackProgress(BaseModel):
 
 
 class Progress(BaseModel):
+    audience: Audience
     tracks: list[TrackProgress]
     can_create_project: bool
+    route_completed: bool
     first_project_id: UUID | None
     draft_project_id: UUID | None = None
 

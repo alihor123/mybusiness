@@ -85,6 +85,46 @@ async def test_track_batch_contains_step_data_and_updates_credits(client):
     assert updated["lessons"][1]["can_credit"]
 
 
+async def test_diagnostic_and_learning_progress_follow_audience(client):
+    profile = await register(client, audience="self_employed")
+    assert profile["audience"] == "self_employed"
+    routes = json.loads((SEED / "tracks_by_audience.json").read_text(encoding="utf-8"))["tracks"]
+    assessments = json.loads(
+        (SEED / "diagnostics_by_audience.json").read_text(encoding="utf-8")
+    )["assessments"]
+    service_tracks = [track for track in routes if track["audience"] == "self_employed"]
+    initial = (await client.get(f"{BASE}/tracks")).json()
+    assert [track["id"] for track in initial] == [track["id"] for track in service_tracks]
+    assert (await do_step(client, service_tracks[0]["steps"][0])).status_code == 200
+
+    test = (await client.get(f"{BASE}/diagnostic")).json()
+    questions = assessments[0]["questions"]
+    assert test["audience"] == "self_employed"
+    assert [question["id"] for question in test["questions"]] == [q["id"] for q in questions]
+    answers = {
+        q["id"]: q.get("answer_key") or "Трое клиентов записались на пробный урок."
+        for q in questions
+    }
+    pending = await send(client, "POST", "/diagnostic/submit", json={"answers": answers})
+    assert pending.json()["status"] == "checking"
+
+    updated = await send(client, "PATCH", "/me", json={"audience": "startup"})
+    assert updated.json()["first_name"] == profile["first_name"]
+    await process_pending_once(ai_client=FakeAI())
+    startup = (await client.get(f"{BASE}/diagnostic")).json()
+    assert startup["audience"] == "startup" and startup["results"] is None
+    assert startup["status"] == "not_started"
+    assert all(track["credited_count"] == 0 for track in (await client.get(f"{BASE}/tracks")).json())
+    assert (await send(client, "POST", "/diagnostic/skip?audience=student")).json()["status"] == "skipped"
+    assert (await client.get(f"{BASE}/diagnostic")).json()["status"] == "not_started"
+
+    await send(client, "PATCH", "/me", json={"audience": "self_employed"})
+    restored = (await client.get(f"{BASE}/diagnostic")).json()
+    assert restored["status"] == "completed" and restored["answers"] == answers
+    first_track = (await client.get(f"{BASE}/tracks")).json()[0]
+    assert first_track["required_count"] == 8 and first_track["credited_required_count"] == 1
+
+
 async def test_skip_get_back_to_diagnostic_and_shorter_route(client):
     await register(client)
     ai = FakeAI(fail_first=True)

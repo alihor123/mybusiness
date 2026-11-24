@@ -12,6 +12,7 @@ import ChartUpIcon from "../../assets/icons/chart-up.svg?react"
 import ArrowRightIcon from "../../assets/icons/arrow-right.svg?react"
 import buttonStyles from "../../styles/ButtonContent.module.css"
 import styles from "./TestResultsPage.module.css"
+import { audienceLabel } from "../../components/AudienceSelect/AudienceSelect"
 
 const icons = [LightbulbIcon, TerminalIcon, ChartUpIcon]
 const trackTitles = ["Проверка идеи", "Запуск MVP", "Первые продажи"]
@@ -35,7 +36,7 @@ export default function TestResultsPage() {
     if (!data || busy) return
     setBusy(true)
     try {
-      diagnostic.setData(await submitDiagnostic(data.answers))
+      diagnostic.setData(await submitDiagnostic(data.answers, Date.now(), data.audience))
     } catch (error) {
       showToast({ message: errorMessage(error, "Не удалось повторить проверку"), type: "error" })
     } finally {
@@ -45,10 +46,10 @@ export default function TestResultsPage() {
 
   // Переходит к новому черновику после подтверждения сервера.
   async function retake() {
-    if (busy) return
+    if (busy || !data) return
     setBusy(true)
     try {
-      diagnostic.setData(await restartDiagnostic())
+      diagnostic.setData(await restartDiagnostic(data.audience))
       navigate("/learning/test")
     } catch (error) {
       showToast({ message: errorMessage(error, "Не удалось начать тест заново"), type: "error" })
@@ -66,6 +67,7 @@ export default function TestResultsPage() {
             Результат показывает стартовый уровень и помогает выбрать объём обучения. Это ориентир для маршрута.
           </div>
         </div>
+        {data && <div className={styles.audienceLabel}>Маршрут: {audienceLabel(data.audience)}</div>}
         {results && (
           <button type="button" className={styles.retakeBtn} disabled={busy} onClick={() => void retake()}>
             {busy ? "Подождите…" : "Пройти тест заново"}

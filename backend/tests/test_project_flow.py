@@ -58,11 +58,13 @@ async def test_project_mentoring_flow(client, tmp_path, monkeypatch):
 
     response = await client.post(f"{API}/projects", headers=headers)
     assert response.status_code == 201, response.text
+    assert response.json()["project_audience"] == "student"
     project = f"{API}/projects/{response.json()['id']}"
     payload = {
         "title": "Пилот",
         "industry": "food_service",
         "stage": "idea",
+        "project_audience": "startup",
         "audience": "Студенты",
         "problem": "Очередь",
         "solution_benefit": "Быстрая выдача",
@@ -82,8 +84,11 @@ async def test_project_mentoring_flow(client, tmp_path, monkeypatch):
         )
         assert recommendation.status_code == 503, recommendation.text
 
+        prompts = []
+
         class Available:
             async def complete(self, instructions, prompt, schema):
+                prompts.append(prompt)
                 return schema.model_validate(
                     {
                         "recommendations": [
@@ -101,6 +106,7 @@ async def test_project_mentoring_flow(client, tmp_path, monkeypatch):
         )
         assert response.status_code == 200, response.text
         assert [row["mentor_id"] for row in response.json()["recommendations"]] == [aid, bid]
+        assert '"project_audience": "startup"' in prompts[-1]
         app.dependency_overrides[get_deepseek] = Offline
         rows = []
         for mentor_id in (aid, bid):
@@ -118,6 +124,7 @@ async def test_project_mentoring_flow(client, tmp_path, monkeypatch):
         for browser, row in ((a, rows[0]), (b, rows[1])):
             detail = await browser.get(f"{API}/applications/{row['id']}")
             assert detail.json()["project"]["questionnaire_version"] == version
+            assert detail.json()["project"]["project_audience"] == "startup"
         stale = await a.post(
             f"{API}/applications/{rows[0]['id']}/decision",
             headers=access_csrf(a),
@@ -141,6 +148,20 @@ async def test_project_mentoring_flow(client, tmp_path, monkeypatch):
         assert {row["status"] for row in applications} == {"accepted", "closed_selected_other"}
         plan = (await client.get(f"{project}/tasks")).json()
         assert len(plan["tasks"]) == 5
+        assert plan["tasks"][1]["title"] == "Проведите интервью о проблеме"
+        locked_audience = await client.patch(
+            project, headers=headers, json={"project_audience": "self_employed"}
+        )
+        assert locked_audience.status_code == 409, locked_audience.text
+        assert (await client.get(project)).json()["project_audience"] == "startup"
+        updated_profile = await client.patch(
+            f"{API}/me", headers=headers, json={"audience": "self_employed"}
+        )
+        assert updated_profile.json()["audience"] == "self_employed"
+        assert (await client.get(f"{project}/tasks")).json()["tasks"] == plan["tasks"]
+        next_project = await client.post(f"{API}/projects", headers=headers)
+        assert next_project.status_code == 201
+        assert next_project.json()["project_audience"] == "self_employed"
         task = f"{API}/tasks/{plan['tasks'][2]['id']}"
 
         def pdf(name):
@@ -187,15 +208,24 @@ async def test_project_mentoring_flow(client, tmp_path, monkeypatch):
             json={"decision": "revision_requested", "comment": "Добавь критерий"},
         )
         assert returned.status_code == 200, returned.text
+        returned_task = await client.get(task)
+        assert returned_task.json()["status"] == "revision_requested"
+        assert returned_task.json()["draft_text"]
+        assert "submit" in returned_task.json()["allowed_actions"]
         late = await client.put(
             f"{task}/draft", headers=headers,
             data={"text": "Ранний снимок", "saved_at_ms": "35"},
         )
-        assert late.json()["draft_text"] == "Версия 1"
+        assert late.json()["draft_text"]
+        edited = await client.put(
+            f"{task}/draft", headers=headers,
+            data={"text": "Revised answer 2", "saved_at_ms": "50"},
+        )
+        assert edited.json()["draft_text"] == "Revised answer 2"
         second = await client.post(
             f"{task}/submissions",
             headers=headers,
-            data={"text": "Версия 2", "request_key": "try-2", "file_action": "replace"},
+            data={"text": "Revised answer 2", "request_key": "try-2", "file_action": "replace"},
             files=pdf("v2.pdf"),
         )
         assert second.status_code == 200, second.text

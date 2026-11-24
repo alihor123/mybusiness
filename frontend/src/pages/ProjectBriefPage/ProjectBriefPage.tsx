@@ -9,8 +9,10 @@ import { LoadingSkeleton, ResourceError } from "../../components/AsyncState/Asyn
 import { createProject, getProject, updateProject, type ProjectQuestionnaire } from "../../api/projects"
 import { fetchLearningProgress } from "../../api/learning"
 import styles from "./ProjectBriefPage.module.css"
+import AudienceSelect, { type Audience } from "../../components/AudienceSelect/AudienceSelect"
+import { useApp } from "../../contexts/AppContext"
 
-const blankBrief: ProjectQuestionnaire = {
+const blankBrief: Omit<ProjectQuestionnaire, "project_audience"> & { project_audience: Audience } = {
   title: "",
   industry: "",
   stage: "",
@@ -18,6 +20,7 @@ const blankBrief: ProjectQuestionnaire = {
   problem: "",
   solution_benefit: "",
   mentor_request: "",
+  project_audience: "student",
 }
 
 // Сохраняет анкету проекта только в полях, которые принимает сервер.
@@ -26,15 +29,19 @@ export default function ProjectBriefPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const { session } = useApp()
+  const profileAudience = session.status === "ready" ? session.profile.audience : "student"
   const project = useResource(projectId ?? null, (signal) => getProject(projectId!, signal))
-  const progress = useResource(projectId ? null : "learning-progress", fetchLearningProgress)
+  const progress = useResource(projectId ? null : `learning-progress-${profileAudience}`, (signal) =>
+    fetchLearningProgress(signal, profileAudience),
+  )
   // Поля анкеты редактируются локально до сохранения очередного снимка.
-  const [form, setForm] = useState<ProjectQuestionnaire>(blankBrief)
+  const [form, setForm] = useState<ProjectQuestionnaire>({ ...blankBrief, project_audience: profileAudience })
   const [busy, setBusy] = useState(false)
   // Сохраняет ID, если создание прошло, а обновление анкеты завершилось ошибкой.
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null)
   const autosave = useDraftAutosave()
-  const isAccompaniment = project.data ? project.data.status === "accompaniment" : location.state?.fromAbout === true
+  const isAccompaniment = project.data ? Boolean(project.data.mentor_id) : location.state?.fromAbout === true
   const returnToAbout = `/projects/${projectId}?tab=about`
 
   useEffect(() => {
@@ -47,6 +54,7 @@ export default function ProjectBriefPage() {
       problem: project.data.problem ?? "",
       solution_benefit: project.data.solution_benefit ?? "",
       mentor_request: project.data.mentor_request ?? "",
+      project_audience: project.data.project_audience ?? profileAudience,
     })
   }, [project.data])
 
@@ -163,6 +171,14 @@ export default function ProjectBriefPage() {
             </div>
           )}
           <div className={styles.formGrid}>
+            <AudienceSelect
+              id="project-audience"
+              label="Аудитория проекта"
+              value={form.project_audience as Audience}
+              disabled={busy || isAccompaniment}
+              onChange={(value) => field("project_audience", value)}
+            />
+            {isAccompaniment && <div className={styles.infoBanner} role="note">Аудитория проекта закреплена при начале сопровождения и уже не меняется.</div>}
             {fields.map(({ key, label, multiline, placeholder }) => (
               <label key={key} className={styles.field}>
                 <span className={styles.label}>{label}</span>

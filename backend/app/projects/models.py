@@ -1,14 +1,18 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.audience import AUDIENCE_TYPE, AUDIENCE_VALUES, Audience
 from app.database import Base
 
 
 class Project(Base):
     __tablename__ = "projects"
+    __table_args__ = (
+        CheckConstraint(f"project_audience IN {AUDIENCE_VALUES}", name="ck_projects_project_audience"),
+    )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), index=True)
@@ -16,6 +20,9 @@ class Project(Base):
     title: Mapped[str | None]
     industry: Mapped[str | None]
     stage: Mapped[str | None]
+    project_audience: Mapped[Audience] = mapped_column(
+        AUDIENCE_TYPE, default=Audience.STUDENT, server_default=Audience.STUDENT.value
+    )
     audience: Mapped[str | None]
     problem: Mapped[str | None]
     solution_benefit: Mapped[str | None]

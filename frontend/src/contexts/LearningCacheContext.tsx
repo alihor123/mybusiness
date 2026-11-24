@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react"
 import { errorMessage } from "../api/client"
+import { useApp } from "./AppContext"
 import {
   fetchLearningProgress,
   fetchDiagnostic,
@@ -36,6 +37,8 @@ const Context = createContext<LearningCache | null>(null)
 
 // Кэш живёт в кабинете одного аккаунта и сохраняется при возврате к списку.
 export function LearningCacheProvider({ children }: { children: ReactNode }) {
+  const { session } = useApp()
+  const audience = session.status === "ready" ? session.profile.audience : "student"
   // Список, права на проекты и полностью загруженные уроки.
   const [tracks, setTracks] = useState<Resource<Track[]>>(empty)
   const [diagnostic, setDiagnosticState] = useState<Resource<Diagnostic>>(empty)
@@ -97,15 +100,15 @@ export function LearningCacheProvider({ children }: { children: ReactNode }) {
 
   // Перечитывает список или право на проекты по запросу экрана.
   function loadTracks() {
-    void load("tracks", fetchTracks, setTracks, tracks.data)
+    void load("tracks", (signal) => fetchTracks(signal, audience), setTracks, tracks.data)
   }
 
   function loadProgress() {
-    void load("progress", fetchLearningProgress, setProgress, progress.data)
+    void load("progress", (signal) => fetchLearningProgress(signal, audience), setProgress, progress.data)
   }
 
   function loadDiagnostic() {
-    void load("diagnostic", fetchDiagnostic, setDiagnosticState, diagnostic.data)
+    void load("diagnostic", (signal) => fetchDiagnostic(signal, audience), setDiagnosticState, diagnostic.data)
   }
 
   // Один фоновый опрос поддерживает статус диагностики актуальным на всех экранах.
@@ -117,7 +120,7 @@ export function LearningCacheProvider({ children }: { children: ReactNode }) {
         await new Promise<void>((resolve) => window.setTimeout(resolve, 5000))
         if (controller.signal.aborted) return
         try {
-          const latest = await fetchDiagnostic(controller.signal)
+          const latest = await fetchDiagnostic(controller.signal, audience)
           if (!controller.signal.aborted) setDiagnosticState({ data: latest, error: null })
           if (latest.status !== "checking") return
         } catch {
@@ -185,8 +188,13 @@ export function LearningCacheProvider({ children }: { children: ReactNode }) {
 
   // Обновляет счётчики и доступность следующего шага из ответа сервера.
   function updateProgress(next: LearningProgress) {
-    cancel("progress")
-    setProgress({ data: next, error: null })
+    if (next.audience === audience) {
+      cancel("progress")
+      setProgress({ data: next, error: null })
+    } else {
+      cancel("progress")
+      loadProgress()
+    }
     setTracks((current) => {
       if (!current.data) return current
       const data = current.data.map((track) => {

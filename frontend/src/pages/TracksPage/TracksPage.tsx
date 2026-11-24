@@ -8,13 +8,17 @@ import { useCachedDiagnostic, useCachedTracks } from "../../contexts/LearningCac
 import ArrowRightIcon from "../../assets/icons/arrow-right.svg?react"
 import buttonStyles from "../../styles/ButtonContent.module.css"
 import styles from "./TracksPage.module.css"
+import AudienceSelect, { type Audience } from "../../components/AudienceSelect/AudienceSelect"
+import { useApp } from "../../contexts/AppContext"
 
 // Показывает прогресс трёх учебных треков с сервера.
 export default function TracksPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const { session, updateProfile } = useApp()
   // Состояние повтора проверки диагностики.
   const [retrying, setRetrying] = useState(false)
+  const [changingAudience, setChangingAudience] = useState(false)
   const tracks = useCachedTracks()
   const diagnostic = useCachedDiagnostic()
   const hasResult = Boolean(diagnostic.data?.results &&
@@ -24,7 +28,7 @@ export default function TracksPage() {
     if (!diagnostic.data || retrying) return
     setRetrying(true)
     try {
-      diagnostic.setData(await submitDiagnostic(diagnostic.data.answers))
+      diagnostic.setData(await submitDiagnostic(diagnostic.data.answers, Date.now(), diagnostic.data.audience))
     } catch (error) {
       showToast({
         message: error instanceof Error ? error.message : "Не удалось повторить проверку",
@@ -35,9 +39,30 @@ export default function TracksPage() {
     }
   }
 
+  async function changeAudience(audience: Audience) {
+    if (session.status !== "ready" || changingAudience || session.profile.audience === audience) return
+    setChangingAudience(true)
+    try {
+      await updateProfile({ audience })
+    } catch (error) {
+      showToast({ message: error instanceof Error ? error.message : "Не удалось сменить аудиторию", type: "error" })
+      setChangingAudience(false)
+    }
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.fixedTop}>
+        {session.status === "ready" && (
+          <div className={styles.audienceRow}>
+            <AudienceSelect
+              id="learning-audience"
+              value={session.profile.audience}
+              disabled={changingAudience}
+              onChange={(audience) => void changeAudience(audience)}
+            />
+          </div>
+        )}
         {diagnostic.data?.status === "checking" && (
           <AiActivity
             compact

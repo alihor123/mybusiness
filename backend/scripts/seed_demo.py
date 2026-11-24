@@ -7,13 +7,14 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.audience import Audience
 from app.auth.models import Role, User
 from app.auth.service import hash_password, lock_user
 from app.auth.tokens import utcnow
 from app.config import get_settings
 from app.database import get_session_factory
 from app.events.seed import import_demo_events
-from app.learning.models import Attempt, Completion, Credit, Step
+from app.learning.models import Attempt, Completion, Credit, Step, Track
 from app.learning.progress import finish_if_ready
 from app.mentors.models import Mentor
 from app.mentors.seed import import_demo_mentors
@@ -70,9 +71,15 @@ async def create_user(
 
 async def complete_demo(db: AsyncSession) -> None:
     await lock_user(db, COMPLETE_ID)
-    if await db.get(Completion, COMPLETE_ID) is not None:
+    if await db.get(Completion, (COMPLETE_ID, Audience.STUDENT.value)) is not None:
         return
-    for step in await db.scalars(select(Step).order_by(Step.track_id, Step.position)):
+    steps = await db.scalars(
+        select(Step)
+        .join(Track, Step.track_id == Track.id)
+        .where(Track.audience == Audience.STUDENT.value)
+        .order_by(Step.track_id, Step.position)
+    )
+    for step in steps:
         if await db.get(Credit, (COMPLETE_ID, step.id)) is not None:
             continue
         attempt_id = None
@@ -101,8 +108,8 @@ async def complete_demo(db: AsyncSession) -> None:
             )
         )
     await db.flush()
-    await finish_if_ready(db, COMPLETE_ID)
-    if await db.get(Completion, COMPLETE_ID) is None:
+    await finish_if_ready(db, COMPLETE_ID, Audience.STUDENT)
+    if await db.get(Completion, (COMPLETE_ID, Audience.STUDENT.value)) is None:
         raise RuntimeError("Expected completed demo learning. Apply the content migrations first.")
 
 

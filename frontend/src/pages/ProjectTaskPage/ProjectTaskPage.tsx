@@ -57,6 +57,7 @@ export default function ProjectTaskPage() {
   const signature = `${answer}\u0000${fileEdit ? (file ? `${file.name}:${file.size}:${file.lastModified}` : "remove") : "keep"}`
   const allowed = new Set(task.allowed_actions)
   const editable = allowed.has("save_draft") || allowed.has("submit")
+  const revising = task.status === "revision_requested"
   const busy = pending !== null
 
   // Отправляет только вложение. Автосохранение текста не повторяет загрузку файла.
@@ -150,11 +151,12 @@ export default function ProjectTaskPage() {
             )}
           </article>
         ))}
-        <div className={styles.field}>
-          <label htmlFor="project-task-answer">Результаты</label>
+        {editable && <div className={styles.field}>
+          <label htmlFor="project-task-answer" className={styles.fieldLabel}>
+            {revising ? "Исправленный ответ" : "Результаты"}
+          </label>
           <textarea
             id="project-task-answer"
-            disabled={!editable}
             readOnly={busy}
             rows={6}
             className={styles.textarea}
@@ -168,7 +170,7 @@ export default function ProjectTaskPage() {
               setCheckError("")
             }}
           />
-        </div>
+        </div>}
         <div className={styles.filesSection}>
           <div className={styles.filesHeader}>
             <strong className={styles.filesTitle}>Файл (PDF, JPG или PNG, до 10 МБ)</strong>
@@ -250,7 +252,7 @@ export default function ProjectTaskPage() {
         )}
         {allowed.has("submit") && (
           <button className={styles.primaryBtn} disabled={busy} onClick={() => void run("submit")}>
-            Отправить наставнику
+            {revising ? "Отправить повторно" : "Отправить наставнику"}
           </button>
         )}
       </div>

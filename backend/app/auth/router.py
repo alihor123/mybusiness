@@ -85,7 +85,7 @@ async def update_me(
         user = await db.get(service.User, actor.user_id, with_for_update=True)
         if user is None:
             raise service.unauthorized()
-        for field, value in data.model_dump().items():
+        for field, value in data.model_dump(exclude_unset=True).items():
             setattr(user, field, value)
         await db.flush()
         return (await service.get_actor(db, actor.user_id)).profile

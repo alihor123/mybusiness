@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.audience import Audience
 from app.projects.schemas import ProjectOut
 
 
@@ -37,4 +38,5 @@ class ApplicationInboxItem(ApplicationOut):
     applicant_name: str = ""
     industry: str | None = None
     stage: str | None = None
+    project_audience: Audience | None = None
     mentor_request: str | None = None

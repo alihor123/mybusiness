@@ -1,4 +1,5 @@
 import { request } from "./client"
+import type { Audience } from "../components/AudienceSelect/AudienceSelect"
 
 export type LearningAnswer = string | Record<string, string>
 export type DiagnosticQuestion = {
@@ -20,6 +21,7 @@ export type DiagnosticResult = {
   optional_exercises: number
 }
 export type Diagnostic = {
+  audience: Audience
   status: "not_started" | "in_progress" | "skipped" | "checking" | "completed"
   version: number
   questions: DiagnosticQuestion[]
@@ -54,6 +56,8 @@ export type Track = {
 }
 export type TrackDetail = Track & { steps: TrackStep[] }
 export type LearningProgress = {
+  audience: Audience
+  route_completed: boolean
   tracks: {
     track_id: string
     required_count: number
@@ -94,25 +98,30 @@ export type LearningStep = TrackStep & {
 }
 export type TrackBundle = { track: TrackDetail, lessons: LearningStep[] }
 
-export async function fetchDiagnostic(signal: AbortSignal) {
-  return request<Diagnostic>("/diagnostic", { signal })
+function audiencePath(path: string, audience?: Audience) {
+  if (!audience) return path
+  return `${path}${path.includes("?") ? "&" : "?"}audience=${encodeURIComponent(audience)}`
+}
+
+export async function fetchDiagnostic(signal: AbortSignal, audience?: Audience) {
+  return request<Diagnostic>(audiencePath("/diagnostic", audience), { signal })
 }
 type DiagnosticDraft = Pick<Diagnostic, "answers" | "current_question_id"> & { saved_at_ms: number }
 
-export async function saveDiagnosticDraft(data: DiagnosticDraft) {
-  return request<Diagnostic>("/diagnostic/draft", { method: "PUT", body: data })
+export async function saveDiagnosticDraft(data: DiagnosticDraft, audience?: Audience) {
+  return request<Diagnostic>(audiencePath("/diagnostic/draft", audience), { method: "PUT", body: data })
 }
-export async function skipDiagnostic(body?: DiagnosticDraft) {
-  return request<Diagnostic>("/diagnostic/skip", { method: "POST", body })
+export async function skipDiagnostic(body?: DiagnosticDraft, audience?: Audience) {
+  return request<Diagnostic>(audiencePath("/diagnostic/skip", audience), { method: "POST", body })
 }
-export async function submitDiagnostic(answers: Record<string, LearningAnswer>, saved_at_ms = Date.now()) {
-  return request<Diagnostic>("/diagnostic/submit", { method: "POST", body: { answers, saved_at_ms } })
+export async function submitDiagnostic(answers: Record<string, LearningAnswer>, saved_at_ms = Date.now(), audience?: Audience) {
+  return request<Diagnostic>(audiencePath("/diagnostic/submit", audience), { method: "POST", body: { answers, saved_at_ms } })
 }
-export async function restartDiagnostic() {
-  return request<Diagnostic>("/diagnostic/restart", { method: "POST" })
+export async function restartDiagnostic(audience?: Audience) {
+  return request<Diagnostic>(audiencePath("/diagnostic/restart", audience), { method: "POST" })
 }
-export async function fetchTracks(signal: AbortSignal) {
-  return request<Track[]>("/tracks", { signal })
+export async function fetchTracks(signal: AbortSignal, audience?: Audience) {
+  return request<Track[]>(audiencePath("/tracks", audience), { signal })
 }
 export async function fetchTrack(trackId: string, signal: AbortSignal) {
   return request<TrackDetail>(`/tracks/${encodeURIComponent(trackId)}`, { signal })
@@ -147,6 +156,6 @@ export async function requestLearningHelp(stepId: string, question: string, curr
     body: { question, current_input },
   })
 }
-export async function fetchLearningProgress(signal: AbortSignal) {
-  return request<LearningProgress>("/learning/progress", { signal })
+export async function fetchLearningProgress(signal: AbortSignal, audience?: Audience) {
+  return request<LearningProgress>(audiencePath("/learning/progress", audience), { signal })
 }

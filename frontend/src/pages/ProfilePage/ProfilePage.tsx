@@ -6,6 +6,7 @@ import { errorMessage } from "../../api/client"
 import { useApp } from "../../contexts/AppContext"
 import { useToast } from "../../contexts/ToastContext"
 import styles from "./ProfilePage.module.css"
+import AudienceSelect from "../../components/AudienceSelect/AudienceSelect"
 
 const fields = [
   { name: "first_name", title: "Имя", type: "text", autoComplete: "given-name", maxLength: 100 },
@@ -46,6 +47,7 @@ function ProfileForm({ profile }: { profile: Profile }) {
         first_name: form.first_name,
         last_name: form.last_name,
         occupation: form.occupation,
+        audience: form.audience,
       })
       setForm(next)
       showToast({ message: "Профиль сохранён", type: "success" })
@@ -116,6 +118,15 @@ function ProfileForm({ profile }: { profile: Profile }) {
             />
           </label>
         ))}
+
+        {profile.role === "student" && (
+          <AudienceSelect
+            id="profile-audience"
+            value={form.audience}
+            disabled={pending !== null}
+            onChange={(audience) => setForm((current) => ({ ...current, audience }))}
+          />
+        )}
 
         <div className={styles.actionsRow}>
           <button type="submit" className={styles.primaryBtn} disabled={pending !== null}>

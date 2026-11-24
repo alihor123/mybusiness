@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.audience import AUDIENCE_TYPE, AUDIENCE_VALUES, Audience
 from app.database import Base
 
 
@@ -37,6 +38,7 @@ class User(Base):
     __table_args__ = (
         UniqueConstraint("email", name="uq_users_email"),
         CheckConstraint("email = lower(email)", name="ck_users_email_lowercase"),
+        CheckConstraint(f"audience IN {AUDIENCE_VALUES}", name="ck_users_audience"),
         Index("uq_users_demo", "is_demo", unique=True, postgresql_where=text("is_demo")),
     )
 
@@ -47,6 +49,9 @@ class User(Base):
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
     occupation: Mapped[str | None] = mapped_column(String(200))
+    audience: Mapped[Audience] = mapped_column(
+        AUDIENCE_TYPE, default=Audience.STUDENT, server_default=Audience.STUDENT.value
+    )
     is_demo: Mapped[bool] = mapped_column(default=False, server_default=text("false"), nullable=False)
 
 

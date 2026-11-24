@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.audience import Audience
 from app.learning.assessment import Answer, Options
 
 
@@ -35,6 +36,7 @@ class TrackScore(BaseModel):
 
 
 class DiagnosticOut(BaseModel):
+    audience: Audience
     status: Literal["not_started", "in_progress", "skipped", "checking", "completed"]
     version: int
     questions: list[QuestionOut]

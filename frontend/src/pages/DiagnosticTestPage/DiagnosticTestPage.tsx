@@ -15,6 +15,8 @@ import {
   type LearningAnswer,
 } from "../../api/learning"
 import styles from "./DiagnosticTestPage.module.css"
+import AudienceSelect, { type Audience, audienceLabel } from "../../components/AudienceSelect/AudienceSelect"
+import { useApp } from "../../contexts/AppContext"
 
 // Заголовок и пропуск теста остаются на месте во время первой загрузки вопросов.
 function DiagnosticHeading({
@@ -56,12 +58,14 @@ function DiagnosticHeading({
 export default function DiagnosticTestPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const { session, updateProfile } = useApp()
   // Загружает вопросы и сохранённый черновик диагностики.
   const resource = useCachedDiagnostic()
   // Хранит ответы формы и номер вопроса между запросами.
   const [answers, setAnswers] = useState<Record<string, LearningAnswer>>({})
   const [currentIndex, setCurrentIndex] = useState(0)
   const [busy, setBusy] = useState(false)
+  const [changingAudience, setChangingAudience] = useState(false)
   // После первого заполнения источник ответов — открытая форма.
   const hydrated = useRef(false)
   const autosave = useDraftAutosave()
@@ -99,11 +103,30 @@ export default function DiagnosticTestPage() {
   const answer = answers[question.id]
   const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100)
 
+  const activeAudience = session.status === "ready" ? session.profile.audience : "student"
+
+  async function changeAudience(audience: Audience) {
+    if (session.status !== "ready" || changingAudience || session.profile.audience === audience) return
+    setChangingAudience(true)
+    try {
+      await autosave.flush()
+      await updateProfile({ audience })
+    } catch (error) {
+      showToast({ message: error instanceof Error ? error.message : "Не удалось сменить аудиторию", type: "error" })
+      setChangingAudience(false)
+      resource.reload()
+    }
+  }
+
   // Запоминает номер текущего вопроса и ответы одним снимком.
   function queueDraft(next: Record<string, LearningAnswer>, nextQuestion: string) {
     const savedAt = Date.now()
     autosave.schedule(async () => {
-      const saved = await saveDiagnosticDraft({ answers: next, current_question_id: nextQuestion, saved_at_ms: savedAt })
+      const saved = await saveDiagnosticDraft({
+        answers: next,
+        current_question_id: nextQuestion,
+        saved_at_ms: savedAt,
+      }, activeAudience)
       resource.applyDraft(saved, savedAt)
     })
   }
@@ -157,7 +180,7 @@ export default function DiagnosticTestPage() {
     }
     setBusy(true)
     try {
-      const result = await submitDiagnostic(answers, Date.now())
+      const result = await submitDiagnostic(answers, Date.now(), activeAudience)
       autosave.cancel()
       resource.setData(result)
       if (retry || result.status === "checking") navigate("/learning/results")
@@ -177,7 +200,7 @@ export default function DiagnosticTestPage() {
     if (busy) return
     setBusy(true)
     try {
-      const result = await skipDiagnostic({ answers, current_question_id: question.id, saved_at_ms: Date.now() })
+      const result = await skipDiagnostic({ answers, current_question_id: question.id, saved_at_ms: Date.now() }, activeAudience)
       autosave.cancel()
       resource.setData(result)
       navigate("/learning")
@@ -194,6 +217,17 @@ export default function DiagnosticTestPage() {
   return (
     <div className={styles.page}>
       <DiagnosticHeading onSkip={skip} hasResult={Boolean(resource.data.results)} busy={busy} />
+      {session.status === "ready" && (
+        <div className={styles.audiencePanel}>
+          <AudienceSelect
+            id="diagnostic-audience"
+            value={session.profile.audience}
+            disabled={busy || changingAudience}
+            onChange={(audience) => void changeAudience(audience)}
+          />
+          <p className={styles.audienceHint}>Тестирование для маршрута «{audienceLabel(resource.data.audience)}».</p>
+        </div>
+      )}
       <div className={styles.card}>
         {resource.data.check_unavailable && (
           <AiActivity

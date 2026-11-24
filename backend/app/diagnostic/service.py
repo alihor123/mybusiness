@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.client import CheckUnavailable
+from app.audience import Audience
 from app.auth.service import lock_user
 from app.auth.tokens import utcnow
 from app.diagnostic.models import Diagnostic, Question
@@ -13,7 +14,11 @@ from app.diagnostic.schemas import DiagnosticOut, Draft, FreeScores, QuestionOut
 from app.errors import api_error
 from app.learning.assessment import conflict, invalid_answer, validate_answer
 
-VERSION = 1
+DIAGNOSTIC_VERSIONS = {
+    Audience.STUDENT: 1,
+    Audience.SELF_EMPLOYED: 2,
+    Audience.STARTUP: 3,
+}
 FREE_EXAMPLES = {
     "diag-idea-free": (
         "На большой перемене у буфета корпуса Б спрошу трёх студентов, которые ушли из очереди. "
@@ -34,10 +39,13 @@ async def get_questions(db: AsyncSession, version: int) -> list[Question]:
     return list(await db.scalars(select(Question).where(Question.version == version).order_by(Question.position)))
 
 
-def response(attempt: Diagnostic | None, questions: list[Question]) -> DiagnosticOut:
+def response(
+    attempt: Diagnostic | None, questions: list[Question], audience: Audience
+) -> DiagnosticOut:
     scores = attempt.scores if attempt else None
     return DiagnosticOut(
-        version=attempt.version if attempt else VERSION,
+        audience=audience,
+        version=DIAGNOSTIC_VERSIONS[audience],
         status=attempt.status if attempt else "not_started",
         questions=[QuestionOut.model_validate(question) for question in questions],
         current_question_id=(attempt.current_question_id if attempt else questions[0].id if questions else None),
@@ -50,22 +58,26 @@ def response(attempt: Diagnostic | None, questions: list[Question]) -> Diagnosti
     )
 
 
-async def get_diagnostic(db: AsyncSession, user_id: UUID) -> DiagnosticOut:
-    attempt = await db.get(Diagnostic, user_id)
-    questions = await get_questions(db, attempt.version if attempt else VERSION)
-    return response(attempt, questions)
+async def get_diagnostic(db: AsyncSession, user_id: UUID, audience: Audience) -> DiagnosticOut:
+    version = DIAGNOSTIC_VERSIONS[audience]
+    attempt = await db.get(Diagnostic, (user_id, version))
+    questions = await get_questions(db, version)
+    return response(attempt, questions, audience)
 
 
-async def editable(db: AsyncSession, user_id: UUID) -> tuple[Diagnostic, list[Question]]:
+async def editable(
+    db: AsyncSession, user_id: UUID, audience: Audience
+) -> tuple[Diagnostic, list[Question]]:
     await lock_user(db, user_id)
-    attempt = await db.get(Diagnostic, user_id, populate_existing=True)
-    questions = await get_questions(db, attempt.version if attempt else VERSION)
+    version = DIAGNOSTIC_VERSIONS[audience]
+    attempt = await db.get(Diagnostic, (user_id, version), populate_existing=True)
+    questions = await get_questions(db, version)
     if not questions:
         raise api_error(503, "DIAGNOSTIC_UNAVAILABLE", "Диагностика пока недоступна")
     if attempt is None:
         attempt = Diagnostic(
             user_id=user_id,
-            version=VERSION,
+            version=version,
             status="in_progress",
             current_question_id=questions[0].id,
             answers={},
@@ -76,15 +88,17 @@ async def editable(db: AsyncSession, user_id: UUID) -> tuple[Diagnostic, list[Qu
     return attempt, questions
 
 
-async def save_draft(db: AsyncSession, user_id: UUID, data: Draft) -> DiagnosticOut:
+async def save_draft(
+    db: AsyncSession, user_id: UUID, data: Draft, audience: Audience
+) -> DiagnosticOut:
     async with db.begin():
-        attempt, questions = await editable(db, user_id)
+        attempt, questions = await editable(db, user_id, audience)
         if attempt.status == "completed":
-            return response(attempt, questions)
+            return response(attempt, questions, audience)
         if attempt.status == "checking":
             raise conflict("CHECK_IN_PROGRESS", "Ответы сохранены и проверяются")
         apply_draft(attempt, questions, data)
-        return response(attempt, questions)
+        return response(attempt, questions, audience)
 
 
 def apply_draft(attempt: Diagnostic, questions: list[Question], data: Draft) -> None:
@@ -104,9 +118,11 @@ def apply_draft(attempt: Diagnostic, questions: list[Question], data: Draft) -> 
         attempt.saved_at_ms = data.saved_at_ms
 
 
-async def skip(db: AsyncSession, user_id: UUID, data: Draft | None = None) -> DiagnosticOut:
+async def skip(
+    db: AsyncSession, user_id: UUID, data: Draft | None, audience: Audience
+) -> DiagnosticOut:
     async with db.begin():
-        attempt, questions = await editable(db, user_id)
+        attempt, questions = await editable(db, user_id, audience)
         if attempt.status == "checking":
             raise conflict("CHECK_IN_PROGRESS", "Дождитесь завершения проверки")
         if attempt.status != "completed":
@@ -118,12 +134,12 @@ async def skip(db: AsyncSession, user_id: UUID, data: Draft | None = None) -> Di
             attempt.check_id = None
             attempt.check_deadline = None
             attempt.check_unavailable = False
-        return response(attempt, questions)
+        return response(attempt, questions, audience)
 
 
-async def restart(db: AsyncSession, user_id: UUID) -> DiagnosticOut:
+async def restart(db: AsyncSession, user_id: UUID, audience: Audience) -> DiagnosticOut:
     async with db.begin():
-        attempt, questions = await editable(db, user_id)
+        attempt, questions = await editable(db, user_id, audience)
         if attempt.status not in {"completed", "skipped"}:
             raise conflict("DIAGNOSTIC_NOT_RESTARTABLE", "Завершите или пропустите текущую диагностику")
         attempt.status = "in_progress"
@@ -133,18 +149,20 @@ async def restart(db: AsyncSession, user_id: UUID) -> DiagnosticOut:
         attempt.check_id = None
         attempt.check_deadline = None
         attempt.check_unavailable = False
-        return response(attempt, questions)
+        return response(attempt, questions, audience)
 
 
-async def submit(db: AsyncSession, user_id: UUID, data: Submit) -> DiagnosticOut:
+async def submit(
+    db: AsyncSession, user_id: UUID, data: Submit, audience: Audience
+) -> DiagnosticOut:
     async with db.begin():
-        attempt, questions = await editable(db, user_id)
+        attempt, questions = await editable(db, user_id, audience)
         if attempt.status == "completed":
-            return response(attempt, questions)
+            return response(attempt, questions, audience)
         if attempt.status == "checking":
             if data.answers != attempt.answers:
                 raise conflict("DIAGNOSTIC_SNAPSHOT_CHANGED", "Сохраните новые ответы перед проверкой")
-            return response(attempt, questions)
+            return response(attempt, questions, audience)
         question_ids = {question.id for question in questions}
         if data.answers.keys() != question_ids:
             raise invalid_answer()
@@ -158,7 +176,7 @@ async def submit(db: AsyncSession, user_id: UUID, data: Submit) -> DiagnosticOut
         # Срок сразу наступил: фоновый обработчик подхватит задание после commit.
         attempt.check_deadline = utcnow()
         attempt.saved_at_ms = max(attempt.saved_at_ms or 0, data.saved_at_ms or time_ns() // 1_000_000)
-        return response(attempt, questions)
+        return response(attempt, questions, audience)
 
 
 async def score_answers(ai, questions: list[Question], answers: dict) -> dict[str, int]:

@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
+from app.audience import Audience
 from app.auth.models import Permission, Role, RolePermission, Session, User
 from app.auth.schemas import Actor, LoginCredentials, Profile, Registration
 from app.auth.tokens import (
@@ -37,6 +38,10 @@ async def lock_user(db: AsyncSession, user_id: UUID) -> None:
     await db.execute(select(User.id).where(User.id == user_id).with_for_update())
 
 
+async def get_audience(db: AsyncSession, user_id: UUID) -> Audience:
+    return Audience((await db.scalars(select(User.audience).where(User.id == user_id))).one())
+
+
 async def get_actor(db: AsyncSession, user_id: UUID) -> Actor:
     row = (
         await db.execute(
@@ -60,6 +65,7 @@ async def get_actor(db: AsyncSession, user_id: UUID) -> Actor:
             last_name=user.last_name,
             email=user.email,
             occupation=user.occupation,
+            audience=user.audience,
             is_demo=user.is_demo,
         ),
     )
@@ -112,6 +118,7 @@ async def register(db: AsyncSession, data: Registration) -> tuple[Actor, Pair]:
                 last_name=data.last_name,
                 password_hash=password_hash,
                 role_id=role_id,
+                audience=data.audience,
             )
             .on_conflict_do_nothing(index_elements=[User.email])
             .returning(User.id)

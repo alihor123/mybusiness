@@ -35,7 +35,7 @@ class Diagnostic(Base):
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
-    version: Mapped[int]
+    version: Mapped[int] = mapped_column(primary_key=True)
     status: Mapped[str] = mapped_column(String(16))
     current_question_id: Mapped[str | None] = mapped_column(ForeignKey("diagnostic_questions.id"))
     answers: Mapped[dict] = mapped_column(JSONB)

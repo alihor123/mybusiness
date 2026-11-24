@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.audience import Audience
+from app.auth.service import get_audience
 from app.auth.tokens import utcnow
 from app.learning.models import (
     Attempt,
@@ -91,10 +93,14 @@ class Route:
         )
 
 
-async def get_route(db: AsyncSession, user_id: UUID) -> Route:
-    tracks = list(await db.scalars(select(Track).order_by(Track.position)))
+async def get_route(db: AsyncSession, user_id: UUID, audience: Audience) -> Route:
+    tracks = list(await db.scalars(
+        select(Track).where(Track.audience == audience).order_by(Track.position)
+    ))
     steps: dict[str, list[Step]] = {track.id: [] for track in tracks}
-    for step in await db.scalars(select(Step).order_by(Step.position)):
+    for step in await db.scalars(
+        select(Step).where(Step.track_id.in_(steps)).order_by(Step.position)
+    ):
         steps[step.track_id].append(step)
     credits = set(await db.scalars(select(Credit.step_id).where(Credit.user_id == user_id)))
     diagnostic_credits = set(
@@ -113,33 +119,46 @@ async def get_route(db: AsyncSession, user_id: UUID) -> Route:
     return Route(tracks, steps, credits, diagnostic_credits, positions)
 
 
-async def get_progress(db: AsyncSession, user_id: UUID) -> Progress:
-    route = await get_route(db, user_id)
-    completion = await db.get(Completion, user_id)
+async def get_progress(
+    db: AsyncSession, user_id: UUID, audience: Audience | None = None
+) -> Progress:
+    audience = audience or await get_audience(db, user_id)
+    route = await get_route(db, user_id, audience)
+    completion = await db.get(Completion, (user_id, audience))
     draft = await db.get(Project, completion.first_project_id) if completion else None
     return Progress(
+        audience=audience,
         tracks=[route.track_progress(track.id) for track in route.tracks],
-        can_create_project=completion is not None,
+        route_completed=completion is not None,
+        can_create_project=completion is not None or await has_completed_route(db, user_id),
         first_project_id=completion.first_project_id if completion else None,
         draft_project_id=draft.id if draft and draft.archived_at is None else None,
     )
 
 
+async def has_completed_route(db: AsyncSession, user_id: UUID) -> bool:
+    return bool(await db.scalar(select(Completion.id).where(Completion.user_id == user_id).limit(1)))
+
+
 async def get_learning_outcome(db: AsyncSession, user_id: UUID) -> LearningOutcome:
-    completion = await db.get(Completion, user_id)
+    audience = await get_audience(db, user_id)
+    completion = await db.get(Completion, (user_id, audience))
     return LearningOutcome(
-        can_create_project=completion is not None,
+        can_create_project=completion is not None or await has_completed_route(db, user_id),
         project_prefill=ProjectPrefill.model_validate(
             completion.project_prefill if completion else {}
         ),
     )
 
 
-async def finish_if_ready(db: AsyncSession, user_id: UUID) -> None:
+async def finish_if_ready(
+    db: AsyncSession, user_id: UUID, audience: Audience | None = None
+) -> None:
     """Call with the learner row locked in the transaction that changes progress."""
-    if await db.get(Completion, user_id) is not None:
+    audience = audience or await get_audience(db, user_id)
+    if await db.get(Completion, (user_id, audience)) is not None:
         return
-    route = await get_route(db, user_id)
+    route = await get_route(db, user_id, audience)
     if len(route.tracks) != 3 or any(route.next_required(track.id) for track in route.tracks):
         return
     finals = (
@@ -148,7 +167,7 @@ async def finish_if_ready(db: AsyncSession, user_id: UUID) -> None:
             .join(Credit, Credit.attempt_id == Attempt.id)
             .join(Step, Credit.step_id == Step.id)
             .join(Track, Step.track_id == Track.id)
-            .where(Credit.user_id == user_id, Step.type == "final")
+            .where(Credit.user_id == user_id, Step.type == "final", Track.audience == audience)
             .order_by(Track.position)
         )
     ).all()
@@ -165,11 +184,13 @@ async def finish_if_ready(db: AsyncSession, user_id: UUID) -> None:
         user_id=user_id,
         completion_id=completion_id,
         project_prefill=project_prefill,
+        audience=audience,
     )
     db.add(
         Completion(
             id=completion_id,
             user_id=user_id,
+            audience=audience,
             first_project_id=project_id,
             project_prefill=fields,
             completed_at=utcnow(),

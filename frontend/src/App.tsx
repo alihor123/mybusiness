@@ -48,7 +48,7 @@ function ProtectedLayout() {
     return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />
   }
   return (
-    <LearningCacheProvider key={session.profile?.id}>
+    <LearningCacheProvider key={`${session.profile?.id}:${session.profile?.audience}`}>
       <Outlet />
     </LearningCacheProvider>
   )

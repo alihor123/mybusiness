@@ -1,4 +1,5 @@
 import { request } from "./client"
+import type { Audience } from "../components/AudienceSelect/AudienceSelect"
 
 export type ProjectStatus = "draft" | "waiting_mentor" | "accompaniment" | "archived"
 
@@ -13,6 +14,7 @@ export type ProjectOut = {
   industry: string | null
   stage: string | null
   audience: string | null
+  project_audience: Audience
   problem: string | null
   solution_benefit: string | null
   mentor_request: string | null
@@ -20,7 +22,7 @@ export type ProjectOut = {
 
 export type ProjectQuestionnaire = Pick<
   ProjectOut,
-  "title" | "industry" | "stage" | "audience" | "problem" | "solution_benefit" | "mentor_request"
+  "title" | "industry" | "stage" | "project_audience" | "audience" | "problem" | "solution_benefit" | "mentor_request"
 >
 
 export type MentorOut = {

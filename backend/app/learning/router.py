@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.client import DeepSeekClient, get_deepseek
+from app.audience import Audience
 from app.auth.dependencies import require_permission
 from app.auth.schemas import Actor
 from app.database import get_db
@@ -30,8 +31,8 @@ AI = Annotated[DeepSeekClient, Depends(get_deepseek)]
 
 
 @router.get("/tracks")
-async def tracks(actor: Student, db: Database) -> list[TrackOut]:
-    return await service.tracks(db, actor.user_id)
+async def tracks(actor: Student, db: Database, audience: Audience | None = None) -> list[TrackOut]:
+    return await service.tracks(db, actor.user_id, audience or actor.profile.audience)
 
 
 @router.get("/tracks/{track_id}")
@@ -81,5 +82,5 @@ async def help_with_step(step_id: str, data: HelpIn, actor: Student, ai: AI, db:
 
 
 @router.get("/learning/progress")
-async def progress(actor: Student, db: Database) -> Progress:
-    return await get_progress(db, actor.user_id)
+async def progress(actor: Student, db: Database, audience: Audience | None = None) -> Progress:
+    return await get_progress(db, actor.user_id, audience or actor.profile.audience)

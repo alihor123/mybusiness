@@ -5,6 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.audience import Audience
 from app.config import get_settings
 
 
@@ -40,6 +41,7 @@ class Credentials(BaseModel):
 class Registration(Credentials):
     first_name: str = Field(max_length=100)
     last_name: str = Field(max_length=100)
+    audience: Audience = Audience.STUDENT
 
     @field_validator("first_name", "last_name")
     @classmethod
@@ -90,6 +92,7 @@ class Profile(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     occupation: str | None = None
+    audience: Audience = Audience.STUDENT
     is_demo: bool = False
     show_diagnostic_on_login: bool = False
 
@@ -98,6 +101,7 @@ class ProfileUpdate(BaseModel):
     first_name: str | None = Field(default=None, max_length=100)
     last_name: str | None = Field(default=None, max_length=100)
     occupation: str | None = Field(default=None, max_length=200)
+    audience: Audience = Audience.STUDENT
 
     @field_validator("first_name", "last_name", "occupation")
     @classmethod

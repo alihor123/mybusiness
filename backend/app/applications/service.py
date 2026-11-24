@@ -92,6 +92,7 @@ async def inbox(actor: Actor, db: AsyncSession) -> list[ApplicationInboxItem]:
             item.applicant_name = item.applicant_name or applicant.email
             item.industry = project.industry
             item.stage = project.stage
+            item.project_audience = project.project_audience
             item.mentor_request = project.mentor_request
         items.append(item)
     return items

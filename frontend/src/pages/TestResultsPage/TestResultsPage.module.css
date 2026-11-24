@@ -13,6 +13,7 @@
 
 .headingRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .retakeBtn { flex: 0 0 auto; height: 44px; padding: 0 22px; border: 1.5px solid var(--color-accent); border-radius: var(--radius-pill); background: var(--color-white); color: var(--color-accent); font-size: 15px; font-weight: 600; }
+.audienceLabel { color: var(--color-muted); font-size: 14px; font-weight: 600; }
 
 .title {
   margin: 0;
